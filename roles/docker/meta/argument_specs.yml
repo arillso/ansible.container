@@ -1,0 +1,52 @@
+---
+argument_specs:
+  main:
+    short_description: Configure and manage Docker environment using Ansible
+    description:
+      - This spec defines the parameters for configuring Docker and its environment on various distributions using Ansible.
+    options:
+      docker_version:
+        type: str
+        description: Specifies the version of Docker to be installed. If omitted, the latest version is installed.
+        default: "{{ omit }}"
+
+      docker_daemon:
+        type: dict
+        description: Defines the Docker daemon configuration options.
+        options:
+          log-driver:
+            type: str
+            description: Defines the log driver to be used by Docker daemon.
+            default: "journald"
+          live-restore:
+            type: bool
+            description: Enables live restore of Docker when true.
+            default: true
+          registry-mirrors:
+            type: list
+            elements: str
+            description: A list of registry mirrors to use for Docker pull operations.
+
+      docker_systemd_units:
+        type: list
+        elements: dict
+        description: List of systemd units to create for Docker pruning tasks.
+        options:
+          name:
+            type: str
+            description: The name of the systemd unit.
+          type:
+            type: str
+            description: The type of the systemd unit, e.g., service or timer.
+          systemd_unit_generic_options:
+            type: list
+            elements: str
+            description: Generic systemd options for the unit.
+          systemd_unit_options:
+            type: list
+            elements: str
+            description: Specific options for the systemd service or timer.
+          systemd_unit_install_options:
+            type: list
+            elements: str
+            description: Install options for the systemd unit.

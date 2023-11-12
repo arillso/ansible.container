@@ -1,0 +1,34 @@
+---
+namespace: arillso
+name: container
+version: 0.0.0
+readme: README.md
+
+authors:
+  - Simon Baerlocher (@sbaerlocher) <s.baerlocher@sbaerlocher.ch>
+  - arillso (@arillso) <hello@arillso.io>
+
+description: "This is an Ansible collection for configuring containers."
+
+license:
+  - MIT
+
+tags:
+  - container
+  - apt
+  - containerd
+  - linux
+  - windows
+
+dependencies:
+  arillso.system: ">=0.0.17"
+
+repository: https://github.com/arillso/ansible.container
+
+documentation: https://github.com/arillso/ansible.container
+
+# homepage: http://example.com
+
+issues: https://github.com/arillso/ansible.container/issues
+
+build_ignore: []

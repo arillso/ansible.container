@@ -1,0 +1,4 @@
+---
+docker_package:
+  - "{{ 'docker-ce=' + docker_version if docker_version != '' else 'docker-ce' }}"
+  - python3-docker

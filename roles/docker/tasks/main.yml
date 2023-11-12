@@ -1,0 +1,93 @@
+---
+# tasks file for arillso.docker
+
+- name: Add OS specific variables
+  ansible.builtin.include_vars: "{{ loop_vars }}"
+  with_first_found:
+    - files:
+        - "{{ ansible_distribution }}-{{ ansible_distribution_version }}.yml"
+        - "{{ ansible_distribution }}-{{ ansible_distribution_major_version }}.yml"
+        - "{{ ansible_distribution }}.yml"
+        - "{{ ansible_os_family }}.yml"
+        - "{{ ansible_system }}.yml"
+        - "defaults.yml"
+      paths:
+        - "vars"
+  loop_control:
+    loop_var: loop_vars
+
+- name: Include distribution tasks
+  ansible.builtin.include_tasks: "{{ lookup('ansible.builtin.first_found', params) }}"
+  vars:
+    distribution: "{{ ansible_distribution }}"
+    distribution_version: "{{ ansible_distribution_version }}"
+    distribution_major_version: "{{ ansible_distribution_major_version }}"
+    params:
+      files:
+        - "install_docker_{{ distribution | lower }}_{{ distribution_version | lower }}.yml"
+        - "install_docker_{{ distribution | lower }}_{{ distribution_major_version | lower }}.yml"
+        - "install_docker_{{ distribution | lower }}.yml"
+        - "install_docker_{{ ansible_os_family | lower }}.yml"
+        - "install_docker_{{ ansible_system | lower }}.yml"
+        - "defaults.yml"
+
+- name: Install docker
+  become: true
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - "{{ docker_package }}"
+  notify:
+    - Start docker
+    - Enable docker
+
+- name: Create docker directory
+  become: true
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  with_items:
+    - "/etc/docker"
+
+- name: Configure docker daemon
+  become: true
+  ansible.builtin.template:
+    backup: true
+    src: etc/docker/daemon.json.j2
+    dest: /etc/docker/daemon.json
+    mode: "0600"
+    owner: root
+    group: root
+  notify:
+    - Restart docker
+
+- name: Create Docker Prune Service and Timer File
+  ansible.builtin.include_role:
+    name: arillso.system.systemd_unit
+  vars:
+    systemd_unit_name: "{{ item.name }}"
+    systemd_unit_type: "{{ item.type }}"
+    systemd_unit_generic_options: "{{ item.systemd_unit_generic_options | default('') }}"
+    systemd_unit_options: "{{ item.systemd_unit_options | default('') }}"
+    systemd_unit_install_options: "{{ item.systemd_unit_install_options | default('') }}"
+  loop: "{{ docker_systemd_units }}"
+
+- name: Enable and start systemd timers for Docker
+  become: true
+  ansible.builtin.systemd:
+    name: "{{ item.name }}"
+    state: started
+    enabled: true
+    daemon_reload: true
+  loop: "{{ docker_systemd_units }}"
+  when: item.type == 'timer'
+
+- name: Run handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: Reset ssh connection
+  ansible.builtin.meta: reset_connection
