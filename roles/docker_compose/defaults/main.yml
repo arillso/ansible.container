@@ -1,0 +1,111 @@
+# Specifies the version of Docker Compose to install. Leave blank for the latest version.
+docker_compose_version: ""
+
+# List of Docker Compose packages for installation. Appends the specified version to the package name if docker_compose_version is set.
+docker_compose_package:
+  - "{{ 'docker-compose-plugin=' + docker_compose_version if docker_compose_version != '' else 'docker-compose-plugin' }}"
+
+# Base directory path for storing Docker Compose configuration files.
+docker_compose_directory_path: "/etc/docker/compose"
+
+# Full path to the Docker Compose project directory, constructed from docker_compose_directory_path and docker_compose_project.
+docker_compose_directory: "{{ docker_compose_directory_path }}/{{ docker_compose_project }}"
+
+# Boolean flag to choose Docker Compose execution method: 'true' for file-based, 'false' for inline configuration.
+docker_compose_use_file: true
+
+# Inline configuration for Docker Compose, defined as an array of multi-line YAML strings.
+docker_compose_config: []
+
+# Name of the Docker Compose project, utilized to construct the full Docker Compose directory path.
+docker_compose_project: ""
+
+# Docker API version to use. Set to 'auto' for automatic selection of the latest supported version.
+docker_compose_api_version: "auto"
+
+# Option to build images before starting services. Set to 'true' to enable image building.
+docker_compose_build: false
+
+# Path to the CA certificate for server verification. If not set, default CA certificates are used.
+docker_compose_ca_cert: null
+
+# Path to the client's TLS certificate for Docker daemon communication.
+docker_compose_client_cert: null
+
+# Path to the client's TLS key for Docker daemon communication.
+docker_compose_client_key: null
+
+# Enable or disable debug mode. Set to 'true' to activate.
+docker_compose_debug: false
+
+# Include or exclude linked services. Set to 'true' to include.
+docker_compose_dependencies: true
+
+# Docker host URL or Unix socket path for API connection. Defaults to the standard Unix socket.
+docker_compose_docker_host: "unix://var/run/docker.sock"
+
+# Custom path to an environment file, relative to the project source directory.
+docker_compose_env_file: null
+
+# List of Compose file names, relative to project_src, to override default docker-compose.yml.
+docker_compose_files: null
+
+# Check Docker daemon's hostname against the name provided in the client certificate. Default is 'false'.
+docker_compose_hostname_check: false
+
+# Control the use of cache during the image build. Set to 'true' to ignore cache.
+docker_compose_nocache: false
+
+# List of profiles to enable when starting services, applicable for docker-compose v1.28.0 or later.
+docker_compose_profiles: null
+
+# Custom name for the Docker Compose project. If not set, the default name is derived from the project directory.
+docker_compose_project_name: null
+
+# Always pull images before starting the application. Set to 'true' to enable.
+docker_compose_pull: false
+
+# Strategy for container recreation: 'always', 'never', or 'smart' (default).
+docker_compose_recreate: "smart"
+
+# Option to remove images when state is 'absent'. Choices are 'all' or 'local'.
+docker_compose_remove_images: null
+
+# Remove containers for services not defined in the current Compose file. Default is 'false'.
+docker_compose_remove_orphans: false
+
+# Remove data volumes when state is 'absent'. Default is 'false'.
+docker_compose_remove_volumes: false
+
+# Restart all containers when state is 'present'. Default is 'false'.
+docker_compose_restarted: false
+
+# Dictionary defining service scaling: service name as key, number of containers as value.
+docker_compose_scale: null
+
+# List of specific services to operate on. If empty, applies to all services in the Compose file.
+docker_compose_services: null
+
+# Specify a valid SSL version number for secure communication. Uses the default value determined by the SSL Python module if not set.
+docker_compose_ssl_version: null
+
+# Desired state of the Docker Compose project: 'present' (default) or 'absent'.
+docker_compose_state: "present"
+
+# Stop all containers when state is 'present'. Default is 'false'.
+docker_compose_stopped: false
+
+# Timeout in seconds for container shutdown operations. Uses default docker-compose timeout if not set.
+docker_compose_timeout: null
+
+# Use TLS for API connection without verifying the Docker host server's authenticity. Default is 'false'.
+docker_compose_tls: false
+
+# Expected hostname of the Docker Host server for TLS verification. No default value.
+docker_compose_tls_hostname: null
+
+# Flag to enable SSH client usage for Docker API communication. Currently ignored.
+docker_compose_use_ssh_client: false
+
+# Verify the Docker host server's authenticity when using TLS. Default is 'false'.
+docker_compose_validate_certs: false

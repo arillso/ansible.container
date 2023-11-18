@@ -1,35 +1,43 @@
 # arillso.container.docker
 
-This Ansible role is designed for configuring and managing Docker environments using Ansible. It defines parameters for
-setting up Docker on various distributions, allowing for a customized Docker experience.
+This Ansible role is designed for the configuration and management of Docker environments.
+It offers tailored parameters for setting up Docker across various distributions, enabling a customized Docker experience.
 
 ## Requirements
 
-- Ansible 2.915 or higher.
-- Suitable access to target systems for Docker installation and configuration.
+- **Ansible Version**: 2.15 or higher
+- **Access**: Adequate permissions for Docker installation and configuration on target systems
 
 ## Role Variables
 
-The role uses various variables to customize Docker setup and behavior. These variables are defined in the `defaults/main.yml` file.
-Users can override these default values in their playbook.
+Variables for customizing Docker setup are defined in `defaults/main.yml`. Users can override these in their playbook. Key variables include:
 
 ### Docker Configuration
 
-- `docker_version`: Specifies the Docker version to install (default: latest).
-- `docker_daemon`: A dictionary to define Docker daemon configurations, including options like `log-driver` (default: "journald"),
-  `log-opts` (with options like `max-size`), `live-restore` (default: true), and `registry-mirrors`.
+- `docker_version`: Docker version to install (default: latest)
+- `docker_daemon`: Configuration dictionary for Docker daemon, including:
+  - `log-driver` (default: "journald")
+  - `log-opts` with options like `max-size`
+  - `live-restore` (default: true)
+  - `registry-mirrors`
 
 ### Systemd Units for Docker
 
-- `docker_systemd_units`: A list of systemd units for Docker pruning tasks, with options to specify the unit's name, type, and various systemd options.
+- `docker_systemd_units`: List of systemd units for Docker pruning tasks. Includes options for unit's name, type, and various systemd settings.
+
+## Documentation
+
+For detailed information and advanced usage, refer to our guide:
+
+[Arillso Docker Guide](https://guide.arillso.io/collections/arillso/container/docker.html#ansible-collections-arillso-container-docker-role)
 
 ## Dependencies
 
-No other Ansible roles are required as dependencies.
+This role is standalone and does not require other Ansible roles as dependencies.
 
 ## Example Playbook
 
-An example playbook demonstrating the use of `arillso.container.docker` to set up Docker:
+Example playbook for using `arillso.container.docker`:
 
 ```yaml
 - hosts: all
