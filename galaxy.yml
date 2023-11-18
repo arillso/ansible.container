@@ -18,16 +18,15 @@ tags:
   - apt
   - containerd
   - linux
-  - windows
 
 dependencies:
   arillso.system: ">=0.0.17"
 
 repository: https://github.com/arillso/ansible.container
 
-documentation: https://github.com/arillso/ansible.container
+documentation: https://guide.arillso.io/collections/arillso/container/index.html
 
-# homepage: http://example.com
+homepage: https://arillso.io
 
 issues: https://github.com/arillso/ansible.container/issues
 

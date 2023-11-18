@@ -1,0 +1,54 @@
+---
+# Docker API version to use. Set to 'auto' for automatic selection of the latest supported version.
+docker_login_api_version: "auto"
+
+# Path to a CA certificate file for server verification.
+docker_login_ca_cert: "{{ omit }}"
+
+# Path to the client's TLS certificate file.
+docker_login_client_cert: "{{ omit }}"
+
+# Path to the client's TLS key file.
+docker_login_client_key: "{{ omit }}"
+
+# Custom path to the Docker CLI configuration file.
+docker_login_config_path: "~/.docker/config.json"
+
+# Enable or disable debug mode. Set to 'true' to activate.
+docker_login_debug: false
+
+# Docker host URL or Unix socket path for API connection. Defaults to the standard Unix socket.
+docker_login_docker_host: "unix://var/run/docker.sock"
+
+# The plaintext password for the registry account.
+docker_login_password: ""
+
+# Refresh existing authentication in the configuration file.
+docker_login_reauthorize: false
+
+# The registry URL.
+docker_login_registry_url: "https://index.docker.io/v1/"
+
+# Specify a valid SSL version number for secure communication.
+docker_login_ssl_version: "{{ omit }}"
+
+# Controls the current state of the user. 'present' to login, 'absent' to log out.
+docker_login_state: "present"
+
+# Maximum time in seconds to wait for a response from the API.
+docker_login_timeout: 60
+
+# Secures connection to the API using TLS without verifying Docker host server.
+docker_login_tls: false
+
+# Expected name of the Docker Host server for authenticity verification.
+docker_login_tls_hostname: "{{ omit }}"
+
+# Use the SSH CLI tool instead of paramiko for SSH transports. Currently ignored.
+docker_login_use_ssh_client: false
+
+# Username for the registry account.
+docker_login_username: ""
+
+# Secures the connection to the API by using TLS and verifying the Docker host server authenticity.
+docker_login_validate_certs: false

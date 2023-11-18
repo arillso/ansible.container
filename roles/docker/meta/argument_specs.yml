@@ -8,7 +8,7 @@ argument_specs:
       docker_version:
         type: str
         description: Specifies the version of Docker to be installed. If omitted, the latest version is installed.
-        default: "{{ omit }}"
+        default: ""
 
       docker_daemon:
         type: dict
