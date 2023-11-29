@@ -50,6 +50,5 @@ An example of using this role:
     - arillso.container.docker_login
   vars:
     docker_login_username: "user123"
-    docker_login_password: "password"
     docker_login_registry_url: "https://myregistry.com"
 ```
