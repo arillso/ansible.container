@@ -2,8 +2,9 @@
 docker_compose_version: ""
 
 # List of Docker Compose packages for installation. Appends the specified version to the package name if docker_compose_version is set.
-docker_compose_package:
-  - "{{ 'docker-compose-plugin=' + docker_compose_version if docker_compose_version != '' else 'docker-compose-plugin' }}"
+# https://github.com/ansible-collections/community.docker/pull/586
+# docker_compose_packages:
+#   - "{{ 'docker-compose-plugin=' + docker_compose_version if docker_compose_version != '' else 'docker-compose-plugin' }}"
 
 # Base directory path for storing Docker Compose configuration files.
 docker_compose_directory_path: "/etc/docker/compose"
@@ -69,7 +70,7 @@ docker_compose_pull: false
 docker_compose_recreate: "smart"
 
 # Option to remove images when state is 'absent'. Choices are 'all' or 'local'.
-docker_compose_remove_images: null
+docker_compose_remove_images: all
 
 # Remove containers for services not defined in the current Compose file. Default is 'false'.
 docker_compose_remove_orphans: false

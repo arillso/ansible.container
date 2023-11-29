@@ -17,7 +17,7 @@ Variables are defined in `defaults/main.yml` and can be overridden in your playb
 #### Argument Specifications
 
 - `docker_compose_version`: Specifies Docker Compose version to install (defaults to latest)
-- `docker_compose_package`: List of Docker Compose packages for installation
+- `docker_compose_packages`: List of Docker Compose packages for installation
 - `docker_compose_directory_path`: Base directory path for Docker Compose configuration files
 - `docker_compose_directory`: Full path for the Docker Compose project directory
 - `docker_compose_use_file`: Boolean to choose between file-based or inline configuration
