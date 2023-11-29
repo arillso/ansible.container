@@ -7,7 +7,6 @@
     client_key: "{{ docker_login_client_key }}"
     debug: "{{ docker_login_debug }}"
     docker_host: "{{ docker_login_docker_host }}"
-    email: "{{ docker_login_email }}"
     password: "{{ docker_login_password }}"
     reauthorize: "{{ docker_login_reauthorize }}"
     registry_url: "{{ docker_login_registry_url }}"
