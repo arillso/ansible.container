@@ -1,5 +1,6 @@
 ---
 - name: Login to Docker registry
+  become: true
   community.docker.docker_login:
     api_version: "{{ docker_login_api_version }}"
     ca_cert: "{{ docker_login_ca_cert }}"
