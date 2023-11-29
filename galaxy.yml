@@ -21,6 +21,7 @@ tags:
 
 dependencies:
   arillso.system: ">=0.0.17"
+  community.docker: ">=3.4.11"
 
 repository: https://github.com/arillso/ansible.container
 

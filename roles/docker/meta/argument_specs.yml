@@ -26,6 +26,35 @@ argument_specs:
             type: list
             elements: str
             description: A list of registry mirrors to use for Docker pull operations.
+          data-root:
+            type: str
+            description: The root directory of the Docker runtime. Defaults to /var/lib/docker.
+          log-level:
+            type: str
+            description: The logging level. Valid values are "debug", "info", "warn", "error", "fatal".
+          storage-driver:
+            type: str
+            description: The storage driver to use. Popular options include overlay2, aufs, and btrfs.
+          insecure-registries:
+            type: list
+            elements: str
+            description: A list of insecure registries to allow for Docker pull and push operations.
+          default-ulimits:
+            type: dict
+            description: Default ulimits to set for containers.
+          debug:
+            type: bool
+            description: Enable debug mode with additional logging.
+          exec-opts:
+            type: list
+            elements: str
+            description: Runtime execution options.
+          default-runtime:
+            type: str
+            description: The default runtime to use for running containers.
+          experimental:
+            type: bool
+            description: Enable experimental features.
 
       docker_systemd_units:
         type: list
