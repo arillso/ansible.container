@@ -80,7 +80,6 @@
   become: true
   ansible.builtin.systemd:
     name: "{{ item.name }}"
-    state: started
     enabled: true
     daemon_reload: true
   loop: "{{ docker_systemd_units }}"
