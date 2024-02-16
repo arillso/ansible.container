@@ -84,7 +84,7 @@ docker_compose_v2_remove_volumes: false
 docker_compose_v2_restarted: false
 
 # Dictionary defining service scaling: service name as key, number of containers as value.
-docker_compose_v2_scale: "{{ omit }}"
+# docker_compose_v2_scale: "{{ omit }}"
 
 # List of specific services to operate on. If empty, applies to all services in the Compose file.
 docker_compose_v2_services: "{{ omit }}"

@@ -70,7 +70,7 @@
         client_key: "{{ docker_compose_v2_client_key }}"
         files: "{{ docker_compose_v2_files }}"
         pull: "{{ docker_compose_v2_pull }}"
-        scale: "{{ docker_compose_v2_scale }}"
+        scale: "{{ docker_compose_v2_scale | default(omit) }}"
         services: "{{ docker_compose_v2_services }}"
 
   rescue:
