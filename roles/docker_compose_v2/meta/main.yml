@@ -1,0 +1,23 @@
+---
+galaxy_info:
+  author: "arillso (@arillso)"
+  description: "Installs and configures Docker Compose 2 on Debian, RedHat, and Ubuntu."
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Debian
+      versions:
+        - buster
+        - bullseye
+    - name: Ubuntu
+      versions:
+        - focal
+    - name: RedHat
+      versions:
+        - "7"
+        - "8"
+
+  galaxy_tags:
+    - docker
+    - compose
+    - deployment
