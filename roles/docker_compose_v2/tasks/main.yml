@@ -37,6 +37,11 @@
             group: root
             mode: "0644"
 
+      rescue:
+        - name: Error handling if the service could not be created
+          ansible.builtin.debug:
+            msg: "The Docker Compose service could not be created. Please check the configuration and system logs."
+
     - name: Launch Docker Compose based on specified configuration
       become: true
       community.docker.docker_compose_v2:
@@ -67,3 +72,8 @@
         pull: "{{ docker_compose_v2_pull }}"
         scale: "{{ docker_compose_v2_scale }}"
         services: "{{ docker_compose_v2_services }}"
+
+  rescue:
+    - name: Handle undefined docker_compose_v2_config variable
+      ansible.builtin.debug:
+        msg: "The variable 'docker_compose_v2_config' is not defined. Aborting the playbook due to missing configuration."
