@@ -168,7 +168,7 @@
   ansible.builtin.file:
       path: "{{ k3s_config_dir }}"
       state: directory
-      mode: "0755"
+      mode: "0700"
       owner: root
       group: root
   become: true

@@ -170,15 +170,7 @@
 
 
 # General Security Hardening
-- name: Configure secure file permissions for K3s configuration directory
-  ansible.builtin.file:
-      path: "{{ k3s_config_dir }}"
-      mode: "0700"
-      owner: root
-      group: root
-      state: directory
-  become: true
-  when: k3s_config_dir is defined
+# K3s configuration directory permissions are set during directory creation in main.yml
 
 # - name: Configure secure file permissions for K3s token file
 #   ansible.builtin.file:
