@@ -1,0 +1,59 @@
+---
+# Install required Python dependencies for Kubernetes operations
+- name: Install Python packages for Kubernetes
+  ansible.builtin.include_role:
+      name: arillso.system.packages
+      tasks_from: packages
+  vars:
+      packages_list:
+          - name: "python3-kubernetes"
+            state: "present"
+      packages_retry_count: 3
+      packages_retry_delay: 10
+
+  tags:
+      - helm
+      - helm-dependencies
+      - system-packages
+
+- name: "Helm Chart Management"
+  tags:
+      - helm
+      - helm-charts
+      - kubernetes
+  block:
+      - name: "Debug: Display Helm configuration"
+        ansible.builtin.debug:
+            var: item
+        loop:
+            - "helm_enable_charts: {{ helm_enable_charts }}"
+            - "helm_charts count: {{ helm_charts | length }}"
+            - "helm_repositories count: {{ helm_repositories | length }}"
+        when: helm_debug_enabled | default(false)
+
+      - name: "Validate Helm prerequisites"
+        ansible.builtin.include_tasks: prerequisites.yml
+        when: helm_enable_charts | default(false)
+
+      - name: "Configure Helm repositories"
+        ansible.builtin.include_tasks: repositories.yml
+        when:
+            - helm_enable_charts | default(false)
+            - helm_repositories | length > 0
+
+      - name: "Deploy Helm Charts"
+        ansible.builtin.include_tasks: charts.yml
+        when:
+            - helm_enable_charts | default(false)
+            - helm_charts | length > 0
+
+  rescue:
+      - name: "Handle Helm deployment failure"
+        ansible.builtin.fail:
+            msg: |
+                Helm deployment failed. Check the following:
+                - Kubernetes cluster is accessible
+                - Cattle Operator is running
+                - Helm repositories are reachable
+                - Chart configurations are valid
+                Error: {{ ansible_failed_result.msg | default('Unknown error') }}

@@ -1,0 +1,416 @@
+{{ '#!/bin/bash' }}
+# K3s Facts Collection Script
+# Enterprise-grade Kubernetes cluster facts detection for Ansible Facts
+# Optimized for K3s Kubernetes distribution
+# Features: Intelligent caching, auto-detection, health monitoring, cluster state validation
+
+set -euo pipefail
+
+# Error handler to ensure valid JSON output even on failure
+error_handler() {
+    local exit_code=$?
+    local line_number=$1
+    echo "{\"error\": true, \"error_code\": ${exit_code}, \"error_line\": ${line_number}, \"_fallback_mode\": true}" >&1
+    exit 0  # Exit with success to ensure Ansible can parse the error JSON
+}
+trap 'error_handler ${LINENO}' ERR
+
+# Configuration variables
+CACHE_ENABLED="{{ facts_cache_enabled | default(true) }}"
+CACHE_TTL="{{ facts_cache_ttl_k3s | default(facts_cache_default_ttl) | default(300) }}"
+CACHE_DIR="{{ facts_cache_dir | default('/var/cache/ansible-facts') }}"
+HEALTH_TIMEOUT="{{ facts_timeout_default | default(5) }}"
+API_TIMEOUT="{{ facts_timeout_api | default(10) }}"
+MAX_RETRIES="{{ facts_max_retries | default(1) }}"
+DEBUG_ENABLED="{{ facts_debug_enabled | default(false) }}"
+
+# K3s-specific configuration
+K3S_DATA_DIR="{{ k3s_data_dir | default('/var/lib/rancher/k3s') }}"
+K3S_TOKEN_FILE="{{ k3s_token_file | default('/etc/rancher/k3s/k3s-token') }}"
+K3S_NODE_TYPE="{{ facts_node_type | default('generic') }}"
+K3S_ROLE="{{ k3s_role | default('unknown') }}"
+K3S_HTTPS_PORT="{{ k3s_https_listen_port | default(6443) }}"
+K3S_NODE_NAME="{{ k3s_node_name | default(inventory_hostname) }}"
+K3S_SERVER_URL="{{ k3s_server_url | default('') }}"
+K3S_KUBECONFIG="{{ k3s_kubeconfig | default('/etc/rancher/k3s/k3s.yaml') }}"
+
+# Cache file path
+CACHE_FILE="${CACHE_DIR}/k3s-facts.json"
+
+# Logging functions
+log_debug() {
+    [[ "${DEBUG_ENABLED}" == "true" ]] && echo "[DEBUG] $*" >&2
+}
+
+log_error() {
+    echo "[ERROR] $*" >&2
+}
+
+# Safe command execution with retry logic
+safe_exec_with_retry() {
+    local cmd="$1"
+    local default_value="${2:-unknown}"
+    local timeout_seconds="${3:-$HEALTH_TIMEOUT}"
+    local retries="${4:-$MAX_RETRIES}"
+
+    for ((i=0; i<=retries; i++)); do
+        local result
+        if result=$(timeout "${timeout_seconds}" bash -c "${cmd}" 2>/dev/null); then
+            echo "${result}"
+            log_debug "Command successful on attempt $((i+1)): ${cmd}"
+            return 0
+        fi
+
+        if [[ $i -lt $retries ]]; then
+            log_debug "Command failed, retrying ($((i+1))/${retries}): ${cmd}"
+            sleep 0.5
+        fi
+    done
+
+    log_debug "Command failed after $((retries+1)) attempts: ${cmd}"
+    echo "${default_value}"
+    return 1
+}
+
+# Cache management functions
+setup_cache() {
+    if [[ "${CACHE_ENABLED}" == "true" ]]; then
+        mkdir -p "${CACHE_DIR}"
+        chmod 755 "${CACHE_DIR}"
+    fi
+}
+
+is_cache_valid() {
+    if [[ "${CACHE_ENABLED}" != "true" ]] || [[ ! -f "${CACHE_FILE}" ]]; then
+        return 1
+    fi
+
+    local cache_age current_time
+    cache_age=$(stat -c %Y "${CACHE_FILE}" 2>/dev/null || echo 0)
+    current_time=$(date +%s)
+
+    if (( current_time - cache_age < CACHE_TTL )); then
+        return 0
+    else
+        return 1
+    fi
+}
+
+get_cached_data() {
+    if is_cache_valid; then
+        cat "${CACHE_FILE}"
+        return 0
+    fi
+    return 1
+}
+
+cache_data() {
+    if [[ "${CACHE_ENABLED}" == "true" ]]; then
+        echo "$1" > "${CACHE_FILE}.tmp"
+        mv "${CACHE_FILE}.tmp" "${CACHE_FILE}"
+        chmod 644 "${CACHE_FILE}"
+    fi
+}
+
+# K3s facts collection function
+collect_k3s_facts() {
+    # Start with detection time
+    local detection_start
+    detection_start=$(date +%s%3N)
+
+    # Check if K3s binary is installed
+    local binary_installed=false
+    if command -v k3s >/dev/null 2>&1; then
+        binary_installed=true
+    fi
+
+    # Get K3s version if binary is installed
+    local k3s_version="unknown"
+    if [[ "${binary_installed}" == "true" ]]; then
+        k3s_version=$(safe_exec_with_retry "k3s --version | head -n1 | cut -d' ' -f3" "unknown" "${API_TIMEOUT}")
+    fi
+
+    # Check if service exists and is active/enabled
+    local service_exists=false
+    local service_active=false
+    local service_enabled=false
+    if systemctl list-unit-files k3s.service >/dev/null 2>&1; then
+        service_exists=true
+
+        # Check if service is active
+        if systemctl is-active k3s.service >/dev/null 2>&1; then
+            service_active=true
+        fi
+
+        # Check if service is enabled
+        if systemctl is-enabled k3s.service >/dev/null 2>&1; then
+            service_enabled=true
+        fi
+    fi
+
+    # Check if database exists (for server nodes)
+    local database_exists=false
+    if [[ -f "${K3S_DATA_DIR}/server/db/state.db" ]]; then
+        database_exists=true
+    fi
+
+    # Check if token exists
+    local token_exists=false
+    if [[ -f "${K3S_TOKEN_FILE}" ]]; then
+        token_exists=true
+    fi
+
+    # Check kubeconfig availability (K3s specific paths only)
+    local kubeconfig_exists=false
+    local kubeconfig_path=""
+    local kubeconfig_readable=false
+    local kubeconfig_size=0
+    local kubeconfig_permissions=""
+
+    # K3s standard kubeconfig path
+    if [[ -f "/etc/rancher/k3s/k3s.yaml" ]]; then
+        kubeconfig_exists=true
+        kubeconfig_path="/etc/rancher/k3s/k3s.yaml"
+        kubeconfig_size=$(stat -c%s "/etc/rancher/k3s/k3s.yaml" 2>/dev/null || echo 0)
+        kubeconfig_permissions=$(stat -c%a "/etc/rancher/k3s/k3s.yaml" 2>/dev/null || echo "unknown")
+
+        # Check if file is readable
+        if [[ -r "/etc/rancher/k3s/k3s.yaml" ]]; then
+            kubeconfig_readable=true
+        fi
+    fi
+
+    # Check if server is responsive
+    local server_responsive=false
+    local kubectl_functional=false
+    if [[ "${service_active}" == "true" ]]; then
+        if [[ "${K3S_ROLE}" == "server" ]]; then
+            # Test kubectl functionality
+            if [[ "${kubeconfig_exists}" == "true" && "${kubeconfig_readable}" == "true" ]]; then
+                if safe_exec_with_retry "k3s kubectl get nodes >/dev/null 2>&1" "" "${HEALTH_TIMEOUT}"; then
+                    server_responsive=true
+                    kubectl_functional=true
+                fi
+            fi
+        fi
+    fi
+
+    # Determine if this is the first server
+    local first_server=false
+    if [[ "${K3S_ROLE}" == "server" ]]; then
+        # In Ansible context, this would check if it's the first in k3s_servers group
+        if [[ "{{ inventory_hostname == (groups['k3s_servers'][0] if groups['k3s_servers'] | default([]) else '') }}" == "True" ]]; then
+            first_server=true
+        elif [[ ! -f "${K3S_DATA_DIR}/server/db/state.db" ]] && [[ "${service_exists}" == "false" ]]; then
+            # If database doesn't exist and service isn't set up, likely the first server
+            first_server=true
+        fi
+    fi
+
+    # Get hostname and IP address
+    local hostname
+    hostname=$(hostname)
+    local ip_address
+    ip_address=$(ip -4 addr show scope global | grep -v "docker\|veth\|flannel" | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -n 1 || echo "unknown")
+
+    # Determine server URL automatically based on role and inventory
+    local server_url="${K3S_SERVER_URL}"
+
+    if [[ -z "${server_url}" ]]; then
+        if [[ "${K3S_ROLE}" == "server" ]]; then
+            # For servers, use their own IP
+            server_url="https://${ip_address}:${K3S_HTTPS_PORT}"
+        elif [[ "${K3S_ROLE}" == "agent" ]]; then
+            # For agents, auto-discover server URL from inventory
+            # Priority: k3s_controllers -> k3s_servers -> first available server
+            local target_server=""
+
+            # Try k3s_controllers first
+            {%- if groups['k3s_controllers'] is defined and groups['k3s_controllers'] | length > 0 %}
+            target_server="{{ groups['k3s_controllers'][0] }}"
+            {%- elif groups['k3s_servers'] is defined and groups['k3s_servers'] | length > 0 %}
+            target_server="{{ groups['k3s_servers'][0] }}"
+            {%- endif %}
+
+            if [[ -n "${target_server}" ]]; then
+                # Resolve target server IP address
+                local target_ip
+                target_ip=$(getent hosts "${target_server}" 2>/dev/null | awk '{print $1}' | head -n1 || echo "")
+
+                if [[ -z "${target_ip}" ]]; then
+                    # Fallback: try to resolve using ping or direct IP check
+                    if [[ "${target_server}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                        target_ip="${target_server}"
+                    else
+                        target_ip=$(ping -c 1 -W 1 "${target_server}" 2>/dev/null | grep -oP '\(\K[^\)]+' | head -n1 || echo "")
+                    fi
+                fi
+
+                if [[ -n "${target_ip}" ]]; then
+                    server_url="https://${target_ip}:${K3S_HTTPS_PORT}"
+                    log_debug "Auto-discovered server URL for agent: ${server_url}"
+                else
+                    log_error "Failed to resolve IP for target server: ${target_server}"
+                fi
+            else
+                log_error "No K3s servers found in inventory for agent to connect to"
+            fi
+        fi
+    fi
+
+    # Calculate token hash (simplified - in production would use actual token)
+    local token_hash=""
+    if [[ -f "${K3S_TOKEN_FILE}" ]]; then
+        token_hash=$(sha256sum "${K3S_TOKEN_FILE}" 2>/dev/null | cut -d' ' -f1 || echo "")
+    fi
+
+    # Determine if node should initialize cluster
+    local should_init=false
+    if [[ "${K3S_ROLE}" == "server" && "${first_server}" == "true" && "${database_exists}" == "false" ]]; then
+        should_init=true
+    fi
+
+    # Check number of nodes if accessible
+    local node_count=0
+    local ready_node_count=0
+    if [[ "${service_active}" == "true" && "${server_responsive}" == "true" && "${kubectl_functional}" == "true" ]]; then
+        node_count=$(safe_exec_with_retry "k3s kubectl get nodes --no-headers 2>/dev/null | wc -l" "0" "${HEALTH_TIMEOUT}")
+        ready_node_count=$(safe_exec_with_retry "k3s kubectl get nodes --no-headers 2>/dev/null | grep ' Ready ' | wc -l" "0" "${HEALTH_TIMEOUT}")
+    fi
+
+    # Check cluster health
+    local cluster_health="unknown"
+    if [[ "${service_active}" == "true" && "${server_responsive}" == "true" ]]; then
+        if [[ "${node_count}" -gt 0 && "${node_count}" == "${ready_node_count}" ]]; then
+            cluster_health="healthy"
+        elif [[ "${ready_node_count}" -gt 0 ]]; then
+            cluster_health="degraded"
+        else
+            cluster_health="unhealthy"
+        fi
+    fi
+
+    # Capture detection end time and calculate duration
+    local detection_end
+    detection_end=$(date +%s%3N)
+    local detection_duration=$((detection_end - detection_start))
+
+    # Generate JSON output
+    jq -n \
+        --arg hostname "${hostname}" \
+        --arg node_type "${K3S_NODE_TYPE}" \
+        --arg node_role "${K3S_ROLE}" \
+        --arg scan_timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        --arg k3s_version "${k3s_version}" \
+        --arg k3s_node_name "${K3S_NODE_NAME}" \
+        --arg ip_address "${ip_address}" \
+        --arg binary_installed "${binary_installed}" \
+        --arg service_exists "${service_exists}" \
+        --arg service_active "${service_active}" \
+        --arg service_enabled "${service_enabled}" \
+        --arg database_exists "${database_exists}" \
+        --arg token_exists "${token_exists}" \
+        --arg kubeconfig_exists "${kubeconfig_exists}" \
+        --arg kubeconfig_path "${kubeconfig_path}" \
+        --arg kubeconfig_readable "${kubeconfig_readable}" \
+        --arg kubeconfig_size "${kubeconfig_size}" \
+        --arg kubeconfig_permissions "${kubeconfig_permissions}" \
+        --arg kubectl_functional "${kubectl_functional}" \
+        --arg server_responsive "${server_responsive}" \
+        --arg first_server "${first_server}" \
+        --arg server_url "${server_url}" \
+        --arg should_init "${should_init}" \
+        --arg token_hash "${token_hash}" \
+        --arg node_count "${node_count}" \
+        --arg ready_node_count "${ready_node_count}" \
+        --arg cluster_health "${cluster_health}" \
+        --arg cache_enabled "${CACHE_ENABLED}" \
+        --arg cache_ttl "${CACHE_TTL}" \
+        --arg cache_file "${CACHE_FILE}" \
+        --arg health_timeout "${HEALTH_TIMEOUT}" \
+        --arg api_timeout "${API_TIMEOUT}" \
+        --arg detection_duration "${detection_duration}" \
+        --arg last_updated "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        '{
+            cluster: {
+                initialized: ($database_exists | test("true")),
+                database_exists: ($database_exists | test("true")),
+                server_responsive: ($server_responsive | test("true")),
+                first_server: ($first_server | test("true")),
+                token_exists: ($token_exists | test("true")),
+                kubeconfig_exists: ($kubeconfig_exists | test("true")),
+                health: $cluster_health,
+                node_count: ($node_count | tonumber),
+                ready_node_count: ($ready_node_count | tonumber)
+            },
+            node: {
+                role: $node_role,
+                type: $node_type,
+                hostname: $hostname,
+                ip_address: $ip_address,
+                name: $k3s_node_name
+            },
+            service: {
+                binary_installed: ($binary_installed | test("true")),
+                service_exists: ($service_exists | test("true")),
+                service_active: ($service_active | test("true")),
+                service_enabled: ($service_enabled | test("true")),
+                version: $k3s_version
+            },
+            kubeconfig: {
+                exists: ($kubeconfig_exists | test("true")),
+                path: $kubeconfig_path,
+                readable: ($kubeconfig_readable | test("true")),
+                size_bytes: ($kubeconfig_size | tonumber),
+                permissions: $kubeconfig_permissions,
+                kubectl_functional: ($kubectl_functional | test("true"))
+            },
+            cluster_info: {
+                server_url: $server_url,
+                token_hash: $token_hash,
+                should_init: ($should_init | test("true"))
+            },
+            inventory: {
+                controllers: [{{ '"' + (groups['k3s_controllers'] | default([]) | join('", "')) + '"' if groups['k3s_controllers'] is defined and groups['k3s_controllers'] | length > 0 else '' }}],
+                servers: [{{ '"' + (groups['k3s_servers'] | default([]) | join('", "')) + '"' if groups['k3s_servers'] is defined and groups['k3s_servers'] | length > 0 else '' }}],
+                agents: [{{ '"' + (groups['k3s_agents'] | default([]) | join('", "')) + '"' if groups['k3s_agents'] is defined and groups['k3s_agents'] | length > 0 else '' }}],
+                all_k3s_nodes: [{{ '"' + ((groups['k3s_controllers'] | default([]) + groups['k3s_servers'] | default([]) + groups['k3s_agents'] | default([])) | unique | join('", "')) + '"' if (groups['k3s_controllers'] is defined or groups['k3s_servers'] is defined or groups['k3s_agents'] is defined) and (groups['k3s_controllers'] | default([]) + groups['k3s_servers'] | default([]) + groups['k3s_agents'] | default([])) | length > 0 else '' }}]
+            },
+            health: {
+                last_check: $last_updated,
+                check_duration_ms: ($detection_duration | tonumber)
+            },
+            cache: {
+                enabled: ($cache_enabled | test("true")),
+                ttl_seconds: ($cache_ttl | tonumber),
+                cache_file: $cache_file
+            }
+        }'
+}
+
+# Main execution function
+main() {
+    local json_result
+
+    # Setup cache directory
+    setup_cache
+
+    # Try to use cached data first
+    if json_result=$(get_cached_data); then
+        # Update cache hit indicator in output
+        echo "${json_result}" | jq '.cache.cache_hit = true' 2>/dev/null || echo "${json_result}"
+        return 0
+    fi
+
+    # Collect fresh K3s facts
+    json_result=$(collect_k3s_facts)
+
+    # Cache the results
+    cache_data "${json_result}"
+
+    # Output results
+    echo "${json_result}"
+}
+
+# Execute main function
+main

@@ -1,0 +1,740 @@
+---
+# Common argument definitions using YAML anchors
+_common_options: &common_fleet_options
+    fleet_defaults:
+        description: "Global Fleet default values"
+        type: "dict"
+        default:
+            namespace: "fleet-default"
+            create_namespace: true
+            polling_interval: "15s"
+            force_update: false
+            service_account: "default"
+        options:
+            namespace:
+                description: "Default namespace for Fleet resources"
+                type: "str"
+                default: "fleet-default"
+            create_namespace:
+                description: "Create namespace by default"
+                type: "bool"
+                default: true
+            polling_interval:
+                description: "Default polling interval"
+                type: "str"
+                default: "15s"
+            force_update:
+                description: "Default force update setting"
+                type: "bool"
+                default: false
+            service_account:
+                description: "Default service account"
+                type: "str"
+                default: "default"
+
+    fleet_api_version:
+        description: "Fleet API version to use"
+        type: "str"
+        default: "fleet.cattle.io/v1alpha1"
+
+    fleet_state:
+        description: "Desired state of Fleet resources"
+        type: "str"
+        default: "present"
+        choices: ["present", "absent"]
+
+    fleet_validate_manifests:
+        description: "Validate Kubernetes manifests before applying"
+        type: "bool"
+        default: true
+
+_cluster_selector_options: &cluster_selector_options
+    cluster_selector:
+        description: "Cluster selector for targeting"
+        type: "dict"
+        options:
+            match_labels:
+                description: "Match labels for cluster selection"
+                type: "dict"
+                default: {}
+            match_expressions:
+                description: "Match expressions for cluster selection"
+                type: "list"
+                elements: "dict"
+                default: []
+    cluster_group:
+        description: "Cluster group name for targeting"
+        type: "str"
+    cluster_group_selector:
+        description: "Cluster group selector for targeting"
+        type: "dict"
+
+_common_resource_options: &common_resource_options
+    name:
+        description: "Name of the resource"
+        type: "str"
+        required: true
+    namespace:
+        description: "Kubernetes namespace for the resource"
+        type: "str"
+        default: "fleet-default"
+    create_namespace:
+        description: "Create namespace if it doesn't exist"
+        type: "bool"
+        default: true
+    labels:
+        description: "Additional labels for the resource"
+        type: "dict"
+        default: {}
+    annotations:
+        description: "Additional annotations for the resource"
+        type: "dict"
+        default: {}
+
+_helm_configuration: &helm_configuration
+    helm:
+        description: "Helm chart configuration"
+        type: "dict"
+        options:
+            chart:
+                description: "Helm chart name or path"
+                type: "str"
+            repo:
+                description: "Helm repository URL"
+                type: "str"
+            version:
+                description: "Helm chart version"
+                type: "str"
+            release_name:
+                description: "Helm release name"
+                type: "str"
+            values:
+                description: "Helm values"
+                type: "dict"
+                default: {}
+            values_files:
+                description: "List of Helm values files"
+                type: "list"
+                elements: "str"
+                default: []
+            values_from:
+                description: "Helm values from secrets"
+                type: "list"
+                elements: "dict"
+                default: []
+            force:
+                description: "Force Helm operations"
+                type: "bool"
+                default: false
+            take_ownership:
+                description: "Take ownership of existing resources"
+                type: "bool"
+                default: false
+            max_history:
+                description: "Maximum number of release history entries"
+                type: "int"
+                default: 5
+            timeout:
+                description: "Helm operation timeout"
+                type: "str"
+                default: "5m"
+            timeout_force_delete:
+                description: "Force delete on timeout"
+                type: "bool"
+                default: false
+            atomic:
+                description: "Atomic Helm operations"
+                type: "bool"
+                default: false
+            disable_pre_process:
+                description: "Disable pre-processing"
+                type: "bool"
+                default: false
+
+_drift_correction: &drift_correction
+    correct_drift:
+        description: "Drift correction configuration"
+        type: "dict"
+        options:
+            enabled:
+                description: "Enable drift correction"
+                type: "bool"
+                default: false
+            force:
+                description: "Force drift correction"
+                type: "bool"
+                default: false
+            keep_fail_history:
+                description: "Number of failed attempts to keep"
+                type: "int"
+                default: 1
+
+_auth_options: &auth_options
+    git_username:
+        description: "Git username for token authentication"
+        type: "str"
+    git_token:
+        description: "Git token for authentication"
+        type: "str"
+    git_ssh_private_key:
+        description: "SSH private key for authentication"
+        type: "str"
+    git_known_hosts:
+        description: "Known hosts for SSH authentication"
+        type: "str"
+    client_secret_name:
+        description: "Name of the Kubernetes secret for Git authentication"
+        type: "str"
+
+_gitrepo_options: &gitrepo_options
+    fleet_gitrepos:
+        description: "List of Fleet GitRepos to manage"
+        type: "list"
+        elements: "dict"
+        default: []
+        options:
+            name:
+                description: "Name of the GitRepo resource"
+                type: "str"
+                required: true
+            namespace:
+                description: "Kubernetes namespace for the GitRepo"
+                type: "str"
+                default: "fleet-default"
+            create_namespace:
+                description: "Create namespace if it doesn't exist"
+                type: "bool"
+                default: true
+            labels:
+                description: "Additional labels for the GitRepo"
+                type: "dict"
+                default: {}
+            annotations:
+                description: "Additional annotations for the GitRepo"
+                type: "dict"
+                default: {}
+            git_username:
+                description: "Git username for token authentication"
+                type: "str"
+            git_token:
+                description: "Git token for authentication"
+                type: "str"
+            git_ssh_private_key:
+                description: "SSH private key for authentication"
+                type: "str"
+            git_known_hosts:
+                description: "Known hosts for SSH authentication"
+                type: "str"
+            client_secret_name:
+                description: "Name of the Kubernetes secret for Git authentication"
+                type: "str"
+            repository:
+                description: "Git repository URL"
+                type: "str"
+                required: true
+            branch:
+                description: "Git branch to track"
+                type: "str"
+                default: "main"
+            revision:
+                description: "Specific git revision/commit to track"
+                type: "str"
+            paths:
+                description: "List of paths within repository to include"
+                type: "list"
+                elements: "str"
+                default: []
+            exclude_paths:
+                description: "List of paths within repository to exclude"
+                type: "list"
+                elements: "str"
+                default: []
+            polling_interval:
+                description: "Polling interval for git repository changes"
+                type: "str"
+                default: "15s"
+            service_account:
+                description: "Service account for GitRepo operations"
+                type: "str"
+                default: "default"
+            force_update:
+                description: "Force sync generation number"
+                type: "int"
+                default: 0
+            ca_bundle:
+                description: "Base64 encoded CA bundle for git TLS verification"
+                type: "str"
+            insecure_skip_tls:
+                description: "Skip TLS verification for git repository"
+                type: "bool"
+                default: false
+            helm_secret_name:
+                description: "Secret name for Helm repository authentication"
+                type: "str"
+            keep_resources:
+                description: "Keep resources when GitRepo is deleted"
+                type: "bool"
+                default: false
+            disable_dependency_update:
+                description: "Disable automatic dependency updates"
+                type: "bool"
+                default: false
+            targets:
+                description:
+                    - "List of cluster targets for deployment"
+                    - "Keys are automatically transformed from snake_case to camelCase for Fleet API compatibility"
+                    - "Use snake_case notation (cluster_selector, match_labels) which will be converted to camelCase"
+                type: "list"
+                elements: "dict"
+                default: []
+                options:
+                    name:
+                        description: "Name of the target (optional - defaults to 'target000' format if not specified)"
+                        type: "str"
+                        required: false
+                    <<: *cluster_selector_options
+            target_customizations:
+                description: "List of target-specific customizations"
+                type: "list"
+                elements: "dict"
+                default: []
+                options:
+                    name:
+                        description: "Name of the customization"
+                        type: "str"
+                        required: true
+                    cluster_selector:
+                        description: "Cluster selector for customization"
+                        type: "dict"
+                    helm:
+                        description: "Helm-specific customizations"
+                        type: "dict"
+                        options:
+                            values:
+                                description: "Helm values override"
+                                type: "dict"
+                                default: {}
+                            values_files:
+                                description: "List of Helm values files"
+                                type: "list"
+                                elements: "str"
+                                default: []
+                    kustomize:
+                        description: "Kustomize-specific customizations"
+                        type: "dict"
+                        options:
+                            dir:
+                                description: "Kustomize directory path"
+                                type: "str"
+            image_scan_commit:
+                description: "Image scanning and auto-commit configuration"
+                type: "dict"
+                options:
+                    enable:
+                        description: "Enable image scanning"
+                        type: "bool"
+                        default: false
+                    author_name:
+                        description: "Git commit author name"
+                        type: "str"
+                        default: "Fleet Image Updater"
+                    author_email:
+                        description: "Git commit author email"
+                        type: "str"
+                        default: "fleet@cattle.io"
+                    message_template:
+                        description: "Git commit message template"
+                        type: "str"
+            image_scan_interval:
+                description: "Image scanning interval"
+                type: "str"
+            helm_repo_url_regex:
+                description: "Regex pattern for Helm repository URLs"
+                type: "str"
+            <<: *drift_correction
+
+_bundle_options: &bundle_options
+    fleet_bundles:
+        description: "List of Fleet Bundles to manage"
+        type: "list"
+        elements: "dict"
+        default: []
+        options:
+            name:
+                description: "Name of the Bundle resource"
+                type: "str"
+                required: true
+            namespace:
+                description: "Kubernetes namespace for the Bundle"
+                type: "str"
+                default: "fleet-default"
+            create_namespace:
+                description: "Create namespace if it doesn't exist"
+                type: "bool"
+                default: true
+            labels:
+                description: "Additional labels for the Bundle"
+                type: "dict"
+                default: {}
+            annotations:
+                description: "Additional annotations for the Bundle"
+                type: "dict"
+                default: {}
+            target_namespace:
+                description: "Target namespace for Bundle deployment"
+                type: "str"
+            default_namespace:
+                description: "Default namespace for resources"
+                type: "str"
+            service_account:
+                description: "Service account for Bundle operations"
+                type: "str"
+                default: "default"
+            force_update:
+                description: "Force sync generation number"
+                type: "int"
+                default: 0
+            paused:
+                description: "Pause Bundle deployment"
+                type: "bool"
+                default: false
+            keep_resources:
+                description: "Keep resources when Bundle is deleted"
+                type: "bool"
+                default: false
+            resources:
+                description: "List of Kubernetes resources"
+                type: "list"
+                elements: "dict"
+                default: []
+                options:
+                    name:
+                        description: "Name of the resource"
+                        type: "str"
+                        required: true
+                    content:
+                        description: "YAML content of the resource"
+                        type: "str"
+                        required: true
+            helm:
+                description: "Helm chart configuration"
+                type: "dict"
+                options:
+                    chart:
+                        description: "Helm chart name or path"
+                        type: "str"
+                    repo:
+                        description: "Helm repository URL"
+                        type: "str"
+                    version:
+                        description: "Helm chart version"
+                        type: "str"
+                    release_name:
+                        description: "Helm release name"
+                        type: "str"
+                    values:
+                        description: "Helm values"
+                        type: "dict"
+                        default: {}
+                    values_files:
+                        description: "List of Helm values files"
+                        type: "list"
+                        elements: "str"
+                        default: []
+                    values_from:
+                        description: "Helm values from secrets"
+                        type: "list"
+                        elements: "dict"
+                        default: []
+                    force:
+                        description: "Force Helm operations"
+                        type: "bool"
+                        default: false
+                    take_ownership:
+                        description: "Take ownership of existing resources"
+                        type: "bool"
+                        default: false
+                    max_history:
+                        description: "Maximum number of release history entries"
+                        type: "int"
+                        default: 5
+                    timeout:
+                        description: "Helm operation timeout"
+                        type: "str"
+                        default: "5m"
+                    timeout_force_delete:
+                        description: "Force delete on timeout"
+                        type: "bool"
+                        default: false
+                    atomic:
+                        description: "Atomic Helm operations"
+                        type: "bool"
+                        default: false
+                    disable_pre_process:
+                        description: "Disable pre-processing"
+                        type: "bool"
+                        default: false
+            kustomize:
+                description: "Kustomize configuration"
+                type: "dict"
+                options:
+                    dir:
+                        description: "Kustomize directory path"
+                        type: "str"
+            targets:
+                description:
+                    - "List of cluster targets for deployment"
+                    - "Keys are automatically transformed from snake_case to camelCase for Fleet API compatibility"
+                    - "Use snake_case notation (cluster_selector, match_labels) which will be converted to camelCase"
+                type: "list"
+                elements: "dict"
+                default: []
+                options:
+                    name:
+                        description: "Name of the target (optional - defaults to 'target000' format if not specified)"
+                        type: "str"
+                        required: false
+                    <<: *cluster_selector_options
+            target_restrictions:
+                description: "List of target restrictions"
+                type: "list"
+                elements: "dict"
+                default: []
+            depends_on:
+                description: "List of dependencies"
+                type: "list"
+                elements: "dict"
+                default: []
+                options:
+                    name:
+                        description: "Name of the dependency"
+                        type: "str"
+                        required: true
+                    selector:
+                        description: "Dependency selector"
+                        type: "dict"
+            rollout_strategy:
+                description: "Bundle rollout strategy"
+                type: "dict"
+                options:
+                    max_unavailable:
+                        description: "Maximum unavailable replicas"
+                        type: "int"
+                        default: 1
+                    max_unavailable_partitions:
+                        description: "Maximum unavailable partitions"
+                        type: "int"
+                        default: 0
+                    auto_partition_size:
+                        description: "Automatic partition size"
+                        type: "int"
+                        default: 0
+                    partitions:
+                        description: "List of rollout partitions"
+                        type: "list"
+                        elements: "dict"
+                        default: []
+            yoda_mode:
+                description: "Yoda mode configuration"
+                type: "dict"
+                options:
+                    enabled:
+                        description: "Enable yoda mode"
+                        type: "bool"
+                        default: false
+            <<: *drift_correction
+            diff:
+                description: "Diff configuration"
+                type: "dict"
+                options:
+                    compare_patches:
+                        description: "List of patches for comparison"
+                        type: "list"
+                        elements: "dict"
+                        default: []
+
+_cluster_options: &cluster_options
+    fleet_clusters:
+        description: "List of Fleet Clusters to manage"
+        type: "list"
+        elements: "dict"
+        default: []
+        options:
+            <<: *common_resource_options
+            kubeconfig_secret:
+                description: "Secret containing kubeconfig for cluster access (optional for label-only mode)"
+                type: "str"
+                required: false
+            kubeconfig_secret_namespace:
+                description: "Namespace of the kubeconfig secret"
+                type: "str"
+            client_id:
+                description: "Client ID for cluster authentication"
+                type: "str"
+            agent_env_vars:
+                description: "Environment variables for Fleet agent"
+                type: "list"
+                elements: "dict"
+                default: []
+            agent_namespace:
+                description: "Namespace for Fleet agent"
+                type: "str"
+                default: "fleet-system"
+            agent_tls_mode:
+                description: "TLS mode for Fleet agent"
+                type: "str"
+                default: "system-store"
+                choices: ["system-store", "strict", "skip"]
+            agent_private_ca:
+                description: "Private CA for Fleet agent"
+                type: "str"
+            private_repo_url:
+                description: "Private repository URL"
+                type: "str"
+            template_values:
+                description: "Template values for cluster"
+                type: "dict"
+                default: {}
+
+_workspace_options: &workspace_options
+    fleet_workspaces:
+        description: "List of Fleet Workspaces to manage"
+        type: "list"
+        elements: "dict"
+        default: []
+        options:
+            name:
+                description: "Name of the Workspace resource"
+                type: "str"
+                required: true
+            display_name:
+                description: "Display name for the workspace"
+                type: "str"
+            description:
+                description: "Description of the workspace"
+                type: "str"
+            labels:
+                description: "Additional labels for the Workspace resource"
+                type: "dict"
+                default: {}
+            annotations:
+                description: "Additional annotations for the Workspace resource"
+                type: "dict"
+                default: {}
+
+_registration_token_options: &registration_token_options
+    fleet_registration_tokens:
+        description: "List of Fleet ClusterRegistrationTokens to manage"
+        type: "list"
+        elements: "dict"
+        default: []
+        options:
+            <<: *common_resource_options
+            ttl:
+                description: "Time-to-live for the registration token"
+                type: "str"
+                default: "240h"
+
+argument_specs:
+    # Main entry point
+    main:
+        short_description: "Manage Rancher Fleet GitRepos, Bundles, Clusters, and Workspaces"
+        description:
+            - "This role manages Rancher Fleet resources on Kubernetes clusters"
+            - "Supports GitOps-based continuous deployment workflows"
+            - "Manages GitRepos, Bundles, Clusters, and Workspaces"
+        author:
+            - "Arillso Team"
+        options:
+            # GitRepo Management
+            fleet_enable_gitrepos:
+                description: "Enable Fleet GitRepo management"
+                type: "bool"
+                default: false
+
+            <<: *gitrepo_options
+
+            # Bundle Management
+            fleet_enable_bundles:
+                description: "Enable Fleet Bundle management"
+                type: "bool"
+                default: false
+
+            <<: *bundle_options
+
+            # Cluster Management
+            <<: *cluster_options
+
+            # Workspace Management
+            <<: *workspace_options
+
+            # ClusterRegistrationToken Management
+            <<: *registration_token_options
+
+            # Global Configuration
+            <<: *common_fleet_options
+
+    # Auth-specific entry point
+    auth:
+        short_description: "Manage Fleet authentication secrets only"
+        description:
+            - "Manages Kubernetes secrets for GitRepo authentication"
+        author:
+            - "Arillso Team"
+        options:
+            <<: *auth_options
+
+    # GitRepo-specific entry point
+    gitrepos:
+        short_description: "Manage Fleet GitRepos only"
+        description:
+            - "Useful for GitOps-focused deployments"
+        author:
+            - "Arillso Team"
+        options:
+            fleet_gitrepos:
+                <<: *gitrepo_options
+
+    # Bundle-specific entry point
+    bundles:
+        short_description: "Manage Fleet Bundles only"
+        description:
+            - "Useful for direct Kubernetes manifest deployments"
+        author:
+            - "Arillso Team"
+        options:
+            fleet_bundles:
+                <<: *bundle_options
+
+    # Cluster-specific entry point
+    clusters:
+        short_description: "Manage Fleet Clusters only"
+        description:
+            - "Useful for multi-cluster setup and management"
+        author:
+            - "Arillso Team"
+        options:
+            fleet_clusters:
+                <<: *cluster_options
+
+    # Workspace-specific entry point
+    workspaces:
+        short_description: "Manage Fleet Workspaces only"
+        description:
+            - "Useful for workspace organization and management"
+        author:
+            - "Arillso Team"
+        options:
+            fleet_workspaces:
+                <<: *workspace_options
+
+    # ClusterRegistrationToken-specific entry point
+    registration_tokens:
+        short_description: "Manage Fleet ClusterRegistrationTokens only"
+        description:
+            - "Useful for agent-initiated cluster registration"
+        author:
+            - "Arillso Team"
+        options:
+            fleet_registration_tokens:
+                <<: *registration_token_options

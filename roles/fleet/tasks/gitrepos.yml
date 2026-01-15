@@ -1,0 +1,75 @@
+---
+# Fleet GitRepos management tasks
+
+- name: "Create namespace for Fleet GitRepos"
+  kubernetes.core.k8s:
+      name: "{{ item.namespace | default(fleet_defaults.namespace) }}"
+      api_version: v1
+      kind: Namespace
+      state: "{{ fleet_state }}"
+      kubeconfig: "{{ fleet_kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
+  loop: "{{ fleet_gitrepos }}"
+  when:
+      - fleet_gitrepos | length > 0
+      - (item.create_namespace | default(fleet_defaults.create_namespace)) | bool
+      - fleet_state == "present"
+  tags:
+      - fleet
+      - fleet-gitrepos
+      - fleet-namespace
+
+- name: "Manage Fleet GitRepos"
+  kubernetes.core.k8s:
+      kubeconfig: "{{ fleet_kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
+      definition:
+          apiVersion: "{{ fleet_api_version }}"
+          kind: GitRepo
+          metadata:
+              name: "{{ item.name }}"
+              namespace: "{{ item.namespace | default(fleet_defaults.namespace) }}"
+              labels:
+                  "app.kubernetes.io/managed-by": "ansible"
+                  "app.kubernetes.io/component": "fleet-gitrepo"
+                  "fleet.cattle.io/client-secret": "true"
+                  "gitops.infrastructure/gitrepo": "{{ item.name }}"
+              annotations: "{{ item.annotations | default({}) }}"
+          spec:
+              repo: "{{ item.repository }}"
+              branch: "{{ item.branch | default('main') }}"
+              revision: "{{ item.revision | default(omit) }}"
+              paths: "{{ item.paths | default([]) }}"
+              pollingInterval: "{{ item.polling_interval | default(fleet_defaults.polling_interval) }}"
+              serviceAccount: "{{ item.service_account | default(fleet_defaults.service_account) }}"
+              clientSecretName: "{{ item.client_secret_name | default(item.name + '-git-auth') }}"
+              caBundle: "{{ item.ca_bundle | default(omit) }}"
+              insecureSkipTLSVerify: "{{ item.insecure_skip_tls | default(false) | bool }}"
+              helmSecretName: "{{ item.helm_secret_name | default(omit) }}"
+              helmRepoURLRegex: "{{ item.helm_repo_url_regex | default(omit) }}"
+              helmSecretNameForPaths: "{{ item.helm_secret_name_for_paths | default(omit) }}"
+              excludePaths: "{{ item.exclude_paths | default(omit) }}"
+              disablePolling: "{{ item.disable_polling | default(omit) }}"
+              webhookSecret: "{{ item.webhook_secret | default(omit) }}"
+              paused: "{{ item.paused | default(omit) }}"
+              forceSyncGeneration: "{{ item.force_sync_generation | default(omit) }}"
+              correctDrift: "{{ item.correct_drift | default(omit) }}"
+              deleteNamespace: "{{ item.delete_namespace | default(omit) }}"
+              bundles: "{{ item.bundles | default(omit) }}"
+              targets: "{{ item.targets | default([]) | arillso.container.fleet_transform_targets if item.targets is defined else omit }}"
+      state: "{{ fleet_state }}"
+  loop: "{{ fleet_gitrepos }}"
+  when: fleet_gitrepos | length > 0
+  register: fleet_gitrepo_results
+  tags:
+      - fleet
+      - fleet-gitrepos
+
+- name: "Display Fleet GitRepo deployment results"
+  ansible.builtin.debug:
+      msg: "GitRepo '{{ item.item.name }}' in namespace '{{ item.item.namespace | default(fleet_defaults.namespace) }}' - State: {{ fleet_state }}"
+  loop: "{{ fleet_gitrepo_results.results | default([]) }}"
+  when:
+      - fleet_gitrepo_results is defined
+      - not ansible_check_mode
+  tags:
+      - fleet
+      - fleet-gitrepos

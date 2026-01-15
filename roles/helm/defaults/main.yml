@@ -1,0 +1,45 @@
+---
+helm_enable_charts: false
+helm_charts: []
+# Example configuration:
+# - name: "cert-manager"
+#   chart: "cert-manager"
+#   repository: "jetstack"
+#   version: "v1.13.2"
+#   namespace: "cert-manager"
+#   create_namespace: true
+#   values:
+#     installCRDs: true
+
+# Helm repositories configuration
+helm_repositories:
+    jetstack: "https://charts.jetstack.io"
+    bitnami: "https://charts.bitnami.com/bitnami"
+    prometheus-community: "https://prometheus-community.github.io/helm-charts"
+    grafana: "https://grafana.github.io/helm-charts"
+    ingress-nginx: "https://kubernetes.github.io/ingress-nginx"
+    traefik: "https://traefik.github.io/charts"
+    metallb: "https://metallb.github.io/metallb"
+
+helm_chart_defaults:
+    namespace: "default"
+    create_namespace: false
+    timeout: "5m"
+
+helm_kubectl_context: ""
+helm_validation_enabled: true
+helm_validation_timeout: 300
+helm_validation_retries: 10
+helm_validation_delay: 30
+helm_deployment_wait: true
+helm_deployment_timeout: 600
+helm_debug_enabled: false
+helm_log_level: "info"
+
+helm_target_groups:
+    - "kubernetes_masters"
+    - "k3s_servers"
+    - "k8s_masters"
+    - "control_plane"
+
+helm_target_host: "{{ inventory_hostname }}"

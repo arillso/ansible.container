@@ -1,0 +1,121 @@
+---
+# Argument specifications for Helm role
+# Defines and validates all input parameters for the role
+
+argument_specs:
+    main:
+        short_description: "Deploy Helm charts to Kubernetes clusters"
+        description: |
+            This role manages Helm chart deployments to Kubernetes clusters.
+            Supports repository management, chart installation, and validation.
+        author: "Simon Bärlocher"
+        options:
+            helm_enable_charts:
+                type: "bool"
+                required: false
+                default: false
+                description: "Enable Helm chart deployment"
+
+            helm_charts:
+                type: "list"
+                required: false
+                default: []
+                elements: "dict"
+                description: |
+                    List of Helm charts to deploy. Each chart requires:
+                    - name: Chart release name
+                    - chart: Chart name
+                    - repository: Repository key from helm_repositories
+                    - version: Chart version
+                    - namespace: Target namespace
+                    - create_namespace: Create namespace if missing
+                    - values: Chart values override
+
+            helm_repositories:
+                type: "dict"
+                required: false
+                default: {}
+                description: |
+                    Dictionary of Helm repositories.
+                    Key is repository name, value is repository URL.
+
+            helm_chart_defaults:
+                type: "dict"
+                required: false
+                default:
+                    namespace: "default"
+                    create_namespace: false
+                    timeout: "5m"
+                description: "Default values for all chart deployments"
+
+            helm_kubectl_context:
+                type: "str"
+                required: false
+                default: ""
+                description: "Kubernetes context to use for Helm operations"
+
+            helm_validation_enabled:
+                type: "bool"
+                required: false
+                default: true
+                description: "Enable post-deployment validation"
+
+            helm_validation_timeout:
+                type: "int"
+                required: false
+                default: 300
+                description: "Timeout for validation checks in seconds"
+
+            helm_validation_retries:
+                type: "int"
+                required: false
+                default: 10
+                description: "Number of validation retry attempts"
+
+            helm_validation_delay:
+                type: "int"
+                required: false
+                default: 30
+                description: "Delay between validation retries in seconds"
+
+            helm_deployment_wait:
+                type: "bool"
+                required: false
+                default: true
+                description: "Wait for deployment to complete"
+
+            helm_deployment_timeout:
+                type: "int"
+                required: false
+                default: 600
+                description: "Timeout for deployment in seconds"
+
+            helm_debug_enabled:
+                type: "bool"
+                required: false
+                default: false
+                description: "Enable debug output for Helm commands"
+
+            helm_log_level:
+                type: "str"
+                required: false
+                default: "info"
+                choices: ["debug", "info", "warn", "error"]
+                description: "Helm log level"
+
+            helm_target_groups:
+                type: "list"
+                required: false
+                default:
+                    - "kubernetes_masters"
+                    - "k3s_servers"
+                    - "k8s_masters"
+                    - "control_plane"
+                elements: "str"
+                description: "Inventory groups to target for Helm operations"
+
+            helm_target_host:
+                type: "str"
+                required: false
+                default: "{{ inventory_hostname }}"
+                description: "Target host for Helm operations"

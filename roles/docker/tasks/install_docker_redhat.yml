@@ -2,78 +2,78 @@
 - name: "RedHat : add repository"
   become: true
   ansible.builtin.yum_repository:
-    name: "{{ item.name }}"
-    description: "{{ item.description }}"
-    gpgkey: "{{ item.gpgkey }}"
-    baseurl: "{{ item.baseurl }}"
-    enabled: "{{ item.enabled }}"
-    file: docker-ce
+      name: "{{ item.name }}"
+      description: "{{ item.description }}"
+      gpgkey: "{{ item.gpgkey }}"
+      baseurl: "{{ item.baseurl }}"
+      enabled: "{{ item.enabled }}"
+      file: docker-ce
   with_items:
-    - name: "docker-ce-stable"
-      description: "Docker CE Stable - $basearch"
-      baseurl: 'https://download.docker.com/linux/centos/{{ hostvars[inventory_hostname]["ansible_distribution_major_version"] }}/$basearch/stable'
-      enabled: 1
-      gpgkey: "https://download.docker.com/linux/centos/gpg"
-    - name: "docker-ce-stable-debuginfo"
-      description: "Docker CE Stable - Debuginfo $basearch"
-      baseurl: 'https://download.docker.com/linux/centos/{{ hostvars[inventory_hostname]["ansible_distribution_major_version"] }}/debug-$basearch/stable'
-      enabled: 0
-      gpgkey: "https://download.docker.com/linux/centos/gpg"
-    - name: "docker-ce-stable-source"
-      description: "Docker CE Stable - Sources"
-      baseurl: 'https://download.docker.com/linux/centos/{{ hostvars[inventory_hostname]["ansible_distribution_major_version"] }}/source/stable'
-      enabled: 0
-      gpgkey: "https://download.docker.com/linux/centos/gpg"
-    - name: "docker-ce-edge"
-      description: "Docker CE Edge - $basearch"
-      baseurl: 'https://download.docker.com/linux/centos/{{ hostvars[inventory_hostname]["ansible_distribution_major_version"] }}/$basearch/edge'
-      enabled: 0
-      gpgkey: "https://download.docker.com/linux/centos/gpg"
-    - name: "docker-ce-edge-debuginfo"
-      description: "Docker CE Edge - Debuginfo $basearch"
-      baseurl: 'https://download.docker.com/linux/centos/{{ hostvars[inventory_hostname]["ansible_distribution_major_version"] }}/debug-$basearch/edge'
-      enabled: 0
-      gpgcheck: 1
-      gpgkey: "https://download.docker.com/linux/centos/gpg"
-    - name: "docker-ce-edge-source"
-      description: "Docker CE Edge - Sources"
-      baseurl: 'https://download.docker.com/linux/centos/{{ hostvars[inventory_hostname]["ansible_distribution_major_version"] }}/source/edge'
-      enabled: 0
-      gpgcheck: 1
-      gpgkey: "https://download.docker.com/linux/centos/gpg"
-    - name: "docker-ce-test"
-      description: "Docker CE Test - $basearch"
-      baseurl: 'https://download.docker.com/linux/centos/{{ hostvars[inventory_hostname]["ansible_distribution_major_version"] }}/$basearch/test'
-      enabled: 0
-      gpgcheck: 1
-      gpgkey: "https://download.docker.com/linux/centos/gpg"
-    - name: "docker-ce-test-debuginfo"
-      description: "Docker CE Test - Debuginfo $basearch"
-      baseurl: 'https://download.docker.com/linux/centos/{{ hostvars[inventory_hostname]["ansible_distribution_major_version"] }}/debug-$basearch/test'
-      enabled: 0
-      gpgcheck: 1
-      gpgkey: "https://download.docker.com/linux/centos/gpg"
-    - name: "docker-ce-test-source"
-      description: "Docker CE Test - Sources"
-      baseurl: 'https://download.docker.com/linux/centos/{{ hostvars[inventory_hostname]["ansible_distribution_major_version"] }}/source/test'
-      enabled: 0
-      gpgcheck: 1
-      gpgkey: "https://download.docker.com/linux/centos/gpg"
-    - name: "docker-ce-nightly"
-      description: "Docker CE Nightly - $basearch"
-      baseurl: 'https://download.docker.com/linux/centos/{{ hostvars[inventory_hostname]["ansible_distribution_major_version"] }}/$basearch/nightly'
-      enabled: 0
-      gpgcheck: 1
-      gpgkey: "https://download.docker.com/linux/centos/gpg"
-    - name: "docker-ce-nightly-debuginfo"
-      description: "Docker CE Nightly - Debuginfo $basearch"
-      baseurl: 'https://download.docker.com/linux/centos/{{ hostvars[inventory_hostname]["ansible_distribution_major_version"] }}/debug-$basearch/nightly'
-      enabled: 0
-      gpgcheck: 1
-      gpgkey: "https://download.docker.com/linux/centos/gpg"
-    - name: "docker-ce-nightly-source"
-      description: "Docker CE Nightly - Sources"
-      baseurl: 'https://download.docker.com/linux/centos/{{ hostvars[inventory_hostname]["ansible_distribution_major_version"] }}/source/nightly'
-      enabled: 0
-      gpgcheck: 1
-      gpgkey: "https://download.docker.com/linux/centos/gpg"
+      - name: "docker-ce-stable"
+        description: "Docker CE Stable - $basearch"
+        baseurl: 'https://download.docker.com/linux/centos/{{ hostvars[inventory_hostname]["ansible_distribution_major_version"] }}/$basearch/stable'
+        enabled: 1
+        gpgkey: "https://download.docker.com/linux/centos/gpg"
+      - name: "docker-ce-stable-debuginfo"
+        description: "Docker CE Stable - Debuginfo $basearch"
+        baseurl: 'https://download.docker.com/linux/centos/{{ hostvars[inventory_hostname]["ansible_distribution_major_version"] }}/debug-$basearch/stable'
+        enabled: 0
+        gpgkey: "https://download.docker.com/linux/centos/gpg"
+      - name: "docker-ce-stable-source"
+        description: "Docker CE Stable - Sources"
+        baseurl: 'https://download.docker.com/linux/centos/{{ hostvars[inventory_hostname]["ansible_distribution_major_version"] }}/source/stable'
+        enabled: 0
+        gpgkey: "https://download.docker.com/linux/centos/gpg"
+      - name: "docker-ce-edge"
+        description: "Docker CE Edge - $basearch"
+        baseurl: 'https://download.docker.com/linux/centos/{{ hostvars[inventory_hostname]["ansible_distribution_major_version"] }}/$basearch/edge'
+        enabled: 0
+        gpgkey: "https://download.docker.com/linux/centos/gpg"
+      - name: "docker-ce-edge-debuginfo"
+        description: "Docker CE Edge - Debuginfo $basearch"
+        baseurl: 'https://download.docker.com/linux/centos/{{ hostvars[inventory_hostname]["ansible_distribution_major_version"] }}/debug-$basearch/edge'
+        enabled: 0
+        gpgcheck: 1
+        gpgkey: "https://download.docker.com/linux/centos/gpg"
+      - name: "docker-ce-edge-source"
+        description: "Docker CE Edge - Sources"
+        baseurl: 'https://download.docker.com/linux/centos/{{ hostvars[inventory_hostname]["ansible_distribution_major_version"] }}/source/edge'
+        enabled: 0
+        gpgcheck: 1
+        gpgkey: "https://download.docker.com/linux/centos/gpg"
+      - name: "docker-ce-test"
+        description: "Docker CE Test - $basearch"
+        baseurl: 'https://download.docker.com/linux/centos/{{ hostvars[inventory_hostname]["ansible_distribution_major_version"] }}/$basearch/test'
+        enabled: 0
+        gpgcheck: 1
+        gpgkey: "https://download.docker.com/linux/centos/gpg"
+      - name: "docker-ce-test-debuginfo"
+        description: "Docker CE Test - Debuginfo $basearch"
+        baseurl: 'https://download.docker.com/linux/centos/{{ hostvars[inventory_hostname]["ansible_distribution_major_version"] }}/debug-$basearch/test'
+        enabled: 0
+        gpgcheck: 1
+        gpgkey: "https://download.docker.com/linux/centos/gpg"
+      - name: "docker-ce-test-source"
+        description: "Docker CE Test - Sources"
+        baseurl: 'https://download.docker.com/linux/centos/{{ hostvars[inventory_hostname]["ansible_distribution_major_version"] }}/source/test'
+        enabled: 0
+        gpgcheck: 1
+        gpgkey: "https://download.docker.com/linux/centos/gpg"
+      - name: "docker-ce-nightly"
+        description: "Docker CE Nightly - $basearch"
+        baseurl: 'https://download.docker.com/linux/centos/{{ hostvars[inventory_hostname]["ansible_distribution_major_version"] }}/$basearch/nightly'
+        enabled: 0
+        gpgcheck: 1
+        gpgkey: "https://download.docker.com/linux/centos/gpg"
+      - name: "docker-ce-nightly-debuginfo"
+        description: "Docker CE Nightly - Debuginfo $basearch"
+        baseurl: 'https://download.docker.com/linux/centos/{{ hostvars[inventory_hostname]["ansible_distribution_major_version"] }}/debug-$basearch/nightly'
+        enabled: 0
+        gpgcheck: 1
+        gpgkey: "https://download.docker.com/linux/centos/gpg"
+      - name: "docker-ce-nightly-source"
+        description: "Docker CE Nightly - Sources"
+        baseurl: 'https://download.docker.com/linux/centos/{{ hostvars[inventory_hostname]["ansible_distribution_major_version"] }}/source/nightly'
+        enabled: 0
+        gpgcheck: 1
+        gpgkey: "https://download.docker.com/linux/centos/gpg"

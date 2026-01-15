@@ -1,0 +1,39 @@
+---
+# Fleet Workspaces management tasks
+
+- name: "Manage Fleet Workspaces"
+  kubernetes.core.k8s:
+      kubeconfig: "{{ fleet_kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
+      definition:
+          apiVersion: "management.cattle.io/v3"
+          kind: FleetWorkspace
+          metadata:
+              name: "{{ item.name }}"
+              labels: "{{ item.labels | combine({'app.kubernetes.io/managed-by': 'ansible', 'app.kubernetes.io/component': 'fleet-workspace'}) }}"
+              annotations: "{{ item.annotations | default({}) }}"
+          spec:
+              displayName: "{{ item.display_name | default(item.name) }}"
+              description: "{{ item.description | default('') }}"
+      state: "{{ fleet_state }}"
+      wait: true
+      wait_condition:
+          type: Ready
+          status: "True"
+      wait_timeout: 300
+  loop: "{{ fleet_workspaces }}"
+  when: fleet_workspaces | length > 0
+  register: fleet_workspace_results
+  tags:
+      - fleet
+      - fleet-workspaces
+
+- name: "Display Fleet Workspace creation results"
+  ansible.builtin.debug:
+      msg: "Workspace '{{ item.item.name }}' - State: {{ fleet_state }}"
+  loop: "{{ fleet_workspace_results.results | default([]) }}"
+  when:
+      - fleet_workspace_results is defined
+      - not ansible_check_mode
+  tags:
+      - fleet
+      - fleet-workspaces

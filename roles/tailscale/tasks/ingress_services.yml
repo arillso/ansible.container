@@ -1,0 +1,70 @@
+---
+# Tailscale Ingress Services management tasks
+# Supports: LoadBalancer and Ingress resources
+
+- name: Create namespaces for Tailscale Ingress Services
+  kubernetes.core.k8s:
+      kubeconfig: "{{ tailscale_kubeconfig_path }}"
+      name: "{{ item.namespace }}"
+      api_version: v1
+      kind: Namespace
+      state: "{{ tailscale_state }}"
+  loop: "{{ tailscale_ingress_services }}"
+  when:
+      - tailscale_ingress_services | length > 0
+      - tailscale_state == "present"
+  tags:
+      - tailscale
+      - tailscale-ingress
+      - tailscale-namespace
+
+- name: Manage Tailscale LoadBalancer Services
+  kubernetes.core.k8s:
+      kubeconfig: "{{ tailscale_kubeconfig_path }}"
+      state: "{{ tailscale_state }}"
+      definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+              name: "{{ item.name }}"
+              namespace: "{{ item.namespace }}"
+              annotations:
+                  tailscale.com/proxy-group: "{{ item.proxy_group | default(omit) }}"
+                  tailscale.com/hostname: "{{ item.hostname | default(omit) }}"
+          spec:
+              type: LoadBalancer
+              loadBalancerClass: tailscale
+              selector: "{{ item.selector }}"
+              ports: "{{ item.ports }}"
+  loop: "{{ tailscale_ingress_services }}"
+  when:
+      - tailscale_ingress_services | length > 0
+      - item.type | default('loadbalancer') == 'loadbalancer'
+  tags:
+      - tailscale
+      - tailscale-ingress
+
+- name: Manage Tailscale Ingress Resources
+  kubernetes.core.k8s:
+      kubeconfig: "{{ tailscale_kubeconfig_path }}"
+      state: "{{ tailscale_state }}"
+      definition:
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+              name: "{{ item.name }}"
+              namespace: "{{ item.namespace }}"
+              annotations:
+                  tailscale.com/proxy-group: "{{ item.proxy_group | default(omit) }}"
+          spec:
+              ingressClassName: tailscale
+              tls: "{{ item.tls | default(omit) }}"
+              defaultBackend: "{{ item.default_backend | default(omit) }}"
+              rules: "{{ item.rules | default(omit) }}"
+  loop: "{{ tailscale_ingress_services }}"
+  when:
+      - tailscale_ingress_services | length > 0
+      - item.type | default('loadbalancer') == 'ingress'
+  tags:
+      - tailscale
+      - tailscale-ingress

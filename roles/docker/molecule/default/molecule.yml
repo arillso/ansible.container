@@ -1,0 +1,56 @@
+---
+dependency:
+    name: galaxy
+    options:
+        requirements-file: requirements.yml
+
+driver:
+    name: docker
+
+platforms:
+    - name: docker-ubuntu-22.04
+      image: geerlingguy/docker-ubuntu2204-ansible:latest
+      ansible.builtin.command: ""
+      volumes:
+          - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      cgroupns_mode: host
+      privileged: true
+      pre_build_image: true
+
+    - name: docker-debian-12
+      image: geerlingguy/docker-debian12-ansible:latest
+      ansible.builtin.command: ""
+      volumes:
+          - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      cgroupns_mode: host
+      privileged: true
+      pre_build_image: true
+
+provisioner:
+    name: ansible
+    config_options:
+        defaults:
+            callbacks_enabled: profile_tasks, timer, yaml
+            stdout_callback: yaml
+    playbooks:
+        converge: converge.yml
+        verify: verify.yml
+
+verifier:
+    name: ansible
+
+scenario:
+    name: default
+    test_sequence:
+        - dependency
+        - cleanup
+        - destroy
+        - syntax
+        - create
+        - prepare
+        - converge
+        - idempotence
+        - side_effect
+        - verify
+        - cleanup
+        - destroy

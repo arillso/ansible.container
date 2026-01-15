@@ -1,0 +1,288 @@
+---
+# K3s Installation and Configuration Tasks - Enterprise Edition with Auto-Facts
+# Fully autonomous role with automatic facts collection and fallback mechanisms
+# Eliminates manual dependency management while maintaining enterprise-grade reliability
+
+- name: Validate k3s role configuration
+  ansible.builtin.assert:
+      that:
+          - k3s_role in ['server', 'agent']
+          - k3s_version is defined
+          - k3s_node_name is defined
+      fail_msg: "Invalid k3s configuration. Check role variables."
+      success_msg: "K3s configuration validation passed"
+
+# Apply security configuration FIRST to ensure AppArmor allows kubectl execution
+- name: Include SELinux and security configuration (early)
+  ansible.builtin.include_tasks: security.yml
+  when: k3s_security_hardening | default(true) | bool
+  tags:
+      - security
+      - k3s_security
+
+# Automatic facts collection with enterprise-grade fallback mechanisms
+- name: Collect K3s cluster facts automatically
+  ansible.builtin.include_tasks: facts.yml
+  tags:
+      - facts
+      - k3s_facts
+
+# Simplified server initialization logic using facts
+- name: Determine server initialization from facts
+  ansible.builtin.set_fact:
+      k3s_server_init: "{{ ansible_local.k3s.cluster_info.should_init | bool }}"
+  when:
+      - k3s_role == 'server'
+      - not k3s_server_init | default(false) | bool # Only auto-determine if not explicitly set
+
+- name: Display cluster configuration from facts
+  ansible.builtin.debug:
+      msg: |
+          K3s Configuration (from facts):
+          - Role: {{ k3s_role }}
+          - Server Init: {{ k3s_server_init | default(false) }}
+          - Node: {{ inventory_hostname }}
+          - Node Type: {{ ansible_local.k3s.node.type }}
+          - Cluster Initialized: {{ ansible_local.k3s.cluster.initialized }}
+          - Server Responsive: {{ ansible_local.k3s.cluster.server_responsive }}
+          - First Server: {{ ansible_local.k3s.cluster.first_server }}
+          - Binary Installed: {{ ansible_local.k3s.service.binary_installed }}
+          - Service Active: {{ ansible_local.k3s.service.service_active }}
+          - Token Exists: {{ ansible_local.k3s.cluster.token_exists }}
+          - Cluster Server URL: {{ ansible_local.k3s.cluster_info.server_url }}
+          {% if ansible_local.k3s._fallback_mode | default(false) %}
+          - [FALLBACK MODE] Facts collected via fallback mechanism
+          {% endif %}
+
+# Display auto-discovered configuration for agents
+- name: Display auto-discovered agent configuration
+  ansible.builtin.debug:
+      msg: |
+          K3s Agent Auto-Discovery Results:
+          - Server URL: {{ k3s_server_url | default('NOT SET') }}
+          - Token Status: {{ 'AVAILABLE' if k3s_token | default('') != '' else 'NOT AVAILABLE' }}
+          - Source: {{ 'Facts' if ansible_local.k3s.cluster_info.server_url is defined and k3s_server_url == ansible_local.k3s.cluster_info.server_url else 'Inventory Fallback' }}
+  when: k3s_role == "agent"
+
+# Architecture detection for K3s binary download
+- name: Detect system architecture
+  ansible.builtin.set_fact:
+      k3s_arch: >-
+          {%- if ansible_architecture == "x86_64" -%}
+            amd64
+          {%- elif ansible_architecture == "aarch64" -%}
+            arm64
+          {%- elif ansible_architecture == "armv7l" -%}
+            arm
+          {%- elif ansible_architecture == "s390x" -%}
+            s390x
+          {%- else -%}
+            {{ ansible_architecture }}
+          {%- endif -%}
+
+- name: Set K3s binary suffix based on architecture
+  ansible.builtin.set_fact:
+      k3s_suffix: >-
+          {%- if k3s_arch == "amd64" -%}
+
+          {%- elif k3s_arch == "arm64" -%}
+            -arm64
+          {%- elif k3s_arch == "arm" -%}
+            -armhf
+          {%- elif k3s_arch == "s390x" -%}
+            -s390x
+          {%- else -%}
+            -{{ k3s_arch }}
+          {%- endif -%}
+
+# Pre-installation system preparation
+- name: Include pre-installation system preparation tasks
+  ansible.builtin.include_tasks: system_preparation.yml
+  tags:
+      - always
+
+# Token management - simple approach: first server generates, others retrieve
+- name: Retrieve token from first server (if not cluster init)
+  ansible.builtin.slurp:
+      src: "{{ k3s_token_file }}"
+  register: cluster_token
+  failed_when: false
+  when:
+      - k3s_token == ""
+      - not (k3s_role == "server" and k3s_server_init | bool)
+  delegate_to: "{{ ansible_local.k3s.inventory.controllers[0] if ansible_local.k3s.inventory.controllers | length > 0 else ansible_local.k3s.inventory.servers[0] if ansible_local.k3s.inventory.servers | length > 0 else inventory_hostname }}"
+
+- name: Set token from first server
+  ansible.builtin.set_fact:
+      k3s_token: "{{ cluster_token.content | b64decode | trim }}"
+  when:
+      - k3s_token == ""
+      - cluster_token is defined
+      - cluster_token.content is defined
+      - cluster_token.content | length > 0
+
+# Server URL determination using facts with fallback logic
+- name: Set server URL from facts
+  ansible.builtin.set_fact:
+      k3s_server_url: "{{ ansible_local.k3s.cluster_info.server_url }}"
+  when:
+      - k3s_server_url == ""
+      - ansible_local.k3s.cluster_info.server_url is defined
+      - ansible_local.k3s.cluster_info.server_url != ""
+      - k3s_role == "agent" or (k3s_role == "server" and not k3s_server_init | bool)
+      - ansible_local.k3s.cluster_info.server_url not in ['https://' + ansible_default_ipv4.address + ':' + k3s_https_listen_port | string, 'https://' + inventory_hostname + ':' + k3s_https_listen_port | string]
+
+# Fallback server URL determination from inventory when facts are not available
+- name: Set server URL from inventory (fallback)
+  ansible.builtin.set_fact:
+      k3s_server_url: "https://{{ hostvars[groups['k3s_controllers'][0]]['ansible_default_ipv4']['address'] | default(groups['k3s_controllers'][0]) }}:{{ k3s_https_listen_port }}"
+  when:
+      - k3s_server_url == ""
+      - k3s_role == "agent"
+      - groups['k3s_controllers'] is defined
+      - groups['k3s_controllers'] | length > 0
+
+- name: Set server URL from k3s_servers inventory (fallback)
+  ansible.builtin.set_fact:
+      k3s_server_url: "https://{{ hostvars[groups['k3s_servers'][0]]['ansible_default_ipv4']['address'] | default(groups['k3s_servers'][0]) }}:{{ k3s_https_listen_port }}"
+  when:
+      - k3s_server_url == ""
+      - k3s_role == "agent"
+      - groups['k3s_servers'] is defined
+      - groups['k3s_servers'] | length > 0
+
+# K3s binary installation - skip if already installed according to facts
+- name: Download k3s binary
+  ansible.builtin.get_url:
+      url: "https://github.com/k3s-io/k3s/releases/download/{{ k3s_version }}/k3s{{ k3s_suffix | default('') }}"
+      dest: "/usr/local/bin/k3s"
+      mode: "0755"
+      owner: root
+      group: root
+      checksum: "{{ k3s_binary_checksum if k3s_binary_checksum else omit }}"
+  become: true
+  when: not ansible_local.k3s.service.binary_installed | bool
+  notify: restart k3s
+
+- name: Create k3s configuration directory
+  ansible.builtin.file:
+      path: "{{ k3s_config_dir }}"
+      state: directory
+      mode: "0755"
+      owner: root
+      group: root
+  become: true
+
+# Final validation for agents to ensure server connectivity before config creation
+- name: Validate agent configuration requirements
+  ansible.builtin.assert:
+      that:
+          - k3s_server_url is defined and k3s_server_url != ""
+          - k3s_token is defined and k3s_token != ""
+      fail_msg: |
+          K3s agent configuration incomplete after auto-discovery:
+          - Server URL: {{ k3s_server_url | default('NOT SET') }}
+          - Token: {{ 'SET' if k3s_token | default('') != '' else 'NOT SET' }}
+          Ensure K3s servers are deployed first and accessible from agents.
+      success_msg: "K3s agent configuration validated successfully"
+  when: k3s_role == "agent"
+
+- name: Create k3s config file
+  ansible.builtin.template:
+      src: "etc/rancher/k3s/{{ k3s_role }}-config.yaml.j2"
+      dest: "{{ k3s_config_dir }}/config.yaml"
+      mode: "0600"
+      owner: root
+      group: root
+  become: true
+  notify: restart k3s
+
+- name: Create k3s registries config
+  ansible.builtin.template:
+      src: etc/rancher/k3s/registries.yaml.j2
+      dest: "{{ k3s_config_dir }}/registries.yaml"
+      mode: "0600"
+      owner: root
+      group: root
+  become: true
+  when: k3s_private_registries | length > 0
+  notify: restart k3s
+
+- name: Create k3s systemd service
+  ansible.builtin.template:
+      src: etc/systemd/system/k3s.service.j2
+      dest: "/etc/systemd/system/k3s.service"
+      mode: "0644"
+      owner: root
+      group: root
+  become: true
+  notify:
+      - reload systemd
+      - restart k3s
+
+- name: Enable and start k3s service
+  ansible.builtin.systemd:
+      name: k3s
+      enabled: "{{ k3s_service_enabled }}"
+      state: "{{ k3s_service_state }}"
+      daemon_reload: true
+  become: true
+
+- name: Determine k3s server host for health check
+  ansible.builtin.set_fact:
+      k3s_health_check_host: >-
+          {%- if k3s_bind_address != '0.0.0.0' -%}
+            {{ k3s_bind_address }}
+          {%- elif ansible_default_ipv4.address is defined -%}
+            {{ ansible_default_ipv4.address }}
+          {%- elif k3s_node_ip is defined and k3s_node_ip -%}
+            {{ k3s_node_ip }}
+          {%- else -%}
+            127.0.0.1
+          {%- endif -%}
+  when: k3s_role == "server"
+
+- name: Wait for k3s to be ready
+  ansible.builtin.wait_for:
+      port: "{{ k3s_https_listen_port }}"
+      host: "{{ k3s_health_check_host }}"
+      delay: 30
+      timeout: 600
+      sleep: 10
+  when: k3s_role == "server"
+
+# - name: Set kubeconfig permissions
+#   ansible.builtin.file:
+#       path: "{{ k3s_data_dir }}/server/cred/admin.kubeconfig"
+#       mode: "{{ k3s_kubeconfig_mode }}"
+#       owner: "{{ k3s_kubeconfig_owner }}"
+#       group: "{{ k3s_kubeconfig_group }}"
+#   become: true
+#   when: k3s_role == "server"
+
+- name: Create k3s uninstall script
+  ansible.builtin.template:
+      src: usr/local/bin/k3s-uninstall.sh.j2
+      dest: "/usr/local/bin/k3s-uninstall.sh"
+      mode: "0755"
+      owner: root
+      group: root
+  become: true
+  when: k3s_create_uninstall_script | bool
+
+# Post-installation facts refresh to capture new state
+- name: Refresh K3s facts after installation
+  ansible.builtin.setup:
+      gather_subset:
+          - "!all"
+          - "!any"
+          - "local"
+  tags:
+      - facts
+      - k3s_facts
+
+# Include post-installation utilities and symlinks
+- name: Include post-installation utilities and symlinks
+  ansible.builtin.include_tasks: utilities.yml
+  tags:
+      - always

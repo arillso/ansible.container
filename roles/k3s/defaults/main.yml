@@ -1,0 +1,152 @@
+---
+# arillso.container.k3s role defaults
+
+# K3s version and installation
+# renovate: datasource=github-releases depName=k3s-io/k3s
+k3s_version: "v1.33.3+k3s1"
+k3s_channel: "stable"
+k3s_binary_checksum: ""
+
+# K3s role configuration (server, agent)
+k3s_role: "server"
+
+# K3s server initialization flag (auto-detected if false)
+k3s_server_init: false
+
+# K3s cluster configuration
+k3s_cluster_domain: "cluster.local"
+k3s_cluster_dns: "10.43.0.10"
+k3s_cluster_cidr: "10.42.0.0/16"
+k3s_service_cidr: "10.43.0.0/16"
+
+# K3s network configuration
+k3s_flannel_backend: "vxlan"
+k3s_disable_network_policy: false
+k3s_disable_traefik: false
+k3s_disable_servicelb: false
+k3s_disable_metrics_server: false
+k3s_disable_cloud_controller: false
+
+# K3s server configuration
+k3s_tls_san: []
+k3s_node_ip: "{{ ansible_default_ipv4.address }}"
+k3s_bind_address: "{{ ansible_default_ipv4.address }}"
+k3s_https_listen_port: 6443
+
+# K3s data directory
+k3s_data_dir: "/var/lib/rancher/k3s"
+k3s_config_dir: "/etc/rancher/k3s"
+
+# K3s token management
+k3s_token: ""
+k3s_token_file: "{{ k3s_data_dir }}/server/node-token"
+
+# K3s server URL
+k3s_server_url: ""
+
+# K3s node configuration
+k3s_node_name: "{{ inventory_hostname }}"
+k3s_node_labels: []
+k3s_node_taints: []
+
+# K3s container runtime
+# k3s_container_runtime_endpoint: ""
+# k3s_default_runtime: "runc"
+
+# K3s system resources
+k3s_max_pods: 110
+k3s_node_ip_max_pods: 110
+
+# K3s additional configuration
+k3s_extra_server_args: []
+k3s_extra_agent_args: []
+
+# K3s symlinks
+k3s_create_symlinks: true
+k3s_symlink_force: false
+k3s_symlink_commands:
+    - kubectl
+    - crictl
+    - ctr
+
+# K3s killall script
+k3s_create_killall_script: true
+
+# K3s environment variables
+k3s_environment_vars: {}
+# Example:
+# k3s_environment_vars:
+#   HTTP_PROXY: "http://proxy.example.com:8080"
+#   HTTPS_PROXY: "http://proxy.example.com:8080"
+#   NO_PROXY: "localhost,127.0.0.1,10.0.0.0/8"
+
+# K3s kubeconfig
+k3s_kubeconfig_mode: "0644"
+k3s_kubeconfig_group: "root"
+k3s_kubeconfig_owner: "root"
+
+# System requirements
+k3s_install_dependencies: true
+k3s_required_packages:
+    - curl
+    - iptables
+    - nfs-common
+
+# K3s service configuration
+k3s_service_enabled: true
+k3s_service_state: started
+
+# K3s uninstall script
+k3s_create_uninstall_script: true
+
+# K3s bash completion
+k3s_create_bash_completion: true
+
+# K3s security configuration
+k3s_security_hardening: true
+k3s_selinux_custom_policy: false
+k3s_apparmor_profile: true
+k3s_debug_security: false
+
+# K3s private registry configuration
+k3s_private_registries: []
+# Example configuration:
+# k3s_private_registries:
+#   - name: "docker.io"
+#     mirrors:
+#       - "https://registry-1.docker.io"
+#   - name: "ghcr.io"
+#     endpoint: "https://ghcr.io"
+#     auth:
+#       username: "{{ registry_username }}"
+#       password: "{{ registry_password }}"
+#   - name: "private.registry.com"
+#     endpoint: "https://private.registry.com"
+#     tls:
+#       cert_file: "/etc/ssl/certs/registry.crt"
+#       key_file: "/etc/ssl/private/registry.key"
+#       ca_file: "/etc/ssl/certs/registry-ca.crt"
+
+# K3s facts collection scope
+k3s_facts_collect_cluster_state: true
+k3s_facts_collect_service_status: true
+k3s_facts_collect_inventory_info: true
+k3s_facts_collect_health_metrics: true
+
+# K3s facts caching configuration
+k3s_facts_cache_enabled: true
+k3s_facts_cache_ttl: 300
+k3s_facts_health_check_interval: 60
+
+# K3s Role Auto-Facts Configuration
+k3s_auto_facts: true
+k3s_debug_facts: false
+k3s_fallback_mode_allowed: true
+
+# K3s Auto-Facts behavior control
+k3s_require_facts_role: false
+k3s_facts_collection_timeout: 30
+k3s_validate_facts_schema: true
+
+# K3s Helm Integration
+k3s_enable_helm_integration: true

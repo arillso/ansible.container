@@ -1,0 +1,31 @@
+---
+galaxy_info:
+    role_name: helm
+    author: Arillso Team
+    description: Manages Helm Charts deployment on Kubernetes using Cattle Operator
+    company: Arillso
+    license: MIT
+    min_ansible_version: "2.9"
+    platforms:
+        - name: Ubuntu
+          versions:
+              - focal
+              - jammy
+        - name: Debian
+          versions:
+              - bullseye
+              - bookworm
+        - name: EL
+          versions:
+              - "8"
+              - "9"
+
+    galaxy_tags:
+        - kubernetes
+        - helm
+        - k3s
+        - cattle
+        - charts
+        - deployment
+        - container
+        - orchestration

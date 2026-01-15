@@ -1,0 +1,92 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  tasks:
+      - name: Wait for k3s service to be ready
+        ansible.builtin.wait_for:
+            path: /etc/rancher/k3s/k3s.yaml
+            state: present
+            timeout: 300
+
+      - name: Check if k3s is installed
+        ansible.builtin.command: k3s --version
+        register: k3s_version
+        changed_when: false
+
+      - name: Verify k3s version output
+        ansible.builtin.assert:
+            that:
+                - k3s_version.rc == 0
+                - "'k3s version' in k3s_version.stdout"
+            fail_msg: "K3s is not properly installed"
+            success_msg: "K3s is installed correctly"
+
+      - name: Check k3s service status
+        ansible.builtin.service:
+            name: k3s
+            state: started
+        check_mode: true
+        register: k3s_service
+
+      - name: Verify k3s service is running
+        ansible.builtin.assert:
+            that:
+                - not k3s_service.changed
+            fail_msg: "K3s service is not running"
+            success_msg: "K3s service is running"
+
+      - name: Test kubectl functionality
+        ansible.builtin.command: kubectl version --client
+        register: kubectl_version
+        changed_when: false
+        environment:
+            KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+      - name: Verify kubectl is available
+        ansible.builtin.assert:
+            that:
+                - kubectl_version.rc == 0
+            fail_msg: "Kubectl is not available"
+            success_msg: "Kubectl is available"
+
+      - name: Get cluster nodes
+        ansible.builtin.command: kubectl get nodes
+        register: k3s_nodes
+        changed_when: false
+        environment:
+            KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+      - name: Verify cluster has nodes
+        ansible.builtin.assert:
+            that:
+                - k3s_nodes.rc == 0
+                - "'Ready' in k3s_nodes.stdout or 'NotReady' in k3s_nodes.stdout"
+            fail_msg: "No nodes found in cluster"
+            success_msg: "Cluster has nodes"
+
+      - name: Check k3s configuration directory
+        ansible.builtin.stat:
+            path: /etc/rancher/k3s
+        register: k3s_config_dir
+
+      - name: Verify k3s configuration exists
+        ansible.builtin.assert:
+            that:
+                - k3s_config_dir.stat.exists
+                - k3s_config_dir.stat.isdir
+            fail_msg: "K3s configuration directory not found"
+            success_msg: "K3s configuration directory exists"
+
+      - name: Check kubeconfig file
+        ansible.builtin.stat:
+            path: /etc/rancher/k3s/k3s.yaml
+        register: kubeconfig_file
+
+      - name: Verify kubeconfig exists and is readable
+        ansible.builtin.assert:
+            that:
+                - kubeconfig_file.stat.exists
+                - kubeconfig_file.stat.mode == '0644'
+            fail_msg: "Kubeconfig file not found or not readable"
+            success_msg: "Kubeconfig file exists and is readable"

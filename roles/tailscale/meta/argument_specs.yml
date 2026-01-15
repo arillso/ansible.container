@@ -1,0 +1,206 @@
+---
+# Tailscale Kubernetes Resources Role - Argument Specifications
+
+argument_specs:
+    main:
+        short_description: Manage Tailscale Kubernetes resources
+        description:
+            - Manages Tailscale ProxyGroups (ingress, egress, kube-apiserver) in Kubernetes
+            - Manages Ingress Services (LoadBalancer, Ingress) for exposing services to Tailnet
+            - Manages Egress Services for accessing Tailnet resources from Kubernetes
+            - Supports FQDN and IP-based access for egress services
+        author:
+            - Simon Bärlocher
+        options:
+            tailscale_kubeconfig_path:
+                type: str
+                required: false
+                default: /etc/rancher/k3s/k3s.yaml
+                description: Path to kubeconfig file for cluster access
+
+            tailscale_state:
+                type: str
+                required: false
+                default: present
+                choices:
+                    - present
+                    - absent
+                description: State of Tailscale resources (present or absent)
+
+            tailscale_proxygroups:
+                type: list
+                required: false
+                default: []
+                elements: dict
+                description: List of Tailscale ProxyGroups (all three types supported)
+                options:
+                    name:
+                        type: str
+                        required: true
+                        description: Name of the ProxyGroup
+                    namespace:
+                        type: str
+                        required: false
+                        default: default
+                        description: Namespace for the ProxyGroup
+                    type:
+                        type: str
+                        required: true
+                        choices:
+                            - ingress
+                            - egress
+                            - kube-apiserver
+                        description: ProxyGroup type
+                    tags:
+                        type: list
+                        elements: str
+                        required: true
+                        description: Tailscale tags for the ProxyGroup
+                    replicas:
+                        type: int
+                        required: false
+                        default: 1
+                        description: Number of proxy replicas
+                    hostname_prefix:
+                        type: str
+                        required: false
+                        description: Hostname prefix for the ProxyGroup
+                    kube_apiserver:
+                        type: dict
+                        required: false
+                        description: Kube-APIServer specific configuration (only for type kube-apiserver)
+                        options:
+                            mode:
+                                type: str
+                                required: false
+                                default: auth
+                                choices:
+                                    - auth
+                                    - noauth
+                                description: Authentication mode for API server access
+
+            tailscale_ingress_services:
+                type: list
+                required: false
+                default: []
+                elements: dict
+                description: List of Tailscale Ingress Services (LoadBalancer or Ingress)
+                options:
+                    name:
+                        type: str
+                        required: true
+                        description: Name of the Ingress Service
+                    namespace:
+                        type: str
+                        required: true
+                        description: Namespace for the Service
+                    type:
+                        type: str
+                        required: false
+                        default: loadbalancer
+                        choices:
+                            - loadbalancer
+                            - ingress
+                        description: Service type (LoadBalancer or Ingress)
+                    proxy_group:
+                        type: str
+                        required: false
+                        description: ProxyGroup to use for ingress
+                    hostname:
+                        type: str
+                        required: false
+                        description: Custom hostname for the service
+                    selector:
+                        type: dict
+                        required: false
+                        description: Label selector for LoadBalancer service
+                    ports:
+                        type: list
+                        elements: dict
+                        required: true
+                        description: List of ports to expose
+                        options:
+                            name:
+                                type: str
+                                required: true
+                                description: Port name
+                            port:
+                                type: int
+                                required: true
+                                description: Port number
+                            targetPort:
+                                type: int
+                                required: false
+                                description: Target port on pods
+                            protocol:
+                                type: str
+                                required: false
+                                default: TCP
+                                choices:
+                                    - TCP
+                                    - UDP
+                                description: Protocol type
+                    tls:
+                        type: list
+                        elements: dict
+                        required: false
+                        description: TLS configuration for Ingress
+                    default_backend:
+                        type: dict
+                        required: false
+                        description: Default backend for Ingress
+                    rules:
+                        type: list
+                        elements: dict
+                        required: false
+                        description: Ingress rules
+
+            tailscale_egress_services:
+                type: list
+                required: false
+                default: []
+                elements: dict
+                description: List of Tailscale Egress Services (FQDN or IP-based)
+                options:
+                    name:
+                        type: str
+                        required: true
+                        description: Name of the Egress Service
+                    namespace:
+                        type: str
+                        required: true
+                        description: Namespace for the Service
+                    proxy_group:
+                        type: str
+                        required: true
+                        description: ProxyGroup to use for egress
+                    fqdn:
+                        type: str
+                        required: false
+                        description: Target FQDN in Tailscale network (mutually exclusive with ip)
+                    ip:
+                        type: str
+                        required: false
+                        description: Target IP in Tailscale network (mutually exclusive with fqdn)
+                    ports:
+                        type: list
+                        elements: dict
+                        required: true
+                        description: List of ports to forward
+                        options:
+                            name:
+                                type: str
+                                required: true
+                                description: Port name
+                            port:
+                                type: int
+                                required: true
+                                description: Port number
+                            protocol:
+                                type: str
+                                required: false
+                                default: TCP
+                                choices:
+                                    - TCP
+                                    - UDP
+                                description: Protocol type

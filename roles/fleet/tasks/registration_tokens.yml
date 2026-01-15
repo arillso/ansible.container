@@ -1,0 +1,72 @@
+---
+# Fleet ClusterRegistrationToken management tasks
+
+- name: "Create namespace for Fleet ClusterRegistrationTokens"
+  kubernetes.core.k8s:
+      name: "{{ item.namespace | default(fleet_defaults.namespace) }}"
+      api_version: v1
+      kind: Namespace
+      state: "{{ fleet_state }}"
+  loop: "{{ fleet_registration_tokens }}"
+  when:
+      - fleet_registration_tokens | length > 0
+      - (item.create_namespace | default(fleet_defaults.create_namespace)) | bool
+      - fleet_state == "present"
+  tags:
+      - fleet
+      - fleet-registration-tokens
+      - fleet-namespace
+
+- name: "Manage Fleet ClusterRegistrationTokens"
+  kubernetes.core.k8s:
+      kubeconfig: "{{ fleet_kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
+      api_version: "{{ fleet_api_version }}"
+      kind: ClusterRegistrationToken
+      name: "{{ item.name }}"
+      namespace: "{{ item.namespace | default(fleet_defaults.namespace) }}"
+      state: "{{ fleet_state }}"
+      definition:
+          metadata:
+              labels: "{{ item.labels | default({}) | combine({'app.kubernetes.io/managed-by': 'ansible', 'app.kubernetes.io/component': 'fleet-registration-token'}) }}"
+              annotations: "{{ item.annotations | default(omit) }}"
+          spec:
+              ttl: "{{ item.ttl | default('240h') }}"
+  loop: "{{ fleet_registration_tokens }}"
+  when:
+      - fleet_registration_tokens | length > 0
+  register: fleet_registration_token_results
+  tags:
+      - fleet
+      - fleet-registration-tokens
+
+- name: "Retrieve ClusterRegistrationToken values"
+  kubernetes.core.k8s_info:
+      kubeconfig: "{{ fleet_kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
+      api_version: v1
+      kind: Secret
+      name: "{{ item.name }}"
+      namespace: "{{ item.namespace | default(fleet_defaults.namespace) }}"
+  loop: "{{ fleet_registration_tokens }}"
+  when:
+      - fleet_registration_tokens | length > 0
+      - fleet_state == "present"
+      - not ansible_check_mode
+  register: fleet_registration_token_secrets
+  tags:
+      - fleet
+      - fleet-registration-tokens
+
+- name: "Display ClusterRegistrationToken information"
+  ansible.builtin.debug:
+      msg:
+          - "Token Name: {{ item.item.name }}"
+          - "Namespace: {{ item.item.namespace | default(fleet_defaults.namespace) }}"
+          - "TTL: {{ item.item.ttl | default('240h') }}"
+          - "Secret exists: {{ item.resources | length > 0 }}"
+  loop: "{{ fleet_registration_token_secrets.results | default([]) }}"
+  when:
+      - fleet_registration_token_secrets is defined
+      - not ansible_check_mode
+  tags:
+      - fleet
+      - fleet-registration-tokens

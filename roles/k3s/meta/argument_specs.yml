@@ -1,0 +1,203 @@
+---
+# Argument specifications for K3s role
+# Multiple entry points with specific argument requirements
+
+argument_specs:
+    main:
+        short_description: "Install and configure K3s lightweight Kubernetes"
+        description: |
+            Main entry point for K3s installation with full configuration options.
+            Supports both server and agent roles with manual configuration.
+        author: "Simon Bärlocher"
+        options:
+            k3s_version:
+                type: "str"
+                required: true
+                description: "K3s version to install (e.g., v1.33.3+k3s1)"
+
+            k3s_role:
+                type: "str"
+                required: true
+                choices: ["server", "agent"]
+                description: "K3s node role - server (control plane) or agent (worker)"
+
+            k3s_node_name:
+                type: "str"
+                required: true
+                description: "K3s node name (usually inventory_hostname)"
+
+            k3s_server_init:
+                type: "bool"
+                required: false
+                default: false
+                description: "Initialize K3s cluster (only for first server node)"
+
+            k3s_server_url:
+                type: "str"
+                required: false
+                default: ""
+                description: "K3s server URL for agents and joining servers"
+
+            k3s_token:
+                type: "str"
+                required: false
+                default: ""
+                description: "K3s cluster token for authentication"
+                no_log: true
+
+            k3s_bind_address:
+                type: "str"
+                required: false
+                default: "{{ ansible_default_ipv4.address }}"
+                description: "K3s API server bind address"
+
+            k3s_https_listen_port:
+                type: "int"
+                required: false
+                default: 6443
+                description: "K3s HTTPS API server listen port"
+
+            k3s_node_ip:
+                type: "str"
+                required: false
+                default: "{{ ansible_default_ipv4.address }}"
+                description: "K3s node IP address"
+
+            k3s_tls_san:
+                type: "list"
+                required: false
+                default: []
+                elements: "str"
+                description: "Additional TLS SANs for API server certificate"
+
+            k3s_node_labels:
+                type: "list"
+                required: false
+                default: []
+                elements: "str"
+                description: "Node labels to apply (format: key=value)"
+
+            k3s_node_taints:
+                type: "list"
+                required: false
+                default: []
+                elements: "str"
+                description: "Node taints to apply (format: key=value:effect)"
+
+    server_init:
+        short_description: "K3s server initialization entry point"
+        description: |
+            Entry point for initializing a new K3s cluster.
+            Automatically sets k3s_role=server and k3s_server_init=true.
+        author: "Simon Bärlocher"
+        options:
+            k3s_version:
+                type: "str"
+                required: true
+                description: "K3s version to install"
+
+            k3s_node_name:
+                type: "str"
+                required: true
+                description: "K3s node name"
+
+            k3s_bind_address:
+                type: "str"
+                required: false
+                default: "{{ ansible_default_ipv4.address }}"
+                description: "K3s API server bind address"
+
+            k3s_https_listen_port:
+                type: "int"
+                required: false
+                default: 6443
+                description: "K3s HTTPS API server listen port"
+
+            k3s_tls_san:
+                type: "list"
+                required: false
+                default: []
+                elements: "str"
+                description: "Additional TLS SANs for API server"
+
+    server_join:
+        short_description: "K3s server join entry point"
+        description: |
+            Entry point for joining additional servers to existing K3s cluster.
+            Automatically sets k3s_role=server and k3s_server_init=false.
+        author: "Simon Bärlocher"
+        options:
+            k3s_version:
+                type: "str"
+                required: true
+                description: "K3s version to install"
+
+            k3s_node_name:
+                type: "str"
+                required: true
+                description: "K3s node name"
+
+            k3s_server_url:
+                type: "str"
+                required: true
+                description: "K3s server URL to join"
+
+            k3s_token:
+                type: "str"
+                required: true
+                description: "K3s cluster token"
+                no_log: true
+
+            k3s_bind_address:
+                type: "str"
+                required: false
+                default: "{{ ansible_default_ipv4.address }}"
+                description: "K3s API server bind address"
+
+            k3s_https_listen_port:
+                type: "int"
+                required: false
+                default: 6443
+                description: "K3s HTTPS API server listen port"
+
+    agent:
+        short_description: "K3s agent entry point"
+        description: |
+            Entry point for K3s worker nodes (agents).
+            Automatically sets k3s_role=agent.
+        author: "Simon Bärlocher"
+        options:
+            k3s_version:
+                type: "str"
+                required: true
+                description: "K3s version to install"
+
+            k3s_node_name:
+                type: "str"
+                required: true
+                description: "K3s node name"
+
+            k3s_server_url:
+                type: "str"
+                required: true
+                description: "K3s server URL to connect to"
+
+            k3s_token:
+                type: "str"
+                required: true
+                description: "K3s cluster token"
+                no_log: true
+
+            k3s_node_labels:
+                type: "list"
+                required: false
+                default: []
+                elements: "str"
+                description: "Node labels to apply"
+
+            k3s_node_taints:
+                type: "list"
+                required: false
+                default: []
+                elements: "str"
+                description: "Node taints to apply"

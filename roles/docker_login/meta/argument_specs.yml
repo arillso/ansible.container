@@ -1,116 +1,116 @@
 ---
 argument_specs:
-  main:
-    short_description: Manage Docker registry login using Ansible
-    description:
-      - This spec outlines parameters for managing Docker registry logins with Ansible.
-      - It includes options for Docker API version, server verification certificates, and Docker host connection settings, along with login credentials.
-
-    options:
-      docker_login_api_version:
-        type: str
+    main:
+        short_description: Manage Docker registry login using Ansible
         description:
-          - Docker API version to use, set to 'auto' for automatic version selection.
-        default: "auto"
+            - This spec outlines parameters for managing Docker registry logins with Ansible.
+            - It includes options for Docker API version, server verification certificates, and Docker host connection settings, along with login credentials.
 
-      docker_login_ca_cert:
-        type: str
-        description:
-          - Path to the CA certificate for server verification.
-        default: "{{ omit }}"
+        options:
+            docker_login_api_version:
+                type: str
+                description:
+                    - Docker API version to use, set to 'auto' for automatic version selection.
+                default: "auto"
 
-      docker_login_client_cert:
-        type: str
-        description:
-          - Path to the client's TLS certificate for Docker daemon communication.
-        default: "{{ omit }}"
+            docker_login_ca_cert:
+                type: str
+                description:
+                    - Path to the CA certificate for server verification.
+                default: "{{ omit }}"
 
-      docker_login_client_key:
-        type: str
-        description:
-          - Path to the client's TLS key for Docker daemon communication.
-        default: "{{ omit }}"
+            docker_login_client_cert:
+                type: str
+                description:
+                    - Path to the client's TLS certificate for Docker daemon communication.
+                default: "{{ omit }}"
 
-      docker_login_config_path:
-        type: str
-        description:
-          - Custom path to the Docker CLI configuration file.
-        default: "~/.docker/config.json"
+            docker_login_client_key:
+                type: str
+                description:
+                    - Path to the client's TLS key for Docker daemon communication.
+                default: "{{ omit }}"
 
-      docker_login_debug:
-        type: bool
-        description:
-          - Enable or disable debug mode.
-        default: false
+            docker_login_config_path:
+                type: str
+                description:
+                    - Custom path to the Docker CLI configuration file.
+                default: "~/.docker/config.json"
 
-      docker_login_docker_host:
-        type: str
-        description:
-          - Docker host URL or Unix socket path for API connection.
-        default: "unix://var/run/docker.sock"
+            docker_login_debug:
+                type: bool
+                description:
+                    - Enable or disable debug mode.
+                default: false
 
-      docker_login_password:
-        type: str
-        description:
-          - The plaintext password for the registry account.
-        default: ""
+            docker_login_docker_host:
+                type: str
+                description:
+                    - Docker host URL or Unix socket path for API connection.
+                default: "unix://var/run/docker.sock"
 
-      docker_login_reauthorize:
-        type: bool
-        description:
-          - Refresh existing authentication in the configuration file.
-        default: false
+            docker_login_password:
+                type: str
+                description:
+                    - The plaintext password for the registry account.
+                default: ""
 
-      docker_login_registry_url:
-        type: str
-        description:
-          - The registry URL.
-        default: "https://index.docker.io/v1/"
+            docker_login_reauthorize:
+                type: bool
+                description:
+                    - Refresh existing authentication in the configuration file.
+                default: false
 
-      docker_login_ssl_version:
-        type: str
-        description:
-          - Specify a valid SSL version number for secure communication.
-        default: "{{ omit }}"
+            docker_login_registry_url:
+                type: str
+                description:
+                    - The registry URL.
+                default: "https://index.docker.io/v1/"
 
-      docker_login_state:
-        type: str
-        description:
-          - Controls the current state of the user. 'present' to login, 'absent' to log out.
-        default: "present"
+            docker_login_ssl_version:
+                type: str
+                description:
+                    - Specify a valid SSL version number for secure communication.
+                default: "{{ omit }}"
 
-      docker_login_timeout:
-        type: int
-        description:
-          - Maximum time in seconds to wait for a response from the API.
-        default: 60
+            docker_login_state:
+                type: str
+                description:
+                    - Controls the current state of the user. 'present' to login, 'absent' to log out.
+                default: "present"
 
-      docker_login_tls:
-        type: bool
-        description:
-          - Secures connection to the API using TLS without verifying Docker host server.
-        default: false
+            docker_login_timeout:
+                type: int
+                description:
+                    - Maximum time in seconds to wait for a response from the API.
+                default: 60
 
-      docker_login_tls_hostname:
-        type: str
-        description:
-          - Expected name of the Docker Host server for authenticity verification.
-        default: "{{ omit }}"
+            docker_login_tls:
+                type: bool
+                description:
+                    - Secures connection to the API using TLS without verifying Docker host server.
+                default: false
 
-      docker_login_use_ssh_client:
-        type: bool
-        description:
-          - Use the SSH CLI tool instead of paramiko for SSH transports. Currently ignored.
-        default: false
+            docker_login_tls_hostname:
+                type: str
+                description:
+                    - Expected name of the Docker Host server for authenticity verification.
+                default: "{{ omit }}"
 
-      docker_login_username:
-        type: str
-        description:
-          - Username for the registry account.
-        default: ""
+            docker_login_use_ssh_client:
+                type: bool
+                description:
+                    - Use the SSH CLI tool instead of paramiko for SSH transports. Currently ignored.
+                default: false
 
-      docker_login_validate_certs:
-        type: bool
-        description:
-          - Secures the connection to the API by using TLS and verifying the Docker host server authenticity.
-        default: false
+            docker_login_username:
+                type: str
+                description:
+                    - Username for the registry account.
+                default: ""
+
+            docker_login_validate_certs:
+                type: bool
+                description:
+                    - Secures the connection to the API by using TLS and verifying the Docker host server authenticity.
+                default: false

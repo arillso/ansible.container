@@ -1,0 +1,87 @@
+---
+# Helm Prerequisites Tasks
+# Validate system requirements and dependencies
+
+- name: "Find first existing kubeconfig file"
+  ansible.builtin.stat:
+      path: "{{ item }}"
+  register: kubeconfig_check
+  loop:
+      - "/etc/rancher/k3s/k3s.yaml"
+      - "/var/lib/rancher/k3s/server/cred/admin.kubeconfig"
+      - "/root/.kube/config"
+      - "{{ ansible_env.HOME | default('/root') }}/.kube/config"
+  when: helm_kubeconfig_path is not defined or helm_kubeconfig_path == ""
+  run_once: true
+
+- name: "Set detected kubeconfig path to first existing file"
+  ansible.builtin.set_fact:
+      helm_kubeconfig_path: "{{ item.item }}"
+  loop: "{{ kubeconfig_check.results | default([]) }}"
+  when:
+      - kubeconfig_check is defined
+      - item.stat.exists | default(false)
+  run_once: true
+
+- name: "Validate final kubeconfig file exists"
+  ansible.builtin.stat:
+      path: "{{ helm_kubeconfig_path }}"
+  register: kubeconfig_stat
+  run_once: true
+
+- name: "Fail if kubeconfig file does not exist"
+  ansible.builtin.fail:
+      msg: |
+          Kubeconfig file not found at {{ helm_kubeconfig_path }}.
+          Checked locations:
+          - /etc/rancher/k3s/k3s.yaml
+          - /var/lib/rancher/k3s/server/cred/admin.kubeconfig
+          - /root/.kube/config
+          - ~/.kube/config
+          Please ensure K3s is installed and running, or set helm_kubeconfig_path manually.
+  when:
+      - not kubeconfig_stat.stat.exists
+  run_once: true
+
+- name: "Check if Kubernetes cluster is accessible"
+  kubernetes.core.k8s_info:
+      api_version: v1
+      kind: Node
+      kubeconfig: "{{ helm_kubeconfig_path }}"
+  register: cluster_check
+  run_once: true
+
+- name: "Fail if Kubernetes cluster is not accessible"
+  ansible.builtin.fail:
+      msg: "Kubernetes cluster is not accessible. Please ensure kubeconfig is valid and cluster is running."
+  when:
+      - cluster_check.resources | length == 0
+  run_once: true
+
+- name: "Check if Cattle Operator (Helm Controller) is running"
+  kubernetes.core.k8s_info:
+      api_version: apps/v1
+      kind: Deployment
+      name: helm-controller
+      namespace: kube-system
+      kubeconfig: "{{ helm_kubeconfig_path }}"
+  register: helm_controller_check
+  run_once: true
+  failed_when: false
+
+- name: "Display Helm Controller status"
+  ansible.builtin.debug:
+      msg: |
+          Helm Controller Status: {% if helm_controller_check.resources | length > 0 %}Running{% else %}Not Found (may be embedded in K3s){% endif %}
+  run_once: true
+
+- name: "Display Helm configuration summary"
+  ansible.builtin.debug:
+      msg: |
+          Helm Configuration Summary:
+          - Charts to deploy: {{ helm_charts | length }}
+          - Repositories configured: {{ helm_repositories | length }}
+          - Validation enabled: {{ helm_validation_enabled }}
+          - Deployment wait: {{ helm_deployment_wait }}
+          - Kubeconfig: {{ helm_kubeconfig_path }}
+  run_once: true

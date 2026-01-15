@@ -1,0 +1,236 @@
+---
+# Security Configuration for K3s
+# Handles SELinux, AppArmor, and other security-related configurations
+# Enterprise-grade security hardening for Kubernetes workloads
+
+- name: Detect security framework in use
+  ansible.builtin.set_fact:
+      security_framework: >-
+          {%- if ansible_selinux.status is defined and ansible_selinux.status != "disabled" -%}
+            selinux
+          {%- elif ansible_apparmor is defined and ansible_apparmor.status == "enabled" -%}
+            apparmor
+          {%- else -%}
+            none
+          {%- endif -%}
+
+- name: Display detected security framework
+  ansible.builtin.debug:
+      msg: "Detected security framework: {{ security_framework }}"
+  when: k3s_debug_security | default(false) | bool
+
+# SELinux Configuration Block
+- name: SELinux configuration tasks
+  when: security_framework == "selinux"
+  block:
+      - name: Install SELinux management packages
+        ansible.builtin.package:
+            name:
+                - container-selinux
+                - selinux-policy-base
+                - policycoreutils-python-utils
+            state: present
+        become: true
+        when: ansible_os_family == "RedHat"
+
+      - name: Check for k3s-selinux package availability
+        ansible.builtin.uri:
+            url: "https://rpm.rancher.io/k3s/stable/common/centos/{{ ansible_distribution_major_version }}/noarch/"
+            method: GET
+            status_code: 200
+            timeout: 10
+        register: k3s_selinux_repo_check
+        failed_when: false
+        when: ansible_os_family == "RedHat"
+
+      - name: Install k3s-selinux package
+        ansible.builtin.package:
+            name: "https://rpm.rancher.io/k3s/stable/common/centos/{{ ansible_distribution_major_version }}/noarch/k3s-selinux-1.4-1.el{{ ansible_distribution_major_version }}.noarch.rpm"
+            state: present
+            disable_gpg_check: true
+        become: true
+        when:
+            - ansible_os_family == "RedHat"
+            - k3s_selinux_repo_check.status == 200
+        failed_when: false
+        register: k3s_selinux_install
+
+      - name: Configure SELinux context for K3s binary
+        community.general.sefcontext:
+            target: /usr/local/bin/k3s
+            setype: container_runtime_exec_t
+            state: present
+        become: true
+
+      - name: Apply SELinux context to K3s binary
+        ansible.builtin.command: restorecon -v /usr/local/bin/k3s
+        become: true
+        register: selinux_restorecon
+        changed_when: "'restorecon reset' in selinux_restorecon.stdout"
+
+      - name: Check available SELinux booleans
+        ansible.builtin.shell:
+            cmd: set -o pipefail && getsebool -a | grep -E "(container_use_cephfs|virt_use_nfs)"
+            executable: /bin/bash
+        register: available_sebools
+        failed_when: false
+        changed_when: false
+        become: true
+
+      - name: Configure SELinux boolean for container networking
+        ansible.posix.seboolean:
+            name: "{{ item }}"
+            state: true
+            persistent: true
+        loop:
+            - container_use_cephfs
+            - virt_use_nfs
+        become: true
+        when: item in available_sebools.stdout
+        failed_when: false
+
+      - name: Create custom SELinux policy for K3s (if needed)
+        ansible.builtin.copy:
+            content: |
+                module k3s_custom 1.0;
+
+                require {
+                    type container_runtime_t;
+                    type unlabeled_t;
+                    class process transition;
+                }
+
+                allow container_runtime_t unlabeled_t:process transition;
+            dest: /tmp/k3s_custom.te
+            mode: "0644"
+        become: true
+        when: k3s_selinux_custom_policy | default(false) | bool
+
+      - name: Compile and install custom SELinux policy
+        ansible.builtin.shell: |
+            cd /tmp
+            checkmodule -M -m -o k3s_custom.mod k3s_custom.te
+            semodule_package -o k3s_custom.pp -m k3s_custom.mod
+            semodule -i k3s_custom.pp
+        become: true
+        when: k3s_selinux_custom_policy | default(false) | bool
+        changed_when: true
+
+
+# AppArmor Configuration Block
+- name: AppArmor configuration tasks
+  block:
+      - name: Install AppArmor utilities
+        ansible.builtin.package:
+            name:
+                - apparmor-utils
+                - apparmor-profiles
+            state: present
+        become: true
+        when: ansible_os_family == "Debian"
+
+      - name: Create AppArmor profile for K3s
+        ansible.builtin.copy:
+            content: |
+                #include <tunables/global>
+
+                /usr/local/bin/k3s {
+                  #include <abstractions/base>
+                  #include <abstractions/nameservice>
+                  #include <abstractions/user-tmp>
+
+                  capability sys_admin,
+                  capability net_admin,
+                  capability sys_resource,
+                  capability setuid,
+                  capability setgid,
+
+                  /usr/local/bin/k3s mr,
+                  /proc/sys/net/** rw,
+                  /sys/fs/cgroup/** rw,
+                  /var/lib/rancher/k3s/** rwix,
+                  /etc/rancher/k3s/** r,
+
+                  owner /tmp/** rw,
+                  owner /var/tmp/** rw,
+                }
+            dest: /etc/apparmor.d/k3s
+            mode: "0644"
+        become: true
+        when: k3s_apparmor_profile | default(true) | bool
+        register: apparmor_profile_created
+
+      - name: Load K3s AppArmor profile
+        ansible.builtin.command: apparmor_parser -r /etc/apparmor.d/k3s
+        become: true
+        when:
+            - k3s_apparmor_profile | default(true) | bool
+            - apparmor_profile_created is changed
+        changed_when: true
+
+
+# General Security Hardening
+- name: Configure secure file permissions for K3s configuration directory
+  ansible.builtin.file:
+      path: "{{ k3s_config_dir }}"
+      mode: "0700"
+      owner: root
+      group: root
+      state: directory
+  become: true
+  when: k3s_config_dir is defined
+
+# - name: Configure secure file permissions for K3s token file
+#   ansible.builtin.file:
+#       path: "{{ k3s_token_file }}"
+#       mode: "0600"
+#       owner: root
+#       group: root
+#   become: true
+#   when:
+#       - k3s_token_file is defined
+#       - k3s_token_file | length > 0
+
+- name: Check if K3s server credential directory exists
+  ansible.builtin.stat:
+      path: "{{ k3s_data_dir }}/server/cred"
+  register: k3s_cred_dir_check
+
+# - name: Configure secure file permissions for K3s server credentials directory
+#   ansible.builtin.file:
+#       path: "{{ k3s_data_dir }}/server/cred"
+#       mode: "0700"
+#       owner: root
+#       group: root
+#       state: directory
+#   become: true
+#   when: k3s_cred_dir_check.stat.exists
+
+- name: Configure logrotate for K3s logs
+  ansible.builtin.template:
+      src: etc/logrotate.d/k3s.j2
+      dest: /etc/logrotate.d/k3s
+      mode: "0644"
+      owner: root
+      group: root
+  become: true
+# - name: Set up audit logging for K3s (if enabled)
+#   ansible.builtin.template:
+#       src: etc/kubernetes/audit-policy.yaml.j2
+#       dest: "{{ k3s_config_dir }}/audit-policy.yaml"
+#       mode: "0600"
+#       owner: root
+#       group: root
+#   become: true
+#   when: k3s_audit_log_enabled | default(false) | bool
+
+# - name: Display security configuration summary
+#   ansible.builtin.debug:
+#       msg: |
+#           K3s Security Configuration Summary:
+#           - Security Framework: {{ security_framework }}
+#           - SELinux Status: {{ ansible_selinux.status | default('not_detected') }}
+#           - AppArmor Status: {{ ansible_apparmor.status | default('not_detected') }}
+#           - Audit Logging: {{ k3s_audit_log_enabled | default(false) }}
+#           - Custom Policies: {{ k3s_selinux_custom_policy | default(false) or k3s_apparmor_profile | default(false) }}
+#   when: k3s_debug_security | default(false) | bool
