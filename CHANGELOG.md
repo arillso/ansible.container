@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-01-16
+
+### Fixed
+
+- Fixed K3s configuration directory permissions causing unnecessary 'changed' status on every run
+- Improved K3s AppArmor profile with comprehensive permissions for container operations
+- Added sys_chroot, sys_ptrace, dac_override capabilities
+- Added xtables-nft-multi, nft, modprobe subprocess execution permissions
+- Expanded proc/sys and sys filesystem access for full K3s functionality
+- Added file locking support (k flag) to k3s data directory
+- Added ptrace permissions for containerd process management
+- Improved Galaxy collection description for better discoverability
+
+### Changed
+
+- Disabled K3s AppArmor profile by default (k3s_apparmor_profile: false)
+- K3s configuration directory now created with correct 0700 permissions from the start
+
 ## [1.0.0] - 2026-01-15
 
 ### Added
