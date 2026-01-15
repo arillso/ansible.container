@@ -1,287 +1,287 @@
 ---
 argument_specs:
-  main:
-    short_description: Configure and manage Docker environment using Ansible
-    description:
-      - This spec defines the parameters for configuring Docker and its environment on various distributions using Ansible.
-    options:
-      docker_version:
-        type: str
-        description: Specifies the version of Docker to be installed. If omitted, the latest version is installed.
-        default: ""
-
-      docker_daemon:
-        type: dict
-        description: Defines the Docker daemon configuration options.
+    main:
+        short_description: Configure and manage Docker environment using Ansible
+        description:
+            - This spec defines the parameters for configuring Docker and its environment on various distributions using Ansible.
         options:
-          log-driver:
-            type: str
-            description: Defines the log driver to be used by Docker daemon.
-            default: "journald"
-          live-restore:
-            type: bool
-            description: Enables live restore of Docker when true.
-            default: true
-          registry-mirrors:
-            type: list
-            elements: str
-            description: A list of registry mirrors to use for Docker pull operations.
-          data-root:
-            type: str
-            description: The root directory of the Docker runtime. Defaults to /var/lib/docker.
-          log-level:
-            type: str
-            description: The logging level. Valid values are "debug", "info", "warn", "error", "fatal".
-          storage-driver:
-            type: str
-            description: The storage driver to use. Popular options include overlay2, aufs, and btrfs.
-          insecure-registries:
-            type: list
-            elements: str
-            description: A list of insecure registries to allow for Docker pull and push operations.
-          default-ulimits:
-            type: dict
-            description: Default ulimits to set for containers.
-          debug:
-            type: bool
-            description: Enable debug mode with additional logging.
-          exec-opts:
-            type: list
-            elements: str
-            description: Runtime execution options.
-          default-runtime:
-            type: str
-            description: The default runtime to use for running containers.
-          experimental:
-            type: bool
-            description: Enable experimental features.
-          labels:
-            type: list
-            elements: str
-            description: A list of labels to set on the Docker daemon.
-          mtu:
-            type: int
-            description: Sets the maximum transmission unit (MTU) for the Docker daemon network interfaces.
-          max-concurrent-downloads:
-            type: int
-            description: Sets the maximum number of parallel image downloads for the Docker daemon.
-          max-concurrent-uploads:
-            type: int
-            description: Sets the maximum number of parallel image uploads for the Docker daemon.
-          disable-legacy-registry:
-            type: bool
-            description: Disables the use of the legacy V1 Docker registry.
-          shutdown-timeout:
-            type: int
-            description: Sets the timeout value (in seconds) for the Docker daemon to wait before forcibly shutting down containers on daemon shutdown.
-          bip:
-            type: str
-            description: Specifies a custom network bridge IP address in CIDR notation. This is used for the default bridge network.
-          default-address-pools:
-            type: list
-            elements: dict
-            description: A list of IP address pools for dynamic network allocation. Each pool is specified with a base (in CIDR notation) and a size.
-            options:
-              base:
+            docker_version:
                 type: str
-                description: The base address in CIDR notation.
-              size:
-                type: int
-                description: The size of the network pool.
-          allow-nondistributable-artifacts:
-            type: list
-            elements: str
-            description: A list of allowed nondistributable artifacts.
-          api-cors-header:
-            type: str
-            description: Sets the CORS header for the Docker API.
-          authorization-plugins:
-            type: list
-            elements: str
-            description: A list of authorization plugins to use with Docker.
-          bridge:
-            type: str
-            description: Specifies the network bridge Docker will use.
-          builder:
-            type: dict
-            description: Configuration options for Docker builds.
-            options:
-              gc:
+                description: Specifies the version of Docker to be installed. If omitted, the latest version is installed.
+                default: ""
+
+            docker_daemon:
                 type: dict
-                description: Configuration options for build cache garbage collection.
+                description: Defines the Docker daemon configuration options.
                 options:
-                  enabled:
-                    type: bool
-                    description: Enables or disables build cache garbage collection.
-                  defaultKeepStorage:
-                    type: str
-                    description: The default amount of build cache storage to keep.
-                  policy:
-                    type: list
-                    elements: dict
-                    description: Policies for managing build cache storage.
-                    options:
-                      keepStorage:
+                    log-driver:
                         type: str
-                        description: The amount of build cache storage to keep.
-                      filter:
+                        description: Defines the log driver to be used by Docker daemon.
+                        default: "journald"
+                    live-restore:
+                        type: bool
+                        description: Enables live restore of Docker when true.
+                        default: true
+                    registry-mirrors:
                         type: list
                         elements: str
-                        description: Filters to apply for the policy.
-                      all:
+                        description: A list of registry mirrors to use for Docker pull operations.
+                    data-root:
+                        type: str
+                        description: The root directory of the Docker runtime. Defaults to /var/lib/docker.
+                    log-level:
+                        type: str
+                        description: The logging level. Valid values are "debug", "info", "warn", "error", "fatal".
+                    storage-driver:
+                        type: str
+                        description: The storage driver to use. Popular options include overlay2, aufs, and btrfs.
+                    insecure-registries:
+                        type: list
+                        elements: str
+                        description: A list of insecure registries to allow for Docker pull and push operations.
+                    default-ulimits:
+                        type: dict
+                        description: Default ulimits to set for containers.
+                    debug:
                         type: bool
-                        description: Whether the policy applies to all build cache.
-          cgroup-parent:
-            type: str
-            description: Sets the parent cgroup for all containers.
-          containerd:
-            type: str
-            description: The path to the containerd socket.
-          containerd-namespace:
-            type: str
-            description: The namespace to use within containerd.
-          containerd-plugin-namespace:
-            type: str
-            description: The namespace for containerd plugins.
-          default-cgroupns-mode:
-            type: str
-            description: The default namespace mode to use for cgroups.
-          default-gateway:
-            type: str
-            description: The default IPv4 gateway.
-          default-gateway-v6:
-            type: str
-            description: The default IPv6 gateway.
-          default-network-opts:
-            type: dict
-            description: Default network options.
-          default-shm-size:
-            type: str
-            description: The default size of the shm for containers.
-          dns:
-            type: list
-            elements: str
-            description: A list of DNS servers.
-          dns-opts:
-            type: list
-            elements: str
-            description: A list of DNS options.
-          dns-search:
-            type: list
-            elements: str
-            description: A list of DNS search domains.
-          exec-root:
-            type: str
-            description: The root directory for execution state files.
-          features:
-            type: dict
-            description: A map of Docker daemon feature flags.
-          fixed-cidr:
-            type: str
-            description: IPv4 subnet for fixed IPs.
-          fixed-cidr-v6:
-            type: str
-            description: IPv6 subnet for fixed IPs.
-          group:
-            type: str
-            description: The group for the Docker socket.
-          host-gateway-ip:
-            type: str
-            description: The host gateway IP address.
-          hosts:
-            type: list
-            elements: str
-            description: A list of daemon host addresses.
-          icc:
-            type: bool
-            description: Enable or disable inter-container communication.
-          init:
-            type: bool
-            description: Use Docker's init system.
-          init-path:
-            type: str
-            description: Path to the Docker init binary.
-          ip:
-            type: str
-            description: The IP address Docker will bind to.
-          ip-forward:
-            type: bool
-            description: Enable net.ipv4.ip_forward.
-          ip-masq:
-            type: bool
-            description: Enable IP masquerading.
-          iptables:
-            type: bool
-            description: Enable addition of iptables rules.
-          ip6tables:
-            type: bool
-            description: Enable addition of ip6tables rules.
-          ipv6:
-            type: bool
-            description: Enable IPv6 networking.
-          no-new-privileges:
-            type: bool
-            description: Set no-new-privileges by default for new containers.
-          oom-score-adjust:
-            type: int
-            description: Adjust the OOM score.
-          pidfile:
-            type: str
-            description: Path to the PID file.
-          raw-logs:
-            type: bool
-            description: Enable raw logs.
-          runtimes:
-            type: dict
-            description: Specifies OCI compliant runtimes to use for running containers.
-          seccomp-profile:
-            type: str
-            description: The path to the seccomp security profile.
-          selinux-enabled:
-            type: bool
-            description: Enable SELinux support.
-          swarm-default-advertise-addr:
-            type: str
-            description: Set default swarm advertise address.
-          tlscacert:
-            type: str
-            description: Trust certs signed only by this CA.
-          tlscert:
-            type: str
-            description: Path to TLS certificate file.
-          tlskey:
-            type: str
-            description: Path to TLS key file.
-          userland-proxy:
-            type: bool
-            description: Use userland proxy for loopback traffic.
-          userland-proxy-path:
-            type: str
-            description: Path to the userland proxy binary.
-          userns-remap:
-            type: str
-            description: User/Group setting for user namespaces.
+                        description: Enable debug mode with additional logging.
+                    exec-opts:
+                        type: list
+                        elements: str
+                        description: Runtime execution options.
+                    default-runtime:
+                        type: str
+                        description: The default runtime to use for running containers.
+                    experimental:
+                        type: bool
+                        description: Enable experimental features.
+                    labels:
+                        type: list
+                        elements: str
+                        description: A list of labels to set on the Docker daemon.
+                    mtu:
+                        type: int
+                        description: Sets the maximum transmission unit (MTU) for the Docker daemon network interfaces.
+                    max-concurrent-downloads:
+                        type: int
+                        description: Sets the maximum number of parallel image downloads for the Docker daemon.
+                    max-concurrent-uploads:
+                        type: int
+                        description: Sets the maximum number of parallel image uploads for the Docker daemon.
+                    disable-legacy-registry:
+                        type: bool
+                        description: Disables the use of the legacy V1 Docker registry.
+                    shutdown-timeout:
+                        type: int
+                        description: Sets the timeout value (in seconds) for the Docker daemon to wait before forcibly shutting down containers on daemon shutdown.
+                    bip:
+                        type: str
+                        description: Specifies a custom network bridge IP address in CIDR notation. This is used for the default bridge network.
+                    default-address-pools:
+                        type: list
+                        elements: dict
+                        description: A list of IP address pools for dynamic network allocation. Each pool is specified with a base (in CIDR notation) and a size.
+                        options:
+                            base:
+                                type: str
+                                description: The base address in CIDR notation.
+                            size:
+                                type: int
+                                description: The size of the network pool.
+                    allow-nondistributable-artifacts:
+                        type: list
+                        elements: str
+                        description: A list of allowed nondistributable artifacts.
+                    api-cors-header:
+                        type: str
+                        description: Sets the CORS header for the Docker API.
+                    authorization-plugins:
+                        type: list
+                        elements: str
+                        description: A list of authorization plugins to use with Docker.
+                    bridge:
+                        type: str
+                        description: Specifies the network bridge Docker will use.
+                    builder:
+                        type: dict
+                        description: Configuration options for Docker builds.
+                        options:
+                            gc:
+                                type: dict
+                                description: Configuration options for build cache garbage collection.
+                                options:
+                                    enabled:
+                                        type: bool
+                                        description: Enables or disables build cache garbage collection.
+                                    defaultKeepStorage:
+                                        type: str
+                                        description: The default amount of build cache storage to keep.
+                                    policy:
+                                        type: list
+                                        elements: dict
+                                        description: Policies for managing build cache storage.
+                                        options:
+                                            keepStorage:
+                                                type: str
+                                                description: The amount of build cache storage to keep.
+                                            filter:
+                                                type: list
+                                                elements: str
+                                                description: Filters to apply for the policy.
+                                            all:
+                                                type: bool
+                                                description: Whether the policy applies to all build cache.
+                    cgroup-parent:
+                        type: str
+                        description: Sets the parent cgroup for all containers.
+                    containerd:
+                        type: str
+                        description: The path to the containerd socket.
+                    containerd-namespace:
+                        type: str
+                        description: The namespace to use within containerd.
+                    containerd-plugin-namespace:
+                        type: str
+                        description: The namespace for containerd plugins.
+                    default-cgroupns-mode:
+                        type: str
+                        description: The default namespace mode to use for cgroups.
+                    default-gateway:
+                        type: str
+                        description: The default IPv4 gateway.
+                    default-gateway-v6:
+                        type: str
+                        description: The default IPv6 gateway.
+                    default-network-opts:
+                        type: dict
+                        description: Default network options.
+                    default-shm-size:
+                        type: str
+                        description: The default size of the shm for containers.
+                    dns:
+                        type: list
+                        elements: str
+                        description: A list of DNS servers.
+                    dns-opts:
+                        type: list
+                        elements: str
+                        description: A list of DNS options.
+                    dns-search:
+                        type: list
+                        elements: str
+                        description: A list of DNS search domains.
+                    exec-root:
+                        type: str
+                        description: The root directory for execution state files.
+                    features:
+                        type: dict
+                        description: A map of Docker daemon feature flags.
+                    fixed-cidr:
+                        type: str
+                        description: IPv4 subnet for fixed IPs.
+                    fixed-cidr-v6:
+                        type: str
+                        description: IPv6 subnet for fixed IPs.
+                    group:
+                        type: str
+                        description: The group for the Docker socket.
+                    host-gateway-ip:
+                        type: str
+                        description: The host gateway IP address.
+                    hosts:
+                        type: list
+                        elements: str
+                        description: A list of daemon host addresses.
+                    icc:
+                        type: bool
+                        description: Enable or disable inter-container communication.
+                    init:
+                        type: bool
+                        description: Use Docker's init system.
+                    init-path:
+                        type: str
+                        description: Path to the Docker init binary.
+                    ip:
+                        type: str
+                        description: The IP address Docker will bind to.
+                    ip-forward:
+                        type: bool
+                        description: Enable net.ipv4.ip_forward.
+                    ip-masq:
+                        type: bool
+                        description: Enable IP masquerading.
+                    iptables:
+                        type: bool
+                        description: Enable addition of iptables rules.
+                    ip6tables:
+                        type: bool
+                        description: Enable addition of ip6tables rules.
+                    ipv6:
+                        type: bool
+                        description: Enable IPv6 networking.
+                    no-new-privileges:
+                        type: bool
+                        description: Set no-new-privileges by default for new containers.
+                    oom-score-adjust:
+                        type: int
+                        description: Adjust the OOM score.
+                    pidfile:
+                        type: str
+                        description: Path to the PID file.
+                    raw-logs:
+                        type: bool
+                        description: Enable raw logs.
+                    runtimes:
+                        type: dict
+                        description: Specifies OCI compliant runtimes to use for running containers.
+                    seccomp-profile:
+                        type: str
+                        description: The path to the seccomp security profile.
+                    selinux-enabled:
+                        type: bool
+                        description: Enable SELinux support.
+                    swarm-default-advertise-addr:
+                        type: str
+                        description: Set default swarm advertise address.
+                    tlscacert:
+                        type: str
+                        description: Trust certs signed only by this CA.
+                    tlscert:
+                        type: str
+                        description: Path to TLS certificate file.
+                    tlskey:
+                        type: str
+                        description: Path to TLS key file.
+                    userland-proxy:
+                        type: bool
+                        description: Use userland proxy for loopback traffic.
+                    userland-proxy-path:
+                        type: str
+                        description: Path to the userland proxy binary.
+                    userns-remap:
+                        type: str
+                        description: User/Group setting for user namespaces.
 
-      docker_systemd_units:
-        type: list
-        elements: dict
-        description: List of systemd units to create for Docker pruning tasks.
-        options:
-          name:
-            type: str
-            description: The name of the systemd unit.
-          type:
-            type: str
-            description: The type of the systemd unit, e.g., service or timer.
-          systemd_unit_generic_options:
-            type: list
-            elements: str
-            description: Generic systemd options for the unit.
-          systemd_unit_options:
-            type: list
-            elements: str
-            description: Specific options for the systemd service or timer.
-          systemd_unit_install_options:
-            type: list
-            elements: str
-            description: Install options for the systemd unit.
+            docker_systemd_units:
+                type: list
+                elements: dict
+                description: List of systemd units to create for Docker pruning tasks.
+                options:
+                    name:
+                        type: str
+                        description: The name of the systemd unit.
+                    type:
+                        type: str
+                        description: The type of the systemd unit, e.g., service or timer.
+                    systemd_unit_generic_options:
+                        type: list
+                        elements: str
+                        description: Generic systemd options for the unit.
+                    systemd_unit_options:
+                        type: list
+                        elements: str
+                        description: Specific options for the systemd service or timer.
+                    systemd_unit_install_options:
+                        type: list
+                        elements: str
+                        description: Install options for the systemd unit.

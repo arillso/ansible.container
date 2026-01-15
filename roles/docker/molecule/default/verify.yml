@@ -1,0 +1,72 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  tasks:
+      - name: Check if Docker is installed
+        ansible.builtin.command: docker --version
+        register: docker_version
+        changed_when: false
+
+      - name: Verify Docker version output
+        ansible.builtin.assert:
+            that:
+                - docker_version.rc == 0
+                - "'Docker version' in docker_version.stdout"
+            fail_msg: "Docker is not properly installed"
+            success_msg: "Docker is installed correctly"
+
+      - name: Check Docker service status
+        ansible.builtin.service:
+            name: docker
+            state: started
+        check_mode: true
+        register: docker_service
+
+      - name: Verify Docker service is running
+        ansible.builtin.assert:
+            that:
+                - not docker_service.changed
+            fail_msg: "Docker service is not running"
+            success_msg: "Docker service is running"
+
+      - name: Test Docker functionality
+        ansible.builtin.command: docker info
+        register: docker_info
+        changed_when: false
+
+      - name: Verify Docker daemon is responding
+        ansible.builtin.assert:
+            that:
+                - docker_info.rc == 0
+            fail_msg: "Docker daemon is not responding"
+            success_msg: "Docker daemon is responding"
+
+      - name: Check if daemon.json exists
+        ansible.builtin.stat:
+            path: /etc/docker/daemon.json
+        register: daemon_config
+
+      - name: Verify daemon configuration exists
+        ansible.builtin.assert:
+            that:
+                - daemon_config.stat.exists
+            fail_msg: "Docker daemon configuration not found"
+            success_msg: "Docker daemon configuration exists"
+
+      - name: Read daemon configuration
+        ansible.builtin.slurp:
+            path: /etc/docker/daemon.json
+        register: daemon_content
+
+      - name: Parse daemon configuration
+        ansible.builtin.set_fact:
+            daemon_json: "{{ daemon_content.content | b64decode | from_json }}"
+
+      - name: Verify daemon configuration values
+        ansible.builtin.assert:
+            that:
+                - daemon_json['log-driver'] == 'json-file'
+                - daemon_json['storage-driver'] == 'overlay2'
+            fail_msg: "Docker daemon configuration is incorrect"
+            success_msg: "Docker daemon configuration is correct"

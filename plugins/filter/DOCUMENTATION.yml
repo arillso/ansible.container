@@ -1,0 +1,110 @@
+---
+# Fleet Filter Plugins Documentation
+
+plugin_type: filter
+
+filters:
+    fleet_transform_targets:
+        description:
+            - Transform Fleet targets from Ansible's snake_case convention to Fleet API's camelCase format
+            - Recursively transforms all nested dictionary keys
+            - Handles complex structures including cluster_selector, match_labels, match_expressions
+            - Preserves all values and structure while only changing key names
+        version_added: "0.0.4"
+        options:
+            _input:
+                description:
+                    - List of target dictionaries with snake_case keys
+                    - Typically contains cluster_selector, cluster_name, cluster_group, etc.
+                type: list
+                elements: dict
+                required: true
+        examples:
+            - name: Transform Fleet targets in a GitRepo configuration
+              description: Convert snake_case target configuration to camelCase for Fleet API
+              code: |
+                  - name: Apply GitRepo with transformed targets
+                    kubernetes.core.k8s:
+                      definition:
+                        apiVersion: fleet.cattle.io/v1alpha1
+                        kind: GitRepo
+                        spec:
+                          targets: "{{ my_targets | arillso.container.fleet_transform_targets }}"
+                    vars:
+                      my_targets:
+                        - cluster_selector:
+                            match_labels:
+                              environment: production
+                              region: us-west
+
+            - name: Multiple targets with different selectors
+              description: Transform multiple target configurations
+              code: |
+                  - name: Configure multi-cluster deployment
+                    set_fact:
+                      transformed_targets: "{{ fleet_targets | arillso.container.fleet_transform_targets }}"
+                    vars:
+                      fleet_targets:
+                        - cluster_selector:
+                            match_labels:
+                              tier: frontend
+                        - cluster_name: production-cluster
+                        - cluster_group: staging-group
+
+        return:
+            _value:
+                description: List of target dictionaries with camelCase keys suitable for Fleet API
+                type: list
+                elements: dict
+
+    to_camel_case:
+        description:
+            - Convert a snake_case string to camelCase format
+            - Useful for transforming Ansible variable names to API-compatible formats
+            - Preserves the first word in lowercase and capitalizes the first letter of subsequent words
+        version_added: "0.0.4"
+        options:
+            _input:
+                description:
+                    - String in snake_case format to be converted
+                type: string
+                required: true
+        examples:
+            - name: Convert a single string
+              description: Transform a snake_case string to camelCase
+              code: |
+                  - name: Transform variable name
+                    debug:
+                      msg: "{{ 'cluster_selector' | arillso.container.to_camel_case }}"
+                    # Returns: clusterSelector
+
+            - name: Use in variable transformation
+              description: Create API-compatible field names
+              code: |
+                  - name: Create API payload
+                    set_fact:
+                      api_field: "{{ field_name | arillso.container.to_camel_case }}"
+                    vars:
+                      field_name: "match_labels"
+                    # Results in: matchLabels
+
+        return:
+            _value:
+                description: String converted to camelCase format
+                type: string
+
+notes:
+    - These filters are specifically designed for Rancher Fleet GitOps target configurations
+    - Common transformations include cluster_selector -> clusterSelector, match_labels -> matchLabels
+    - The filters preserve all values unchanged, only transforming dictionary keys
+    - Nested structures are handled recursively
+
+seealso:
+    - module: kubernetes.core.k8s
+      description: Kubernetes resource management
+    - ref: Fleet GitOps Documentation
+      description: Official Rancher Fleet documentation
+      link: https://fleet.rancher.io/
+
+author:
+    - Arillso (@arillso)

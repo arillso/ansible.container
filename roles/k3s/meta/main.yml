@@ -1,0 +1,38 @@
+---
+# K3s Role Dependencies - Enterprise-grade automatic dependency management
+# This role automatically ensures required facts are available
+
+galaxy_info:
+    role_name: k3s
+    author: Arillso Team
+    description: Lightweight Kubernetes distribution with security hardening
+    license: MIT
+    min_ansible_version: "2.15"
+    platforms:
+        - name: Ubuntu
+          versions:
+              - focal
+              - jammy
+        - name: Debian
+          versions:
+              - bullseye
+              - bookworm
+        - name: EL
+          versions:
+              - "8"
+              - "9"
+    galaxy_tags:
+        - kubernetes
+        - k3s
+        - container
+        - orchestration
+
+dependencies:
+    # Facts collection role for K3s cluster state detection
+    # This dependency is optional - role will work without it via fallback mechanism
+    - role: arillso.system.facts
+      vars:
+          facts_enable_k3s_detection: true
+          facts_k3s_cache_enabled: true
+          facts_k3s_cache_ttl: 300
+      when: k3s_auto_facts | default(true) | bool

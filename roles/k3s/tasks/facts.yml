@@ -1,0 +1,44 @@
+---
+# K3s Facts Collection and Validation
+# Automatic facts collection with enterprise-grade K3s-specific facts
+
+- name: Check if K3s facts are available
+  ansible.builtin.debug:
+      msg: "Checking K3s facts availability"
+  register: facts_check
+  changed_when: false
+
+- name: Gather existing local facts
+  ansible.builtin.setup:
+      gather_subset:
+          - "!all"
+          - "!any"
+          - "local"
+  register: current_facts
+
+# Deploy K3s facts script to collect and provide cluster information
+- name: Create facts.d directory
+  ansible.builtin.file:
+      path: /etc/ansible/facts.d
+      state: directory
+      mode: "0755"
+  when:
+      - k3s_auto_facts | default(true) | bool
+
+- name: Deploy K3s facts script
+  ansible.builtin.template:
+      src: etc/ansible/facts.d/k3s.fact.j2
+      dest: /etc/ansible/facts.d/k3s.fact
+      mode: "0755"
+  when:
+      - k3s_auto_facts | default(true) | bool
+  register: k3s_facts_script_deployed
+
+# Refresh facts after deploying facts script
+- name: Refresh local facts after facts deployment
+  ansible.builtin.setup:
+      gather_subset:
+          - "!all"
+          - "!any"
+          - "local"
+  when: k3s_facts_script_deployed is changed

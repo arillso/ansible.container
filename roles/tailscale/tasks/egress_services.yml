@@ -1,0 +1,43 @@
+---
+# Tailscale Egress Services management tasks
+# Supports: FQDN and IP-based access
+
+- name: Create namespaces for Tailscale Egress Services
+  kubernetes.core.k8s:
+      kubeconfig: "{{ tailscale_kubeconfig_path }}"
+      name: "{{ item.namespace }}"
+      api_version: v1
+      kind: Namespace
+      state: "{{ tailscale_state }}"
+  loop: "{{ tailscale_egress_services }}"
+  when:
+      - tailscale_egress_services | length > 0
+      - tailscale_state == "present"
+  tags:
+      - tailscale
+      - tailscale-egress
+      - tailscale-namespace
+
+- name: Manage Tailscale Egress Services
+  kubernetes.core.k8s:
+      kubeconfig: "{{ tailscale_kubeconfig_path }}"
+      state: "{{ tailscale_state }}"
+      definition:
+          apiVersion: v1
+          kind: Service
+          metadata:
+              name: "{{ item.name }}"
+              namespace: "{{ item.namespace }}"
+              annotations:
+                  tailscale.com/proxy-group: "{{ item.proxy_group }}"
+                  tailscale.com/tailnet-fqdn: "{{ item.fqdn | default(omit) }}"
+                  tailscale.com/tailnet-ip: "{{ item.ip | default(omit) }}"
+          spec:
+              type: ExternalName
+              externalName: placeholder
+              ports: "{{ item.ports }}"
+  loop: "{{ tailscale_egress_services }}"
+  when: tailscale_egress_services | length > 0
+  tags:
+      - tailscale
+      - tailscale-egress

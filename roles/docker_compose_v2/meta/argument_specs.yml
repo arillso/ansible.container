@@ -1,225 +1,225 @@
 ---
 argument_specs:
-  main:
-    short_description: Configure and manage Docker Compose environment using Ansible
-    description:
-      - This spec outlines parameters for configuring Docker Compose with Ansible.
-      - It includes Docker Compose version, package names, directory paths, configuration methods, and project name.
-
-    options:
-      docker_compose_v2_version:
-        type: str
+    main:
+        short_description: Configure and manage Docker Compose environment using Ansible
         description:
-          - Specifies the version of Docker Compose to install. Leave blank for the latest version.
-          - Specify a specific version to install an older or specific release.
-        default: ""
+            - This spec outlines parameters for configuring Docker Compose with Ansible.
+            - It includes Docker Compose version, package names, directory paths, configuration methods, and project name.
 
-      docker_compose_v2_packages:
-        type: list
-        elements: str
-        description:
-          - List of Docker Compose packages for installation. Appends the specified version to the package name if docker_compose_v2_version is set.
-          - Useful for ensuring consistency across environments by locking to a specific version.
-        default:
-          - name: "{{ 'docker-compose-plugin=' + docker_compose_v2_version if docker_compose_v2_version != '' else 'docker-compose-plugin' }}"
+        options:
+            docker_compose_v2_version:
+                type: str
+                description:
+                    - Specifies the version of Docker Compose to install. Leave blank for the latest version.
+                    - Specify a specific version to install an older or specific release.
+                default: ""
 
-      docker_compose_v2_directory_path:
-        type: str
-        description:
-          - Base directory path for storing Docker Compose configuration files.
-          - Ensure the specified path exists and is writable.
-        default: "/etc/docker/compose"
+            docker_compose_v2_packages:
+                type: list
+                elements: str
+                description:
+                    - List of Docker Compose packages for installation. Appends the specified version to the package name if docker_compose_v2_version is set.
+                    - Useful for ensuring consistency across environments by locking to a specific version.
+                default:
+                    - name: "{{ 'docker-compose-plugin=' + docker_compose_v2_version if docker_compose_v2_version != '' else 'docker-compose-plugin' }}"
 
-      docker_compose_v2_directory:
-        type: str
-        description:
-          - Full path to the Docker Compose project directory, constructed from docker_compose_v2_directory_path and docker_compose_v2_project.
-        default: "{{ docker_compose_v2_directory_path }}/{{ docker_compose_v2_project }}"
+            docker_compose_v2_directory_path:
+                type: str
+                description:
+                    - Base directory path for storing Docker Compose configuration files.
+                    - Ensure the specified path exists and is writable.
+                default: "/etc/docker/compose"
 
-      docker_compose_v2_use_file:
-        type: bool
-        description:
-          - "Boolean flag to choose Docker Compose execution method: 'true' for file-based, 'false' for inline configuration."
-          - "'true' uses a file for configuration, while 'false' utilizes an inline configuration."
-        default: true
+            docker_compose_v2_directory:
+                type: str
+                description:
+                    - Full path to the Docker Compose project directory, constructed from docker_compose_v2_directory_path and docker_compose_v2_project.
+                default: "{{ docker_compose_v2_directory_path }}/{{ docker_compose_v2_project }}"
 
-      docker_compose_v2_config:
-        type: raw
-        description:
-          - Inline configuration for Docker Compose, defined as an array of multi-line YAML strings.
-        default: []
+            docker_compose_v2_use_file:
+                type: bool
+                description:
+                    - "Boolean flag to choose Docker Compose execution method: 'true' for file-based, 'false' for inline configuration."
+                    - "'true' uses a file for configuration, while 'false' utilizes an inline configuration."
+                default: true
 
-      docker_compose_v2_project:
-        type: str
-        description:
-          - Name of the Docker Compose project, utilized to construct the full Docker Compose directory path.
-        default: ""
+            docker_compose_v2_config:
+                type: raw
+                description:
+                    - Inline configuration for Docker Compose, defined as an array of multi-line YAML strings.
+                default: []
 
-      docker_compose_v2_api_version:
-        type: str
-        description:
-          - Docker API version to use. Set to 'auto' for automatic selection of the latest supported version.
-          - "'auto' automatically selects the latest supported API version."
-        default: "auto"
+            docker_compose_v2_project:
+                type: str
+                description:
+                    - Name of the Docker Compose project, utilized to construct the full Docker Compose directory path.
+                default: ""
 
-      docker_compose_v2_ca_cert:
-        type: str
-        description:
-          - Path to the CA certificate for server verification.
+            docker_compose_v2_api_version:
+                type: str
+                description:
+                    - Docker API version to use. Set to 'auto' for automatic selection of the latest supported version.
+                    - "'auto' automatically selects the latest supported API version."
+                default: "auto"
 
-      docker_compose_v2_client_cert:
-        type: str
-        description:
-          - Path to the client's TLS certificate for Docker daemon communication.
+            docker_compose_v2_ca_cert:
+                type: str
+                description:
+                    - Path to the CA certificate for server verification.
 
-      docker_compose_v2_client_key:
-        type: str
-        description:
-          - Path to the client's TLS key for Docker daemon communication.
+            docker_compose_v2_client_cert:
+                type: str
+                description:
+                    - Path to the client's TLS certificate for Docker daemon communication.
 
-      docker_compose_v2_debug:
-        type: bool
-        description:
-          - Enable or disable debug mode.
-        default: false
+            docker_compose_v2_client_key:
+                type: str
+                description:
+                    - Path to the client's TLS key for Docker daemon communication.
 
-      docker_compose_v2_dependencies:
-        type: bool
-        description:
-          - Include or exclude linked services.
-        default: true
+            docker_compose_v2_debug:
+                type: bool
+                description:
+                    - Enable or disable debug mode.
+                default: false
 
-      docker_compose_v2_docker_host:
-        type: str
-        description:
-          - Docker host URL or Unix socket path for API connection. Defaults to the standard Unix socket.
-        default: "unix:///var/run/docker.sock"
+            docker_compose_v2_dependencies:
+                type: bool
+                description:
+                    - Include or exclude linked services.
+                default: true
 
-      docker_compose_v2_env_file:
-        type: str
-        description:
-          - Custom path to an environment file, relative to the project source directory.
+            docker_compose_v2_docker_host:
+                type: str
+                description:
+                    - Docker host URL or Unix socket path for API connection. Defaults to the standard Unix socket.
+                default: "unix:///var/run/docker.sock"
 
-      docker_compose_v2_files:
-        type: list
-        elements: str
-        description:
-          - List of Compose file names, relative to project_src, to override default docker-compose.yml.
+            docker_compose_v2_env_file:
+                type: str
+                description:
+                    - Custom path to an environment file, relative to the project source directory.
 
-      docker_compose_v2_hostname_check:
-        type: bool
-        description:
-          - Check Docker daemon's hostname against the name provided in the client certificate. Default is 'false'.
-        default: false
+            docker_compose_v2_files:
+                type: list
+                elements: str
+                description:
+                    - List of Compose file names, relative to project_src, to override default docker-compose.yml.
 
-      docker_compose_v2_nocache:
-        type: bool
-        description:
-          - Control the use of cache during the image build. Set to 'true' to ignore cache.
-        default: false
+            docker_compose_v2_hostname_check:
+                type: bool
+                description:
+                    - Check Docker daemon's hostname against the name provided in the client certificate. Default is 'false'.
+                default: false
 
-      docker_compose_v2_profiles:
-        type: list
-        elements: str
-        description:
-          - List of profiles to enable when starting services, applicable for docker-compose v1.28.0 or later.
+            docker_compose_v2_nocache:
+                type: bool
+                description:
+                    - Control the use of cache during the image build. Set to 'true' to ignore cache.
+                default: false
 
-      docker_compose_v2_project_name:
-        type: str
-        description:
-          - Custom name for the Docker Compose project. If not set, the default name is derived from the project directory.
+            docker_compose_v2_profiles:
+                type: list
+                elements: str
+                description:
+                    - List of profiles to enable when starting services, applicable for docker-compose v1.28.0 or later.
 
-      docker_compose_v2_pull:
-        description:
-          - Always pull images before starting the application. Set to 'true' to enable.
+            docker_compose_v2_project_name:
+                type: str
+                description:
+                    - Custom name for the Docker Compose project. If not set, the default name is derived from the project directory.
 
-      docker_compose_v2_recreate:
-        type: str
-        description:
-          - "Strategy for container recreation: 'always', 'never', or 'smart' (default)."
-        default: "smart"
+            docker_compose_v2_pull:
+                description:
+                    - Always pull images before starting the application. Set to 'true' to enable.
 
-      docker_compose_v2_remove_images:
-        type: str
-        description:
-          - Option to remove images when state is 'absent'. Choices are 'all' or 'local'.
+            docker_compose_v2_recreate:
+                type: str
+                description:
+                    - "Strategy for container recreation: 'always', 'never', or 'smart' (default)."
+                default: "smart"
 
-      docker_compose_v2_remove_orphans:
-        type: bool
-        description:
-          - Remove containers for services not defined in the current Compose file. Default is 'false'.
-          - Useful for cleaning up containers that are no longer needed.
-        default: false
+            docker_compose_v2_remove_images:
+                type: str
+                description:
+                    - Option to remove images when state is 'absent'. Choices are 'all' or 'local'.
 
-      docker_compose_v2_remove_volumes:
-        type: bool
-        description:
-          - Remove data volumes when state is 'absent'. Default is 'false'.
-        default: false
+            docker_compose_v2_remove_orphans:
+                type: bool
+                description:
+                    - Remove containers for services not defined in the current Compose file. Default is 'false'.
+                    - Useful for cleaning up containers that are no longer needed.
+                default: false
 
-      docker_compose_v2_restarted:
-        type: bool
-        description:
-          - Restart all containers when state is 'present'. Default is 'false'.
-        default: false
+            docker_compose_v2_remove_volumes:
+                type: bool
+                description:
+                    - Remove data volumes when state is 'absent'. Default is 'false'.
+                default: false
 
-      docker_compose_v2_scale:
-        type: dict
-        description:
-          - "Dictionary defining service scaling: service name as key, number of containers as value."
+            docker_compose_v2_restarted:
+                type: bool
+                description:
+                    - Restart all containers when state is 'present'. Default is 'false'.
+                default: false
 
-      docker_compose_v2_services:
-        type: list
-        elements: str
-        description:
-          - List of specific services to operate on. If empty, applies to all services in the Compose file.
+            docker_compose_v2_scale:
+                type: dict
+                description:
+                    - "Dictionary defining service scaling: service name as key, number of containers as value."
 
-      docker_compose_v2_ssl_version:
-        type: str
-        description:
-          - Specify a valid SSL version number for secure communication. Uses the default value determined by the SSL Python module if not set.
+            docker_compose_v2_services:
+                type: list
+                elements: str
+                description:
+                    - List of specific services to operate on. If empty, applies to all services in the Compose file.
 
-      docker_compose_v2_state:
-        type: str
-        description:
-          - "Desired state of the Docker Compose project: 'present' (default) or 'absent'."
-          - "'present' ensures the project is running, 'absent' removes it."
-        default: "present"
+            docker_compose_v2_ssl_version:
+                type: str
+                description:
+                    - Specify a valid SSL version number for secure communication. Uses the default value determined by the SSL Python module if not set.
 
-      docker_compose_v2_stopped:
-        type: bool
-        description:
-          - Stop all containers when state is 'present'. Default is 'false'.
-        default: false
+            docker_compose_v2_state:
+                type: str
+                description:
+                    - "Desired state of the Docker Compose project: 'present' (default) or 'absent'."
+                    - "'present' ensures the project is running, 'absent' removes it."
+                default: "present"
 
-      docker_compose_v2_timeout:
-        type: int
-        description:
-          - Timeout in seconds for container shutdown operations. Set a specific value to override the default timeout.
+            docker_compose_v2_stopped:
+                type: bool
+                description:
+                    - Stop all containers when state is 'present'. Default is 'false'.
+                default: false
 
-      docker_compose_v2_tls:
-        type: bool
-        description:
-          - Use TLS for API connection without verifying the Docker host server's authenticity. Default is 'false'.
-        default: false
+            docker_compose_v2_timeout:
+                type: int
+                description:
+                    - Timeout in seconds for container shutdown operations. Set a specific value to override the default timeout.
 
-      docker_compose_v2_tls_hostname:
-        type: str
-        description:
-          - Expected hostname of the Docker Host server for TLS verification.
+            docker_compose_v2_tls:
+                type: bool
+                description:
+                    - Use TLS for API connection without verifying the Docker host server's authenticity. Default is 'false'.
+                default: false
 
-      docker_compose_v2_validate_certs:
-        type: bool
-        description:
-          - Verify the Docker host server's authenticity when using TLS. Default is 'false'.
-        default: false
+            docker_compose_v2_tls_hostname:
+                type: str
+                description:
+                    - Expected hostname of the Docker Host server for TLS verification.
 
-      docker_compose_v2_cli_context:
-        type: str
-        description:
-          - Specify the Docker CLI context to use with Docker Compose v2.
+            docker_compose_v2_validate_certs:
+                type: bool
+                description:
+                    - Verify the Docker host server's authenticity when using TLS. Default is 'false'.
+                default: false
 
-      docker_compose_v2_docker_cli:
-        type: str
-        description:
-          - Path to the Docker CLI executable, if not in standard PATH.
+            docker_compose_v2_cli_context:
+                type: str
+                description:
+                    - Specify the Docker CLI context to use with Docker Compose v2.
+
+            docker_compose_v2_docker_cli:
+                type: str
+                description:
+                    - Path to the Docker CLI executable, if not in standard PATH.

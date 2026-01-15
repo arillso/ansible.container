@@ -1,0 +1,29 @@
+---
+# Tailscale Kubernetes Resources - Main Tasks
+
+- name: Manage Tailscale ProxyGroups
+  ansible.builtin.include_tasks: proxygroups.yml
+  when:
+      - tailscale_proxygroups is defined
+      - tailscale_proxygroups | length > 0
+  tags:
+      - tailscale
+      - tailscale-proxygroups
+
+- name: Manage Tailscale Ingress Services
+  ansible.builtin.include_tasks: ingress_services.yml
+  when:
+      - tailscale_ingress_services is defined
+      - tailscale_ingress_services | length > 0
+  tags:
+      - tailscale
+      - tailscale-ingress
+
+- name: Manage Tailscale Egress Services
+  ansible.builtin.include_tasks: egress_services.yml
+  when:
+      - tailscale_egress_services is defined
+      - tailscale_egress_services | length > 0
+  tags:
+      - tailscale
+      - tailscale-egress

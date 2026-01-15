@@ -1,41 +1,42 @@
 ---
-docker_version: "" # Default setting: Install latest Docker version unless specified.
+# renovate: datasource=github-releases depName=moby/moby
+docker_version: "27.5.1"
 
 docker_daemon:
-  log-driver: journald # Configures journald as the log driver for Docker daemon.
-  live-restore: true # Enables Docker's live restore feature to keep containers running during daemon downtime.
+    log-driver: journald
+    live-restore: true
 
 docker_systemd_units:
-  - name: docker-prune # Defines a systemd service for Docker image pruning.
-    type: service # Specifies this unit is a service.
-    systemd_unit_generic_options:
-      - "Description=Docker Image Prune Service" # Description of the service.
-    systemd_unit_options:
-      - "Type=oneshot" # Service type is oneshot, meaning it runs once and then exits.
-      - "ExecStart=/usr/bin/docker system prune -af --filter 'until=1h'" # Command to prune Docker images older than 1 hour.
+    - name: docker-prune
+      type: service
+      systemd_unit_generic_options:
+          - "Description=Docker Image Prune Service"
+      systemd_unit_options:
+          - "Type=oneshot"
+          - "ExecStart=/usr/bin/docker system prune -af --filter 'until=1h'"
 
-  - name: docker-prune # Defines a systemd timer for the prune service.
-    type: timer # Specifies this unit is a timer.
-    systemd_unit_generic_options:
-      - "Description=Run docker image prune regularly" # Description of the timer.
-    systemd_unit_options:
-      - "OnCalendar=*:0/5" # Schedules the timer to run every 5 minutes.
-      - "Persistent=true" # Ensures missed runs are executed when the timer is activated.
+    - name: docker-prune
+      type: timer
+      systemd_unit_generic_options:
+          - "Description=Run docker image prune regularly"
+      systemd_unit_options:
+          - "OnCalendar=*:0/5"
+          - "Persistent=true"
 
-  - name: docker-prune-volumes # Systemd service for pruning Docker volumes.
-    type: service # Specifies this unit is a service.
-    systemd_unit_generic_options:
-      - "Description=Docker Image Prune Service" # Description of the service.
-    systemd_unit_options:
-      - "Type=oneshot" # Service type is oneshot.
-      - "ExecStart=/usr/bin/docker system prune -af --volumes" # Command to prune Docker volumes.
+    - name: docker-prune-volumes
+      type: service
+      systemd_unit_generic_options:
+          - "Description=Docker Image Prune Service"
+      systemd_unit_options:
+          - "Type=oneshot"
+          - "ExecStart=/usr/bin/docker system prune -af --volumes"
 
-  - name: docker-prune-volumes # Timer for pruning Docker volumes.
-    type: timer # Specifies this unit is a timer.
-    systemd_unit_generic_options:
-      - "Description=Run docker image prune volumes regularly" # Description of the timer.
-    systemd_unit_options:
-      - "OnCalendar=weekly" # Schedules the timer to run weekly.
-      - "Persistent=true" # Ensures missed runs are executed when the timer is activated.
-    systemd_unit_install_options:
-      - "WantedBy=timers.target" # Specifies the systemd target that wants this unit.
+    - name: docker-prune-volumes
+      type: timer
+      systemd_unit_generic_options:
+          - "Description=Run docker image prune volumes regularly"
+      systemd_unit_options:
+          - "OnCalendar=weekly"
+          - "Persistent=true"
+      systemd_unit_install_options:
+          - "WantedBy=timers.target"

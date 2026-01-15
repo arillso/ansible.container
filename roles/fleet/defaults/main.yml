@@ -1,0 +1,91 @@
+---
+fleet_enable_gitrepos: false
+fleet_enable_bundles: false
+fleet_gitrepos: []
+# Example configuration:
+# - name: "my-app-gitrepo"
+#   namespace: "fleet-default"
+#   repository: "https://github.com/example/my-app.git"
+#   branch: "main"
+#   git_username: "myuser"           # für Token-Auth
+#   git_token: "mytoken"             # für Token-Auth
+#   git_ssh_private_key: "..."       # für SSH-Auth
+#   git_known_hosts: "..."           # optional für SSH-Auth
+#   paths:
+#     - "manifests/"
+#   targets:
+#     - name: "production"
+#       cluster_selector:
+#         matchLabels:
+#           env: "prod"
+#   helm:
+#     chart: "./chart"
+#     values_files:
+#       - "values.yaml"
+#   service_account: "fleet-gitrepo-sa"
+#   force_update: false
+#   polling_interval: "15s"
+
+# Fleet Bundles configuration
+fleet_bundles: []
+# Example configuration:
+# - name: "my-app-bundle"
+#   namespace: "fleet-default"
+#   resources:
+#     - content: |
+#         apiVersion: apps/v1
+#         kind: Deployment
+#         metadata:
+#           name: nginx
+#         spec:
+#           replicas: 1
+#           selector:
+#             matchLabels:
+#               app: nginx
+#           template:
+#             metadata:
+#               labels:
+#                 app: nginx
+#             spec:
+#               containers:
+#               - name: nginx
+#                 image: nginx:latest
+#   targets:
+#     - name: "development"
+#       cluster_selector:
+#         matchLabels:
+#           env: "dev"
+
+# Fleet Cluster configuration
+fleet_clusters: []
+# Example configuration:
+# - name: "production-cluster"
+#   namespace: "fleet-default"
+#   labels:
+#     env: "prod"
+#     region: "eu-central-1"
+#   kubeconfig_secret: "prod-cluster-kubeconfig"
+
+# Fleet Workspace configuration
+fleet_workspaces: []
+# Example configuration:
+# - name: "production-workspace"
+#   labels:
+#     env: "prod"
+#   annotations:
+#     description: "Production environment workspace"
+
+# Global Fleet defaults
+fleet_defaults:
+    namespace: "fleet-default"
+    create_namespace: true
+    polling_interval: "15s"
+    force_update: false
+    service_account: "default"
+
+fleet_api_version: "fleet.cattle.io/v1alpha1"
+fleet_state: "present"
+fleet_validate_manifests: true
+fleet_dry_run: false
+fleet_secret_timeout: 60
+fleet_resource_timeout: 300

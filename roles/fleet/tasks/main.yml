@@ -1,0 +1,44 @@
+---
+# Main tasks for Fleet role
+
+- name: "Include Fleet Secrets management"
+  ansible.builtin.include_tasks: auth.yml
+  when: fleet_enable_gitrepos | bool
+  tags:
+      - fleet
+      - fleet-secrets
+
+- name: "Include Fleet GitRepos management"
+  ansible.builtin.include_tasks: gitrepos.yml
+  when: fleet_enable_gitrepos | bool
+  tags:
+      - fleet
+      - fleet-gitrepos
+
+- name: "Include Fleet Bundles management"
+  ansible.builtin.include_tasks: bundles.yml
+  when: fleet_enable_bundles | bool
+  tags:
+      - fleet
+      - fleet-bundles
+
+- name: "Include Fleet Clusters management"
+  ansible.builtin.include_tasks: clusters.yml
+  when: fleet_clusters | length > 0
+  tags:
+      - fleet
+      - fleet-clusters
+
+- name: "Include Fleet Workspaces management"
+  ansible.builtin.include_tasks: workspaces.yml
+  when: fleet_workspaces | length > 0
+  tags:
+      - fleet
+      - fleet-workspaces
+
+- name: "Include Fleet ClusterRegistrationToken management"
+  ansible.builtin.include_tasks: registration_tokens.yml
+  when: fleet_registration_tokens | length > 0
+  tags:
+      - fleet
+      - fleet-registration-tokens

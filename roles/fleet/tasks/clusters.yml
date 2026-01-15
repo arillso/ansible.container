@@ -1,0 +1,55 @@
+---
+# Fleet Clusters management tasks
+
+- name: "Create namespace for Fleet Clusters"
+  kubernetes.core.k8s:
+      kubeconfig: "{{ fleet_kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
+      name: "{{ item.namespace | default(fleet_defaults.namespace) }}"
+      api_version: v1
+      kind: Namespace
+      state: "{{ fleet_state }}"
+  loop: "{{ fleet_clusters }}"
+  when:
+      - fleet_clusters | length > 0
+      - (item.create_namespace | default(fleet_defaults.create_namespace)) | bool
+      - fleet_state == "present"
+  tags:
+      - fleet
+      - fleet-clusters
+      - fleet-namespace
+
+- name: "Manage Fleet Clusters"
+  kubernetes.core.k8s:
+      kubeconfig: "{{ fleet_kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
+      api_version: "{{ fleet_api_version }}"
+      kind: Cluster
+      name: "{{ item.name }}"
+      namespace: "{{ item.namespace | default(fleet_defaults.namespace) }}"
+      state: "{{ fleet_state }}"
+      definition:
+          metadata:
+              labels: "{{ item.labels | combine({'app.kubernetes.io/managed-by': 'ansible', 'app.kubernetes.io/component': 'fleet-cluster'}) }}"
+              annotations: "{{ item.annotations | default(omit) }}"
+          # yamllint disable-line rule:line-length
+          spec: "{{ omit if (item.kubeconfig_secret is not defined) else {'kubeConfigSecret': item.kubeconfig_secret, 'kubeConfigSecretNamespace': item.kubeconfig_secret_namespace | default(item.namespace | default(fleet_defaults.namespace)), 'clientID': item.client_id | default(''), 'agentEnvVars': item.agent_env_vars | default([]), 'agentNamespace': item.agent_namespace | default('fleet-system'), 'agentTLSMode': item.agent_tls_mode | default('system-store'), 'agentPrivateCA': item.agent_private_ca | default(''), 'privateRepoURL': item.private_repo_url | default(''), 'templateValues': item.template_values | default({})} }}"
+      wait: "{{ omit if (item.kubeconfig_secret is not defined) else true }}"
+      wait_condition: "{{ omit if (item.kubeconfig_secret is not defined) else {'type': 'Ready', 'status': 'True'} }}"
+      wait_timeout: "{{ omit if (item.kubeconfig_secret is not defined) else 300 }}"
+  loop: "{{ fleet_clusters }}"
+  when:
+      - fleet_clusters | length > 0
+  register: fleet_cluster_results
+  tags:
+      - fleet
+      - fleet-clusters
+
+- name: "Display Fleet Cluster registration results"
+  ansible.builtin.debug:
+      msg: "Cluster '{{ item.item.name }}' in namespace '{{ item.item.namespace | default(fleet_defaults.namespace) }}' - State: {{ fleet_state }}"
+  loop: "{{ fleet_cluster_results.results | default([]) }}"
+  when:
+      - fleet_cluster_results is defined
+      - not ansible_check_mode
+  tags:
+      - fleet
+      - fleet-clusters

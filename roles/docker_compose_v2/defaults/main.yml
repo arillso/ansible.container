@@ -1,125 +1,41 @@
-# Specifies the version of Docker Compose to install. Leave blank for the latest version.
-# Specify a specific version to install an older or specific release.
-docker_compose_v2_version: ""
-
-# List of Docker Compose packages for installation. Appends the specified version to the package name if docker_compose_v2_version is set.
-# Useful for ensuring consistency across environments by locking to a specific version.
+---
+# renovate: datasource=github-releases depName=docker/compose
+docker_compose_v2_version: "2.32.4"
 docker_compose_v2_packages:
-  - name: "{{ 'docker-compose-plugin=' + docker_compose_v2_version if docker_compose_v2_version != '' else 'docker-compose-plugin' }}"
-
-# Base directory path for storing Docker Compose configuration files.
-# Ensure the specified path exists and is writable.
+    - name: "{{ 'docker-compose-plugin=' + docker_compose_v2_version if docker_compose_v2_version != '' else 'docker-compose-plugin' }}"
 docker_compose_v2_directory_path: "/etc/docker/compose"
-
-# Full path to the Docker Compose project directory, constructed from docker_compose_v2_directory_path and docker_compose_v2_project.
 docker_compose_v2_directory: "{{ docker_compose_v2_directory_path }}/{{ docker_compose_v2_project }}"
-
-# Boolean flag to choose Docker Compose execution method: 'true' for file-based, 'false' for inline configuration.
-# 'true' uses a file for configuration, while 'false' utilizes an inline configuration.
 docker_compose_v2_use_file: true
-
-# Inline configuration for Docker Compose, defined as an array of multi-line YAML strings.
 docker_compose_v2_config: []
-
-# Name of the Docker Compose project, utilized to construct the full Docker Compose directory path.
 docker_compose_v2_project: ""
-
-# Docker API version to use. Set to 'auto' for automatic selection of the latest supported version.
-# 'auto' automatically selects the latest supported API version.
 docker_compose_v2_api_version: "auto"
-
-# Path to the CA certificate for server verification. If not set, default CA certificates are used.
 docker_compose_v2_ca_cert: "{{ omit }}"
-
-# Path to the client's TLS certificate for Docker daemon communication.
 docker_compose_v2_client_cert: "{{ omit }}"
-
-# Path to the client's TLS key for Docker daemon communication.
 docker_compose_v2_client_key: "{{ omit }}"
-
-# Enable or disable debug mode. Set to 'true' to activate.
 docker_compose_v2_debug: false
-
-# Include or exclude linked services. Set to 'true' to include.
 docker_compose_v2_dependencies: true
-
-# Docker host URL or Unix socket path for API connection. Defaults to the standard Unix socket.
 docker_compose_v2_docker_host: "unix:///var/run/docker.sock"
-
-# Custom path to an environment file, relative to the project source directory.
 docker_compose_v2_env_file: "{{ omit }}"
-
-# List of Compose file names, relative to project_src, to override default docker-compose.yml.
 docker_compose_v2_files: "{{ omit }}"
-
-# Check Docker daemon's hostname against the name provided in the client certificate. Default is 'false'.
 docker_compose_v2_hostname_check: false
-
-# Control the use of cache during the image build. Set to 'true' to ignore cache.
 docker_compose_v2_nocache: false
-
-# List of profiles to enable when starting services, applicable for docker-compose v1.28.0 or later.
 docker_compose_v2_profiles: "{{ omit }}"
-
-# Custom name for the Docker Compose project. If not set, the default name is derived from the project directory.
 docker_compose_v2_project_name: "{{ omit }}"
-
-# Set 'always' to pull images before starting, 'never' to skip, or 'if_not_present' for pulling if not local.
 docker_compose_v2_pull: policy
-
-# Strategy for container recreation: 'always', 'never', or 'smart' (default).
 docker_compose_v2_recreate: "auto"
-
-# Option to remove images when state is 'absent'. Choices are 'all' or 'local'.
 docker_compose_v2_remove_images: all
-
-# Remove containers for services not defined in the current Compose file. Default is 'false'.
-# Useful for cleaning up containers that are no longer needed.
 docker_compose_v2_remove_orphans: false
-
-# Remove data volumes when state is 'absent'. Default is 'false'.
 docker_compose_v2_remove_volumes: false
-
-# Restart all containers when state is 'present'. Default is 'false'.
 docker_compose_v2_restarted: false
-
-# Dictionary defining service scaling: service name as key, number of containers as value.
-# docker_compose_v2_scale: "{{ omit }}"
-
-# List of specific services to operate on. If empty, applies to all services in the Compose file.
 docker_compose_v2_services: "{{ omit }}"
-
-# Specify a valid SSL version number for secure communication. Uses the default value determined by the SSL Python module if not set.
 docker_compose_v2_ssl_version: "{{ omit }}"
-
-# Desired state of the Docker Compose project: 'present' (default) or 'absent'.
-# 'present' ensures the project is running, 'absent' removes it.
 docker_compose_v2_state: "present"
-
-# Stop all containers when state is 'present'. Default is 'false'.
 docker_compose_v2_stopped: false
-
-# Timeout in seconds for container shutdown operations. Uses default docker-compose timeout if not set.
-# Set a specific value to override the default timeout.
 docker_compose_v2_timeout:
-
-# Use TLS for API connection without verifying the Docker host server's authenticity. Default is 'false'.
 docker_compose_v2_tls: false
-
-# Expected hostname of the Docker Host server for TLS verification. No default value.
 docker_compose_v2_tls_hostname: "{{ omit }}"
-
-# Verify the Docker host server's authenticity when using TLS. Default is 'false'.
 docker_compose_v2_validate_certs: false
-
-# Specify the Docker CLI context to use with Docker Compose v2.
 docker_compose_v2_cli_context: "{{ omit }}"
-
-# Path to the Docker CLI executable, if not in standard PATH.
 docker_compose_v2_docker_cli: "{{ omit }}"
-
-# Whether to build images before starting containers. This is used when docker compose up is run.
 docker_compose_v2_build: "{{ omit }}"
-
-# Use a CA certificate when performing server verification by providing the path to a CA certificate file.
 docker_compose_v2_ca_path: "{{ omit }}"

@@ -1,0 +1,79 @@
+---
+tailscale_kubeconfig_path: /etc/rancher/k3s/k3s.yaml
+tailscale_state: present
+
+# Tailscale ProxyGroups
+tailscale_proxygroups: []
+# Examples:
+# tailscale_proxygroups:
+#   - name: ingress-proxies
+#     namespace: tailscale
+#     type: ingress
+#     replicas: 2
+#     tags:
+#       - "tag:k8s-ingress"
+#     hostname_prefix: prod-ingress
+#   - name: egress-proxies
+#     namespace: tailscale
+#     type: egress
+#     replicas: 3
+#     tags:
+#       - "tag:k8s-egress"
+#   - name: k8s-api-proxy
+#     namespace: tailscale
+#     type: kube-apiserver
+#     replicas: 2
+#     tags:
+#       - "tag:k8s-api"
+#     hostname_prefix: k8s-api
+#     kube_apiserver:
+#       mode: auth
+
+# Tailscale Ingress Services (LoadBalancer/Ingress)
+tailscale_ingress_services: []
+# Examples:
+# tailscale_ingress_services:
+#   - name: my-app
+#     namespace: default
+#     type: loadbalancer
+#     proxy_group: ingress-proxies
+#     hostname: my-app
+#     selector:
+#       app: my-app
+#     ports:
+#       - name: http
+#         port: 80
+#         targetPort: 8080
+#   - name: my-app-ingress
+#     namespace: default
+#     type: ingress
+#     proxy_group: ingress-proxies
+#     tls:
+#       - hosts:
+#           - my-app
+#     default_backend:
+#       service:
+#         name: my-app
+#         port:
+#           number: 80
+
+# Tailscale Egress Services (ExternalName)
+tailscale_egress_services: []
+# Examples:
+# tailscale_egress_services:
+#   - name: internal-database
+#     namespace: default
+#     proxy_group: egress-proxies
+#     fqdn: database.tailnet-abc.ts.net
+#     ports:
+#       - name: postgres
+#         port: 5432
+#         protocol: TCP
+#   - name: legacy-server
+#     namespace: default
+#     proxy_group: egress-proxies
+#     ip: 100.100.100.50
+#     ports:
+#       - name: api
+#         port: 8080
+#         protocol: TCP

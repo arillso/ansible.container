@@ -1,0 +1,73 @@
+---
+# System Preparation Tasks for K3s
+# Prepares the system environment before K3s installation
+# Includes kernel modules, system dependencies, and network prerequisites
+
+- name: Ensure system dependencies are installed
+  ansible.builtin.package:
+      name: "{{ k3s_required_packages }}"
+      state: present
+  when: k3s_install_dependencies | bool
+  become: true
+
+- name: Load required kernel modules for container networking
+  community.general.modprobe:
+      name: "{{ item }}"
+      state: present
+  loop:
+      - br_netfilter
+      - overlay
+  become: true
+
+- name: Configure kernel modules to load at boot
+  ansible.builtin.lineinfile:
+      path: /etc/modules-load.d/k3s.conf
+      line: "{{ item }}"
+      create: true
+      mode: "0644"
+      owner: root
+      group: root
+  loop:
+      - br_netfilter
+      - overlay
+  become: true
+
+- name: Configure sysctl parameters for Kubernetes networking
+  ansible.posix.sysctl:
+      name: "{{ item.name }}"
+      value: "{{ item.value }}"
+      state: present
+      reload: true
+      sysctl_file: /etc/sysctl.d/99-k3s.conf
+  loop:
+      - { name: "net.bridge.bridge-nf-call-iptables", value: "1" }
+      - { name: "net.bridge.bridge-nf-call-ip6tables", value: "1" }
+      - { name: "net.ipv4.ip_forward", value: "1" }
+  become: true
+
+# - name: Create K3s configuration directories
+#   ansible.builtin.file:
+#       path: "{{ item }}"
+#       state: directory
+#       mode: "0755"
+#       owner: root
+#       group: root
+#   loop:
+#       - "{{ k3s_config_dir }}"
+#       - "{{ k3s_data_dir }}"
+#       - /etc/rancher
+#   become: true
+
+- name: Disable swap if enabled (Kubernetes requirement)
+  ansible.builtin.command: swapoff -a
+  become: true
+  when: ansible_swaptotal_mb > 0
+  changed_when: true
+
+- name: Comment out swap entries in /etc/fstab
+  ansible.builtin.replace:
+      path: /etc/fstab
+      regexp: '^([^#].*\sswap\s.*)$'
+      replace: '# \1'
+  become: true
+  when: ansible_swaptotal_mb > 0

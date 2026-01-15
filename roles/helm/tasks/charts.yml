@@ -1,0 +1,111 @@
+---
+# Helm Chart Deployment Tasks via helm.cattle.io/v1 CRDs
+# Enterprise-grade GitOps Helm deployment using Rancher's Helm Controller
+
+- name: "Validate Helm Controller CRD availability"
+  kubernetes.core.k8s_info:
+      api_version: apiextensions.k8s.io/v1
+      kind: CustomResourceDefinition
+      name: helmcharts.helm.cattle.io
+      kubeconfig: "{{ helm_kubeconfig_path }}"
+  register: helm_crd_check
+  run_once: true
+
+- name: "Fail if Helm Controller CRD is not available"
+  ansible.builtin.fail:
+      msg: "Helm Controller CRD 'helmcharts.helm.cattle.io' is not available. Ensure K3s Helm Controller is running."
+  when:
+      - helm_crd_check.resources | length == 0
+  run_once: true
+
+- name: "Create namespaces for Helm charts"
+  kubernetes.core.k8s:
+      name: "{{ item.namespace | default(helm_chart_defaults.namespace) }}"
+      api_version: v1
+      kind: Namespace
+      state: present
+      kubeconfig: "{{ helm_kubeconfig_path }}"
+  loop: "{{ helm_charts }}"
+  when:
+      - item.create_namespace | default(helm_chart_defaults.create_namespace) | bool
+      - item.namespace is defined or helm_chart_defaults.namespace != 'default'
+  run_once: true
+
+# Deploy all Helm charts
+- name: "Deploy Helm charts"
+  kubernetes.core.k8s:
+      state: present
+      kubeconfig: "{{ helm_kubeconfig_path }}"
+      definition:
+          apiVersion: helm.cattle.io/v1
+          kind: HelmChart
+          metadata:
+              name: "{{ item.name }}"
+              namespace: kube-system
+              labels:
+                  app.kubernetes.io/managed-by: "ansible-helm-role"
+                  app.kubernetes.io/component: "helm-chart"
+                  helm.cattle.io/bootstrap: "{{ item.bootstrap | default(false) | string }}"
+          spec:
+              chart: "{{ item.chart }}"
+              repo: "{{ helm_repositories[item.repository] | default(item.repo) | default(omit) }}"
+              version: "{{ item.version | default(omit) }}"
+              targetNamespace: "{{ item.namespace | default(helm_chart_defaults.namespace) }}"
+              createNamespace: "{{ item.create_namespace | default(helm_chart_defaults.create_namespace) }}"
+              timeout: "{{ item.timeout | default(helm_chart_defaults.timeout) }}"
+              valuesContent: "{{ item['values'] | to_nice_yaml if (item.get('values') and item['values'] | length > 0) else omit }}"
+              set: "{{ item.set | default(omit) }}"
+  loop: "{{ helm_charts }}"
+  when:
+      - helm_charts | length > 0
+  run_once: true
+  register: charts_deployment_result
+
+- name: "Wait for Helm charts to be ready"
+  kubernetes.core.k8s_info:
+      api_version: batch/v1
+      kind: Job
+      name: "helm-install-{{ item.name }}"
+      namespace: kube-system
+      kubeconfig: "{{ helm_kubeconfig_path }}"
+      wait: true
+      wait_condition:
+          type: "Complete"
+          status: "True"
+      wait_timeout: "{{ (item.timeout | default(helm_deployment_timeout) | regex_replace('([0-9]+)m', '\\1') | int) * 60 if 'm' in (item.timeout | default(helm_deployment_timeout) | string) else (item.timeout | default(helm_deployment_timeout) | int) }}"
+  loop: "{{ helm_charts }}"
+  when:
+      - helm_deployment_wait | bool
+      - charts_deployment_result is changed
+  run_once: true
+  retries: "{{ helm_validation_retries }}"
+  delay: "{{ helm_validation_delay }}"
+
+- name: "Display deployed Helm charts status"
+  kubernetes.core.k8s_info:
+      api_version: helm.cattle.io/v1
+      kind: HelmChart
+      namespace: kube-system
+      name: "{{ item.name }}"
+      kubeconfig: "{{ helm_kubeconfig_path }}"
+  loop: "{{ helm_charts }}"
+  when:
+      - helm_charts | length > 0
+  run_once: true
+  register: helm_charts_status
+
+- name: "Summary of Helm chart deployments"
+  ansible.builtin.debug:
+      msg: |
+          Helm Chart Deployment Summary:
+          {% for chart in helm_charts %}
+          - {{ chart.name }}:
+            * Namespace: {{ chart.namespace | default(helm_chart_defaults.namespace) }}
+            * Chart: {{ chart.chart }}
+            * Version: {{ chart.version | default('latest') }}
+            * Bootstrap: {{ chart.bootstrap | default(false) }}
+            * Repository: {{ chart.repository | default('default') }}
+          {% endfor %}
+  when:
+      - helm_charts | length > 0
+  run_once: true

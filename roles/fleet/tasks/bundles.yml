@@ -1,0 +1,94 @@
+---
+# Fleet Bundles management tasks
+
+- name: "Create namespace for Fleet Bundles"
+  kubernetes.core.k8s:
+      name: "{{ item.namespace | default(fleet_defaults.namespace) }}"
+      api_version: v1
+      kind: Namespace
+      state: "{{ fleet_state }}"
+      kubeconfig: "{{ fleet_kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
+  loop: "{{ fleet_bundles }}"
+  when:
+      - fleet_bundles | length > 0
+      - (item.create_namespace | default(fleet_defaults.create_namespace)) | bool
+      - fleet_state == "present"
+  tags:
+      - fleet
+      - fleet-bundles
+      - fleet-namespace
+
+- name: "Manage Fleet Bundles"
+  kubernetes.core.k8s:
+      definition:
+          apiVersion: "{{ fleet_api_version }}"
+          kind: Bundle
+          metadata:
+              name: "{{ item.name }}"
+              namespace: "{{ item.namespace | default(fleet_defaults.namespace) }}"
+              labels: "{{ item.labels | combine({'app.kubernetes.io/managed-by': 'ansible', 'app.kubernetes.io/component': 'fleet-bundle'}) }}"
+              annotations: "{{ item.annotations | default({}) }}"
+          spec:
+              namespace: "{{ item.target_namespace | default(item.namespace | default(fleet_defaults.namespace)) }}"
+              defaultNamespace: "{{ item.default_namespace | default('') }}"
+              serviceAccount: "{{ item.service_account | default(fleet_defaults.service_account) }}"
+              forceSyncGeneration: "{{ item.force_update | default(fleet_defaults.force_update) | int }}"
+              paused: "{{ item.paused | default(false) | bool }}"
+              rolloutStrategy:
+                  maxUnavailable: "{{ item.rollout_strategy.max_unavailable | default(1) }}"
+                  maxUnavailablePartitions: "{{ item.rollout_strategy.max_unavailable_partitions | default(0) }}"
+                  autoPartitionSize: "{{ item.rollout_strategy.auto_partition_size | default(0) }}"
+                  partitions: "{{ item.rollout_strategy.partitions | default([]) }}"
+              targets: "{{ item.targets | default([]) }}"
+              targetRestrictions: "{{ item.target_restrictions | default([]) }}"
+              dependsOn: "{{ item.depends_on | default([]) }}"
+              resources: "{{ item.resources | default([]) }}"
+              helm:
+                  chart: "{{ item.helm.chart | default('') }}"
+                  repo: "{{ item.helm.repo | default('') }}"
+                  version: "{{ item.helm.version | default('') }}"
+                  releaseName: "{{ item.helm.release_name | default(item.name) }}"
+                  values: "{{ item.helm.values | default({}) }}"
+                  valuesFiles: "{{ item.helm.values_files | default([]) }}"
+                  valuesFrom: "{{ item.helm.values_from | default([]) }}"
+                  force: "{{ item.helm.force | default(false) | bool }}"
+                  takeOwnership: "{{ item.helm.take_ownership | default(false) | bool }}"
+                  maxHistory: "{{ item.helm.max_history | default(5) | int }}"
+                  timeout: "{{ item.helm.timeout | default('5m') }}"
+                  timeoutForceDelete: "{{ item.helm.timeout_force_delete | default(false) | bool }}"
+                  atomic: "{{ item.helm.atomic | default(false) | bool }}"
+                  disablePreProcess: "{{ item.helm.disable_pre_process | default(false) | bool }}"
+              kustomize:
+                  dir: "{{ item.kustomize.dir | default('') }}"
+              yodaMode:
+                  enabled: "{{ item.yoda_mode.enabled | default(false) | bool }}"
+              correctDrift:
+                  enabled: "{{ item.correct_drift.enabled | default(false) | bool }}"
+                  force: "{{ item.correct_drift.force | default(false) | bool }}"
+                  keepFailHistory: "{{ item.correct_drift.keep_fail_history | default(1) | int }}"
+              keepResources: "{{ item.keep_resources | default(false) | bool }}"
+              diff:
+                  comparePatches: "{{ item.diff.compare_patches | default([]) }}"
+      state: "{{ fleet_state }}"
+      wait: true
+      wait_condition:
+          type: Ready
+          status: "True"
+      wait_timeout: 300
+  loop: "{{ fleet_bundles }}"
+  when: fleet_bundles | length > 0
+  register: fleet_bundle_results
+  tags:
+      - fleet
+      - fleet-bundles
+
+- name: "Display Fleet Bundle deployment results"
+  ansible.builtin.debug:
+      msg: "Bundle '{{ item.item.name }}' in namespace '{{ item.item.namespace | default(fleet_defaults.namespace) }}' - State: {{ fleet_state }}"
+  loop: "{{ fleet_bundle_results.results | default([]) }}"
+  when:
+      - fleet_bundle_results is defined
+      - not ansible_check_mode
+  tags:
+      - fleet
+      - fleet-bundles

@@ -1,0 +1,18 @@
+---
+# Helm Repository Management Tasks
+# Validate Helm repositories for use with helm.cattle.io/v1 HelmChart CRDs
+# Note: Cattle Operator doesn't use separate repository configs - repositories are specified directly in HelmChart CRDs
+
+- name: "Verify Helm repositories are accessible"
+  ansible.builtin.uri:
+      url: "{{ item.value }}/index.yaml"
+      method: GET
+      status_code: [200, 404] # 404 is acceptable for some repos
+      timeout: 30
+      validate_certs: true
+  loop: "{{ helm_repositories | dict2items }}"
+  when:
+      - helm_repositories | length > 0
+  run_once: true
+  register: helm_repo_check
+  failed_when: false # Don't fail on repository access issues

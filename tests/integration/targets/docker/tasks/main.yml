@@ -1,0 +1,73 @@
+---
+# Integration tests for docker role
+
+- name: Include docker role
+  ansible.builtin.include_role:
+      name: arillso.container.docker
+
+- name: Verify Docker is installed
+  ansible.builtin.command: docker --version
+  register: docker_version
+  changed_when: false
+
+- name: Display Docker version
+  ansible.builtin.debug:
+      var: docker_version.stdout
+
+- name: Check Docker service is running
+  ansible.builtin.service:
+      name: docker
+      state: started
+  check_mode: true
+  register: docker_service
+  failed_when: docker_service.changed
+
+- name: Verify Docker daemon is responding
+  ansible.builtin.command: docker info
+  register: docker_info
+  changed_when: false
+
+- name: Test Docker functionality with hello-world
+  community.docker.docker_container:
+      name: test-hello-world
+      image: hello-world:latest
+      state: started
+      detach: false
+      cleanup: true
+      auto_remove: true
+  register: docker_test
+
+- name: Verify Docker can pull and run containers
+  ansible.builtin.assert:
+      that:
+          - docker_test is succeeded
+      fail_msg: "Docker failed to run hello-world container"
+      success_msg: "Docker is working correctly"
+
+- name: Check Docker daemon configuration
+  ansible.builtin.stat:
+      path: /etc/docker/daemon.json
+  register: daemon_config
+
+- name: Verify daemon.json exists
+  ansible.builtin.assert:
+      that:
+          - daemon_config.stat.exists
+      fail_msg: "Docker daemon configuration not found"
+      success_msg: "Docker daemon configuration exists"
+
+- name: Read daemon configuration
+  ansible.builtin.slurp:
+      path: /etc/docker/daemon.json
+  register: daemon_content
+  when: daemon_config.stat.exists
+
+- name: Parse daemon configuration
+  ansible.builtin.set_fact:
+      daemon_json: "{{ daemon_content.content | b64decode | from_json }}"
+  when: daemon_config.stat.exists
+
+- name: Display daemon configuration
+  ansible.builtin.debug:
+      var: daemon_json
+  when: daemon_config.stat.exists

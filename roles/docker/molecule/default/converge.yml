@@ -1,0 +1,17 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+      docker_daemon_config:
+          log-driver: json-file
+          log-opts:
+              max-size: "10m"
+              max-file: "3"
+          storage-driver: overlay2
+          features:
+              buildkit: true
+  tasks:
+      - name: Include docker role
+        ansible.builtin.include_role:
+            name: arillso.container.docker

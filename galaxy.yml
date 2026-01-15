@@ -5,23 +5,23 @@ version: 0.0.5
 readme: README.md
 
 authors:
-  - Simon Baerlocher (@sbaerlocher) <s.baerlocher@sbaerlocher.ch>
-  - arillso (@arillso) <hello@arillso.io>
+    - Simon Baerlocher (@sbaerlocher) <s.baerlocher@sbaerlocher.ch>
+    - arillso (@arillso) <hello@arillso.io>
 
 description: "This is an Ansible collection for configuring containers."
 
 license:
-  - MIT
+    - MIT
 
 tags:
-  - container
-  - apt
-  - containerd
-  - linux
+    - container
+    - apt
+    - containerd
+    - linux
 
 dependencies:
-  arillso.system: ">=0.0.17"
-  community.docker: ">=3.4.11"
+    arillso.system: ">=0.0.17"
+    community.docker: ">=3.4.11"
 
 repository: https://github.com/arillso/ansible.container
 
