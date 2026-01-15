@@ -7,60 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-01-15
+
 ### Added
 
-- Added LICENSE (MIT)
-- Added .editorconfig for editor consistency
-- Added .gitignore for repository cleanliness
-- Added .github/CODEOWNERS
-- Added .github/renovate.json for automated dependency updates
-- Added AGENTS.md for AI agent documentation
-- Added CLAUDE.md for Claude integration
-- Added CHANGELOG.md for version tracking
-- Added comprehensive README with all 8 roles
-- Added CONTRIBUTING.md for development guidelines
-- Added integration tests for Docker and K3s roles
+- Added new K3s role with comprehensive Kubernetes support (v1.33.3+k3s1)
+- Added new Helm role for Kubernetes package management
+- Added new Fleet role for Rancher Fleet GitOps management
+- Added new Tailscale role with support for all ProxyGroup types (ingress, egress, kube-apiserver)
+- Added GitHub issue templates (bug report, documentation, feature request)
+- Added GitHub pull request template
+- Added comprehensive documentation (AGENTS.md, CONTRIBUTING.md, CLAUDE.md)
+- Added filter plugins for Fleet management with 15 unit tests
+- Added CI/CD workflow with integrated linting and testing
 - Added Molecule tests for Docker and K3s roles
-- Added unit tests for filter plugins (15 test cases)
-- Added DOCUMENTATION.yml for filter plugins
-- Added pytest configuration (pytest.ini)
-- Added support for all three Tailscale ProxyGroup types (ingress, egress, kube-apiserver)
-- Added tailscale_ingress_services for LoadBalancer and Ingress resources
-- Added IP-based access support for Tailscale egress services
+- Added integration tests for Docker and K3s roles
+- Added argument_specs.yml for all roles with complete variable documentation
+- Added K3s security hardening (SELinux, AppArmor) with auto-detection
+- Added K3s auto-facts collection with caching
+- Added K3s private registry configuration support
+- Added logrotate configuration for K3s logs
+- Added EditorConfig for consistent code style
+- Added yamllint configuration
+- Added pytest configuration
+- Added Renovate for automated dependency management
+- Added CODEOWNERS file
 
 ### Changed
 
-- Updated main README to include all roles (docker, docker_compose, docker_compose_v2, docker_login, k3s, fleet, helm, tailscale)
-- Updated requirements.txt with comprehensive development dependencies
-- Updated filter plugin README with YAML documentation reference
+- Updated README to include all 8 roles
 - Updated copyright years to 2023-2026 across all files
-- Updated example dates in K3s autonomous deployment documentation to 2026
-- Improved inline documentation consistency
+- Updated ansible-lint configuration to use extended profile
+- Updated Docker platform support to EL 8/9
+- Updated all roles to use FQCN (Fully Qualified Collection Names)
+- Improved role READMEs with links to guide.arillso.io
 - Consolidated all tests (unit, molecule, integration) into single CI workflow
-- Enabled integration tests in CI workflow
-- Reduced comments in all roles defaults/main.yml files for better readability
-- Added Renovate version management for Docker (27.5.1), Docker Compose (2.32.4), and K3s (v1.33.3+k3s1)
-- Refactored Tailscale role to support unified ProxyGroup management (all three types)
-- Renamed tailscale_egress_proxygroup and tailscale_ingress_proxygroup to tailscale_proxygroups (unified list)
-- Updated Tailscale role README with examples for all three ProxyGroup types
-- Updated AGENTS.md to match organization standards with complete structure documentation
-
-### Added
-
-- Re-enabled k3s private registry configuration support
-- Re-enabled k3s security hardening (SELinux/AppArmor) with auto-detection
-- Added logrotate configuration template for k3s logs
+- Reduced comments in defaults/main.yml files for better readability
+- Refactored Tailscale role to support unified ProxyGroup management
 
 ### Removed
 
-- Removed IMPROVEMENTS.md (redundant with CHANGELOG)
-- Removed AUTONOMOUS_DEPLOYMENT.md from k3s role (belongs on guide.arillso.io)
-- Removed commented-out token storage code (not needed)
+- Removed deprecated docker_compose v1 role (migrate to docker_compose_v2)
+- Removed dependabot configuration (replaced by Renovate)
+- Removed pre-commit configuration
+- Removed separate linter workflow (integrated into ci.yml)
+- Removed RHEL 7 support from Docker role
 
 ### Fixed
 
+- Fixed all YAML linting issues (document-start, comments-indentation, line-length)
+- Fixed all ansible-lint violations (FQCN, schema, task-key-order)
+- Fixed ansible-test sanity errors (shebangs, empty-init)
+- Fixed platform schema validation for Ansible Galaxy
+- Fixed Jinja2 template shebangs to avoid sanity errors
 - Fixed license header consistency (MIT throughout)
-- Cleaned up commented code sections in k3s role
 
 ## [0.0.7] - 2024-02-16
 
