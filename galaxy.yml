@@ -8,7 +8,7 @@ authors:
     - Simon Baerlocher (@sbaerlocher) <s.baerlocher@sbaerlocher.ch>
     - arillso (@arillso) <hello@arillso.io>
 
-description: "This is an Ansible collection for configuring containers."
+description: Ansible collection for container and orchestration management including Docker, Docker Compose, Kubernetes (K3s), Helm, Fleet, and Tailscale with comprehensive security hardening and GitOps support.
 
 license:
     - MIT
