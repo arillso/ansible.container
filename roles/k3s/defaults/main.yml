@@ -105,7 +105,9 @@ k3s_create_bash_completion: true
 # K3s security configuration
 k3s_security_hardening: true
 k3s_selinux_custom_policy: false
-k3s_apparmor_profile: true
+# AppArmor profile disabled by default - K3s requires many system operations
+# (mount, file_lock, proc access) that are difficult to whitelist correctly
+k3s_apparmor_profile: false
 k3s_debug_security: false
 
 # K3s private registry configuration

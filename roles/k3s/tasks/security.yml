@@ -139,25 +139,55 @@
                   #include <abstractions/nameservice>
                   #include <abstractions/user-tmp>
 
+                  # Core capabilities
                   capability sys_admin,
                   capability net_admin,
                   capability sys_resource,
                   capability setuid,
                   capability setgid,
+                  capability sys_chroot,
+                  capability sys_ptrace,
+                  capability dac_override,
 
+                  # K3s binary and subprocess execution
                   /usr/local/bin/k3s mr,
-                  /proc/sys/net/** rw,
-                  /sys/fs/cgroup/** rw,
-                  /var/lib/rancher/k3s/** rwix,
-                  /etc/rancher/k3s/** r,
+                  /usr/sbin/xtables-nft-multi ix,
+                  /usr/sbin/nft ix,
+                  /usr/sbin/modprobe ix,
 
+                  # Network and cgroup access
+                  /proc/sys/** rw,
+                  /sys/** rw,
+
+                  # K3s data directory with file locking (k flag)
+                  /var/lib/rancher/k3s/** rwixk,
+                  /etc/rancher/k3s/** rw,
+                  /etc/rancher/node/** rw,
+
+                  # Process and system info
+                  /proc/*/stat r,
+                  /proc/*/cpuset r,
+                  /proc/*/mountinfo r,
+                  /proc/*/cgroup r,
+                  /proc/sys/fs/pipe-max-size r,
+                  /etc/machine-id r,
+                  /sys/devices/virtual/dmi/id/product_uuid r,
+
+                  # Container runtime requirements
+                  /run/** rw,
+                  /var/run/** rw,
+
+                  # Temp directories
                   owner /tmp/** rw,
                   owner /var/tmp/** rw,
+
+                  # Allow ptrace for containerd
+                  ptrace (read),
                 }
             dest: /etc/apparmor.d/k3s
             mode: "0644"
         become: true
-        when: k3s_apparmor_profile | default(true) | bool
+        when: k3s_apparmor_profile | default(false) | bool
         register: apparmor_profile_created
 
       - name: Load K3s AppArmor profile
