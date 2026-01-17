@@ -693,7 +693,10 @@ argument_specs:
             - "Arillso Team"
         options:
             fleet_gitrepos:
-                <<: *gitrepo_options
+                description: "List of Fleet GitRepos to manage"
+                type: "list"
+                elements: "dict"
+                default: []
 
     # Bundle-specific entry point
     bundles:
@@ -704,7 +707,10 @@ argument_specs:
             - "Arillso Team"
         options:
             fleet_bundles:
-                <<: *bundle_options
+                description: "List of Fleet Bundles to manage"
+                type: "list"
+                elements: "dict"
+                default: []
 
     # Cluster-specific entry point
     clusters:
@@ -715,7 +721,10 @@ argument_specs:
             - "Arillso Team"
         options:
             fleet_clusters:
-                <<: *cluster_options
+                description: "List of Fleet Clusters to manage"
+                type: "list"
+                elements: "dict"
+                default: []
 
     # Workspace-specific entry point
     workspaces:
@@ -726,7 +735,10 @@ argument_specs:
             - "Arillso Team"
         options:
             fleet_workspaces:
-                <<: *workspace_options
+                description: "List of Fleet Workspaces to manage"
+                type: "list"
+                elements: "dict"
+                default: []
 
     # ClusterRegistrationToken-specific entry point
     registration_tokens:
@@ -737,4 +749,7 @@ argument_specs:
             - "Arillso Team"
         options:
             fleet_registration_tokens:
-                <<: *registration_token_options
+                description: "List of Fleet ClusterRegistrationTokens to manage"
+                type: "list"
+                elements: "dict"
+                default: []
