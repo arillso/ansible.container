@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-01-17
+
+### Fixed
+
+- Fixed K3s role Galaxy validation errors by removing invalid `no_log` field from argument_specs.yml
+- Fixed Fleet role Galaxy validation errors by replacing YAML anchor references with explicit descriptions
+- Resolved 13 total validation errors preventing proper indexing on Ansible Galaxy
+- K3s and Fleet roles now properly documented and searchable on Galaxy
+
 ## [1.0.1] - 2026-01-16
 
 ### Fixed
