@@ -43,7 +43,6 @@ argument_specs:
                 required: false
                 default: ""
                 description: "K3s cluster token for authentication"
-                no_log: true
 
             k3s_bind_address:
                 type: "str"
@@ -146,7 +145,6 @@ argument_specs:
                 type: "str"
                 required: true
                 description: "K3s cluster token"
-                no_log: true
 
             k3s_bind_address:
                 type: "str"
@@ -186,7 +184,6 @@ argument_specs:
                 type: "str"
                 required: true
                 description: "K3s cluster token"
-                no_log: true
 
             k3s_node_labels:
                 type: "list"

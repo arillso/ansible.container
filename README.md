@@ -1,6 +1,6 @@
 # Ansible Collection: arillso.container
 
-[![license](https://img.shields.io/github/license/mashape/apistatus.svg?style=popout-square)](licence) [![Ansible Galaxy](http://img.shields.io/badge/ansible--galaxy-arillso.container-blue.svg?style=popout-square)](https://galaxy.ansible.com/arillso/container)
+[![license](https://img.shields.io/github/license/mashape/apistatus.svg?style=popout-square)](LICENSE) [![Ansible Galaxy](http://img.shields.io/badge/ansible--galaxy-arillso.container-blue.svg?style=popout-square)](https://galaxy.ansible.com/arillso/container)
 
 ## Description
 
@@ -39,19 +39,19 @@ collections:
       version: ">=0.0.5"
 ```
 
-## Quick Start
+## Requirements
 
-See the [examples](examples/) directory for sample playbooks and inventory configurations.
+- Ansible >= 2.15
+- Python >= 3.9
 
-For detailed documentation, visit [guide.arillso.io](https://guide.arillso.io).
+## Documentation
+
+Full documentation is available at:
+<https://guide.arillso.io/collections/arillso/container/>
 
 ## License
 
-<!-- markdownlint-disable -->
-
-This project is under the MIT License. See the [LICENSE](licence) file for the full license text.
-
-<!-- markdownlint-enable -->
+This project is under the MIT License. See the [LICENSE](LICENSE) file for the full license text.
 
 ## Copyright
 
