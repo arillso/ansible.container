@@ -13,7 +13,7 @@ argument_specs:
             k3s_version:
                 type: "str"
                 required: true
-                description: "K3s version to install (e.g., v1.33.3+k3s1)"
+                description: "K3s version to install (e.g., v1.35.2+k3s1)"
 
             k3s_role:
                 type: "str"

@@ -69,7 +69,7 @@ body:
                 roles:
                   - role: arillso.container.docker
                     vars:
-                      docker_version: "27.5.1"
+                      docker_version: "28.5.2"
 
     - type: textarea
       id: logs
