@@ -319,7 +319,9 @@ git push origin 0.1.0
 
 - **Issues**: Open an issue on GitHub for bugs or feature requests
 - **Discussions**: Use GitHub Discussions for questions
-- **Documentation**: Check [guide.arillso.io](https://guide.arillso.io)
+- **Documentation**: Check [guide.arillso.io][docs]
+
+[docs]: https://guide.arillso.io?utm_source=github&utm_medium=contributing&utm_campaign=documentation
 
 ## Recognition
 

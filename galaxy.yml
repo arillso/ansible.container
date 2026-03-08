@@ -25,7 +25,7 @@ dependencies:
 
 repository: https://github.com/arillso/ansible.container
 
-documentation: https://guide.arillso.io/collections/arillso/container/index.html
+documentation: https://guide.arillso.io/collections/arillso/container/index.html?utm_source=ansible_galaxy&utm_medium=metadata&utm_campaign=documentation
 
 homepage: https://arillso.io
 
