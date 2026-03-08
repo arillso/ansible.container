@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-03-08
+
+### Changed
+
+- Migrated CI/CD workflows to shared reusable workflows from `arillso/.github`
+- Updated Docker Engine default version from 27.5.1 to 28.5.2
+- Updated Docker Compose v2 default version from 2.32.4 to 5.1.0
+- Updated K3s default version from v1.33.3+k3s1 to v1.35.2+k3s1
+- Updated Python development dependencies (pytest-cov, pylint, sphinx-rtd-theme)
+- Updated documentation links with UTM tracking parameters
+- Excluded `ansible-core` from Renovate updates (version controlled by CI matrix)
+
+### Added
+
+- Added Claude AI workflow for automated issue and PR handling
+- Added Claude AI review workflow for pull requests
+
 ## [1.0.2] - 2026-01-17
 
 ### Fixed
