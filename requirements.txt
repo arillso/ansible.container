@@ -1,7 +1,7 @@
 # Python dependencies for arillso.container collection
 
 # Development dependencies
-ansible-core>=2.20.3
+ansible-core>=2.18.0
 ansible-lint>=6.22.2
 molecule>=6.0.3
 molecule-plugins[docker]>=23.7.0
