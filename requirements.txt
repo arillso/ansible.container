@@ -21,4 +21,4 @@ docker>=6.1.0
 
 # Documentation
 sphinx>=7.2.0
-sphinx-rtd-theme>=2.0.0
+sphinx-rtd-theme>=3.1.0
