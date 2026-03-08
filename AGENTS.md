@@ -50,14 +50,14 @@ Each role follows standard Ansible role structure:
 
 #### Docker Ecosystem
 
-- **docker** - Docker Engine installation (27.5.1)
+- **docker** - Docker Engine installation (28.5.2)
 - **docker_compose** - Docker Compose v1
-- **docker_compose_v2** - Docker Compose v2 (2.32.4)
+- **docker_compose_v2** - Docker Compose v2 (5.1.0)
 - **docker_login** - Docker registry authentication
 
 #### Kubernetes Ecosystem
 
-- **k3s** - Lightweight Kubernetes (v1.33.3+k3s1) with security hardening
+- **k3s** - Lightweight Kubernetes (v1.35.2+k3s1) with security hardening
 - **fleet** - Rancher Fleet GitOps management
 - **helm** - Helm package manager for Kubernetes
 - **tailscale** - Tailscale VPN mesh network (ingress, egress, kube-apiserver)
@@ -112,7 +112,7 @@ Format:
 
 ```yaml
 # renovate: datasource=github-releases depName=k3s-io/k3s
-k3s_version: "v1.33.3+k3s1"
+k3s_version: "v1.35.2+k3s1"
 ```
 
 ## Workflows
