@@ -26,12 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Renamed `k3s_facts_health_check_interval` to `k3s_facts_health_check_timeout` (#51)
-- Removed `k3s_require_facts_role` variable from K3s defaults (#51)
 - Changed `k3s_enable_helm_integration` default from `true` to `false` (#51)
 - Changed `docker_compose_v2_recreate` default from `smart` to `auto` and added type to `docker_compose_v2_pull` (#45)
 - Updated `docker_version` default in argument specs to `28.5.2`, `docker_compose_v2_version` to `5.1.0` (#45)
 - Renamed Fleet auth variables to use `fleet_` prefix (`git_username` → `fleet_git_username`, etc.) (#45)
-- Added `noqa: argument-specs` annotation to `helm_repositories` default (#45)
+- Updated `helm_repositories` default to include `noqa: argument-specs` annotation (#45)
 - Replaced `.yamllint.yml` with comprehensive `.yamllint` configuration (stricter rules, 160 char line limit) (#44)
 - Modernized `.ansible-lint` configuration (removed `experimental` skip, cleaned up formatting) (#44)
 - Expanded `.gitignore` with testing, build, and environment patterns (#44)
@@ -43,6 +42,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restricted Claude AI workflow triggers to `@claude` mentions only (#43)
 - Updated Claude review to trigger only on PR open events (#43)
 - Updated Python development dependencies (pytest-cov v7, molecule v26/v25, ansible-lint v26, black v26, sphinx v9, and others) (#47, #48, #49, #50, #52)
+
+### Removed
+
+- Removed `k3s_require_facts_role` variable from K3s defaults (#51)
 
 ## [1.1.0] - 2026-03-08
 
