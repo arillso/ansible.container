@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-03-10
+
+### Added
+
+- Added comprehensive argument specs for K3s role covering networking, storage, security, service, and facts variables (#46)
+- Added K3s facts configuration variables (`k3s_facts_collect_cluster_state`, `k3s_facts_collect_service_status`, `k3s_facts_collect_inventory_info`, `k3s_facts_collect_health_metrics`) with expanded fact template (#51)
+- Added K3s facts dependency wiring to `arillso.system.facts` role via configurable variables (#51)
+- Added `docker_compose_v2_scale` and `docker_compose_v2_build`/`docker_compose_v2_ca_path` argument specs for Docker Compose v2 role (#45)
+- Added `fleet_registration_tokens`, Fleet authentication defaults (`fleet_git_username`, `fleet_git_token`, etc.) and missing argument specs (`fleet_dry_run`, `fleet_secret_timeout`, `fleet_resource_timeout`) for Fleet role (#45)
+- Added nested `options` for `helm_defaults` in Helm role argument specs (#45)
+- Added Makefile with targets for lint, test, format, build, clean, and install-dev (#44)
+- Added pyproject.toml with black, isort, ruff, and pytest configuration (#44)
+- Added pre-commit configuration with trailing-whitespace, end-of-file-fixer, and ansible-lint hooks (#44)
+- Added security scanning configurations: checkov, gitleaks, grype, trivy, secretlint (#44)
+- Added markdownlint, markdown-link-check, jscpd, and kics configuration files (#44)
+
+### Changed
+
+- Renamed `k3s_facts_health_check_interval` to `k3s_facts_health_check_timeout` (#51)
+- Removed `k3s_require_facts_role` variable from K3s defaults (#51)
+- Changed `k3s_enable_helm_integration` default from `true` to `false` (#51)
+- Changed `docker_compose_v2_recreate` default from `smart` to `auto` and added type to `docker_compose_v2_pull` (#45)
+- Updated `docker_version` default in argument specs to `28.5.2`, `docker_compose_v2_version` to `5.1.0` (#45)
+- Renamed Fleet auth variables to use `fleet_` prefix (`git_username` → `fleet_git_username`, etc.) (#45)
+- Added `noqa: argument-specs` annotation to `helm_repositories` default (#45)
+- Replaced `.yamllint.yml` with comprehensive `.yamllint` configuration (stricter rules, 160 char line limit) (#44)
+- Modernized `.ansible-lint` configuration (removed `experimental` skip, cleaned up formatting) (#44)
+- Expanded `.gitignore` with testing, build, and environment patterns (#44)
+- Simplified CONTRIBUTING.md (reduced from 334 to 167 lines, modernized prerequisites to Python 3.12/Ansible 2.18) (#44)
+- Migrated pytest configuration from `pytest.ini` to `pyproject.toml` (#44)
+- Bumped `requires_ansible` from `>=2.15.5` to `>=2.18.0` in `meta/runtime.yml` (#44)
+- Updated Renovate config to pin shared preset version and add custom regex manager for role defaults (#43)
+- Updated CI workflows to `@2026-03-09` shared workflow refs (#43)
+- Restricted Claude AI workflow triggers to `@claude` mentions only (#43)
+- Updated Claude review to trigger only on PR open events (#43)
+- Updated Python development dependencies (pytest-cov v7, molecule v26/v25, ansible-lint v26, black v26, sphinx v9, and others) (#47, #48, #49, #50, #52)
+
 ## [1.1.0] - 2026-03-08
 
 ### Changed
