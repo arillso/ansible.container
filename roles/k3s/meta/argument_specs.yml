@@ -83,11 +83,6 @@ argument_specs:
                 elements: "str"
                 description: "Node taints to apply (format: key=value:effect)"
 
-            k3s_channel:
-                type: "str"
-                default: "stable"
-                description: "K3s release channel"
-
             k3s_binary_checksum:
                 type: "str"
                 default: ""
@@ -116,6 +111,7 @@ argument_specs:
             k3s_flannel_backend:
                 type: "str"
                 default: "vxlan"
+                choices: ["vxlan", "host-gw", "wireguard-native", "none"]
                 description: "Flannel backend type"
 
             k3s_disable_network_policy:
@@ -155,18 +151,13 @@ argument_specs:
 
             k3s_token_file:
                 type: "str"
-                default: "{{ k3s_data_dir }}/server/node-token"
+                default: "/var/lib/rancher/k3s/server/node-token"
                 description: "Path to the K3s node token file"
 
             k3s_max_pods:
                 type: "int"
                 default: 110
                 description: "Maximum number of pods per node"
-
-            k3s_node_ip_max_pods:
-                type: "int"
-                default: 110
-                description: "Maximum number of pods per node IP"
 
             k3s_extra_server_args:
                 type: "list"
@@ -246,6 +237,7 @@ argument_specs:
             k3s_service_state:
                 type: "str"
                 default: "started"
+                choices: ["started", "stopped", "restarted", "reloaded"]
                 description: "Desired state of K3s service"
 
             k3s_create_uninstall_script:
@@ -284,75 +276,10 @@ argument_specs:
                 default: []
                 description: "Private container registry configurations"
 
-            k3s_facts_collect_cluster_state:
-                type: "bool"
-                default: true
-                description: "Collect cluster state facts"
-
-            k3s_facts_collect_service_status:
-                type: "bool"
-                default: true
-                description: "Collect service status facts"
-
-            k3s_facts_collect_inventory_info:
-                type: "bool"
-                default: true
-                description: "Collect inventory information facts"
-
-            k3s_facts_collect_health_metrics:
-                type: "bool"
-                default: true
-                description: "Collect health metrics facts"
-
-            k3s_facts_cache_enabled:
-                type: "bool"
-                default: true
-                description: "Enable facts caching"
-
-            k3s_facts_cache_ttl:
-                type: "int"
-                default: 300
-                description: "Facts cache time-to-live in seconds"
-
-            k3s_facts_health_check_interval:
-                type: "int"
-                default: 60
-                description: "Health check interval in seconds"
-
             k3s_auto_facts:
                 type: "bool"
                 default: true
                 description: "Enable automatic facts collection"
-
-            k3s_debug_facts:
-                type: "bool"
-                default: false
-                description: "Enable facts debugging output"
-
-            k3s_fallback_mode_allowed:
-                type: "bool"
-                default: true
-                description: "Allow fallback mode for facts collection"
-
-            k3s_require_facts_role:
-                type: "bool"
-                default: false
-                description: "Require facts role to be explicitly included"
-
-            k3s_facts_collection_timeout:
-                type: "int"
-                default: 30
-                description: "Timeout for facts collection in seconds"
-
-            k3s_validate_facts_schema:
-                type: "bool"
-                default: true
-                description: "Validate facts against schema"
-
-            k3s_enable_helm_integration:
-                type: "bool"
-                default: true
-                description: "Enable Helm integration with K3s"
 
     server_init:
         short_description: "K3s server initialization entry point"
