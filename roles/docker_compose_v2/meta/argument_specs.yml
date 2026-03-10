@@ -12,7 +12,7 @@ argument_specs:
                 description:
                     - Specifies the version of Docker Compose to install. Leave blank for the latest version.
                     - Specify a specific version to install an older or specific release.
-                default: ""
+                default: "5.1.0"
 
             docker_compose_v2_packages:
                 type: list
@@ -130,14 +130,15 @@ argument_specs:
                     - Custom name for the Docker Compose project. If not set, the default name is derived from the project directory.
 
             docker_compose_v2_pull:
+                type: str
                 description:
-                    - Always pull images before starting the application. Set to 'true' to enable.
+                    - "Pull policy for images. Valid values: 'always', 'missing', 'never', 'build'."
 
             docker_compose_v2_recreate:
                 type: str
                 description:
-                    - "Strategy for container recreation: 'always', 'never', or 'smart' (default)."
-                default: "smart"
+                    - "Strategy for container recreation: 'always', 'never', or 'auto' (default)."
+                default: "auto"
 
             docker_compose_v2_remove_images:
                 type: str
@@ -223,3 +224,13 @@ argument_specs:
                 type: str
                 description:
                     - Path to the Docker CLI executable, if not in standard PATH.
+
+            docker_compose_v2_build:
+                type: str
+                description:
+                    - Build policy for Docker Compose services.
+
+            docker_compose_v2_ca_path:
+                type: str
+                description:
+                    - Path to the CA certificate for TLS verification.

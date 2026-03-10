@@ -47,6 +47,19 @@ argument_specs:
                     create_namespace: false
                     timeout: "5m"
                 description: "Default values for all chart deployments"
+                options:
+                    namespace:
+                        type: "str"
+                        default: "default"
+                        description: "Default namespace for chart deployments"
+                    create_namespace:
+                        type: "bool"
+                        default: false
+                        description: "Create namespace if it doesn't exist"
+                    timeout:
+                        type: "str"
+                        default: "5m"
+                        description: "Default timeout for Helm operations"
 
             helm_kubectl_context:
                 type: "str"
