@@ -116,7 +116,6 @@
         when: k3s_selinux_custom_policy | default(false) | bool
         changed_when: true
 
-
 # AppArmor Configuration Block
 - name: AppArmor configuration tasks
   block:
@@ -197,7 +196,6 @@
             - k3s_apparmor_profile | default(true) | bool
             - apparmor_profile_created is changed
         changed_when: true
-
 
 # General Security Hardening
 # K3s configuration directory permissions are set during directory creation in main.yml
