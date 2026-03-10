@@ -83,6 +83,277 @@ argument_specs:
                 elements: "str"
                 description: "Node taints to apply (format: key=value:effect)"
 
+            k3s_channel:
+                type: "str"
+                default: "stable"
+                description: "K3s release channel"
+
+            k3s_binary_checksum:
+                type: "str"
+                default: ""
+                description: "Expected checksum of the K3s binary"
+
+            k3s_cluster_domain:
+                type: "str"
+                default: "cluster.local"
+                description: "Kubernetes cluster domain"
+
+            k3s_cluster_dns:
+                type: "str"
+                default: "10.43.0.10"
+                description: "Cluster DNS service IP address"
+
+            k3s_cluster_cidr:
+                type: "str"
+                default: "10.42.0.0/16"
+                description: "CIDR range for pod IPs"
+
+            k3s_service_cidr:
+                type: "str"
+                default: "10.43.0.0/16"
+                description: "CIDR range for service IPs"
+
+            k3s_flannel_backend:
+                type: "str"
+                default: "vxlan"
+                description: "Flannel backend type"
+
+            k3s_disable_network_policy:
+                type: "bool"
+                default: false
+                description: "Disable K3s default network policy controller"
+
+            k3s_disable_traefik:
+                type: "bool"
+                default: false
+                description: "Disable built-in Traefik ingress controller"
+
+            k3s_disable_servicelb:
+                type: "bool"
+                default: false
+                description: "Disable built-in service load balancer"
+
+            k3s_disable_metrics_server:
+                type: "bool"
+                default: false
+                description: "Disable built-in metrics server"
+
+            k3s_disable_cloud_controller:
+                type: "bool"
+                default: false
+                description: "Disable built-in cloud controller manager"
+
+            k3s_data_dir:
+                type: "str"
+                default: "/var/lib/rancher/k3s"
+                description: "K3s data directory path"
+
+            k3s_config_dir:
+                type: "str"
+                default: "/etc/rancher/k3s"
+                description: "K3s configuration directory path"
+
+            k3s_token_file:
+                type: "str"
+                default: "{{ k3s_data_dir }}/server/node-token"
+                description: "Path to the K3s node token file"
+
+            k3s_max_pods:
+                type: "int"
+                default: 110
+                description: "Maximum number of pods per node"
+
+            k3s_node_ip_max_pods:
+                type: "int"
+                default: 110
+                description: "Maximum number of pods per node IP"
+
+            k3s_extra_server_args:
+                type: "list"
+                elements: "str"
+                default: []
+                description: "Additional arguments for K3s server"
+
+            k3s_extra_agent_args:
+                type: "list"
+                elements: "str"
+                default: []
+                description: "Additional arguments for K3s agent"
+
+            k3s_create_symlinks:
+                type: "bool"
+                default: true
+                description: "Create symlinks for kubectl, crictl, ctr"
+
+            k3s_symlink_force:
+                type: "bool"
+                default: false
+                description: "Force overwrite existing symlinks"
+
+            k3s_symlink_commands:
+                type: "list"
+                elements: "str"
+                default:
+                    - kubectl
+                    - crictl
+                    - ctr
+                description: "List of commands to create symlinks for"
+
+            k3s_create_killall_script:
+                type: "bool"
+                default: true
+                description: "Create K3s killall script"
+
+            k3s_environment_vars:
+                type: "dict"
+                default: {}
+                description: "Environment variables for K3s service"
+
+            k3s_kubeconfig_mode:
+                type: "str"
+                default: "0644"
+                description: "File permissions for kubeconfig"
+
+            k3s_kubeconfig_group:
+                type: "str"
+                default: "root"
+                description: "Group ownership of kubeconfig"
+
+            k3s_kubeconfig_owner:
+                type: "str"
+                default: "root"
+                description: "Owner of kubeconfig file"
+
+            k3s_install_dependencies:
+                type: "bool"
+                default: true
+                description: "Install required system packages"
+
+            k3s_required_packages:
+                type: "list"
+                elements: "str"
+                default:
+                    - curl
+                    - iptables
+                    - nfs-common
+                description: "Required system packages for K3s"
+
+            k3s_service_enabled:
+                type: "bool"
+                default: true
+                description: "Enable K3s service on boot"
+
+            k3s_service_state:
+                type: "str"
+                default: "started"
+                description: "Desired state of K3s service"
+
+            k3s_create_uninstall_script:
+                type: "bool"
+                default: true
+                description: "Create K3s uninstall script"
+
+            k3s_create_bash_completion:
+                type: "bool"
+                default: true
+                description: "Create bash completion for kubectl"
+
+            k3s_security_hardening:
+                type: "bool"
+                default: true
+                description: "Enable K3s security hardening"
+
+            k3s_selinux_custom_policy:
+                type: "bool"
+                default: false
+                description: "Apply custom SELinux policy for K3s"
+
+            k3s_apparmor_profile:
+                type: "bool"
+                default: false
+                description: "Apply AppArmor profile for K3s"
+
+            k3s_debug_security:
+                type: "bool"
+                default: false
+                description: "Enable security debugging output"
+
+            k3s_private_registries:
+                type: "list"
+                elements: "dict"
+                default: []
+                description: "Private container registry configurations"
+
+            k3s_facts_collect_cluster_state:
+                type: "bool"
+                default: true
+                description: "Collect cluster state facts"
+
+            k3s_facts_collect_service_status:
+                type: "bool"
+                default: true
+                description: "Collect service status facts"
+
+            k3s_facts_collect_inventory_info:
+                type: "bool"
+                default: true
+                description: "Collect inventory information facts"
+
+            k3s_facts_collect_health_metrics:
+                type: "bool"
+                default: true
+                description: "Collect health metrics facts"
+
+            k3s_facts_cache_enabled:
+                type: "bool"
+                default: true
+                description: "Enable facts caching"
+
+            k3s_facts_cache_ttl:
+                type: "int"
+                default: 300
+                description: "Facts cache time-to-live in seconds"
+
+            k3s_facts_health_check_interval:
+                type: "int"
+                default: 60
+                description: "Health check interval in seconds"
+
+            k3s_auto_facts:
+                type: "bool"
+                default: true
+                description: "Enable automatic facts collection"
+
+            k3s_debug_facts:
+                type: "bool"
+                default: false
+                description: "Enable facts debugging output"
+
+            k3s_fallback_mode_allowed:
+                type: "bool"
+                default: true
+                description: "Allow fallback mode for facts collection"
+
+            k3s_require_facts_role:
+                type: "bool"
+                default: false
+                description: "Require facts role to be explicitly included"
+
+            k3s_facts_collection_timeout:
+                type: "int"
+                default: 30
+                description: "Timeout for facts collection in seconds"
+
+            k3s_validate_facts_schema:
+                type: "bool"
+                default: true
+                description: "Validate facts against schema"
+
+            k3s_enable_helm_integration:
+                type: "bool"
+                default: true
+                description: "Enable Helm integration with K3s"
+
     server_init:
         short_description: "K3s server initialization entry point"
         description: |
