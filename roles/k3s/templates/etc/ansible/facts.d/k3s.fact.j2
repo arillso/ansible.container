@@ -10,19 +10,25 @@ set -euo pipefail
 error_handler() {
     local exit_code=$?
     local line_number=$1
-    echo "{\"error\": true, \"error_code\": ${exit_code}, \"error_line\": ${line_number}, \"_fallback_mode\": true}" >&1
-    exit 0  # Exit with success to ensure Ansible can parse the error JSON
+    if [[ "${FALLBACK_ALLOWED}" == "true" ]]; then
+        echo "{\"error\": true, \"error_code\": ${exit_code}, \"error_line\": ${line_number}, \"_fallback_mode\": true}" >&1
+        exit 0  # Exit with success to ensure Ansible can parse the error JSON
+    else
+        echo "{\"error\": true, \"error_code\": ${exit_code}, \"error_line\": ${line_number}}" >&2
+        exit ${exit_code}
+    fi
 }
 trap 'error_handler ${LINENO}' ERR
 
 # Configuration variables
-CACHE_ENABLED="{{ facts_cache_enabled | default(true) }}"
-CACHE_TTL="{{ facts_cache_ttl_k3s | default(facts_cache_default_ttl) | default(300) }}"
+CACHE_ENABLED="{{ k3s_facts_cache_enabled | default(facts_cache_enabled) | default(true) }}"
+CACHE_TTL="{{ k3s_facts_cache_ttl | default(facts_cache_ttl_k3s) | default(facts_cache_default_ttl) | default(300) }}"
 CACHE_DIR="{{ facts_cache_dir | default('/var/cache/ansible-facts') }}"
-HEALTH_TIMEOUT="{{ facts_timeout_default | default(5) }}"
-API_TIMEOUT="{{ facts_timeout_api | default(10) }}"
+HEALTH_TIMEOUT="{{ k3s_facts_health_check_interval | default(facts_timeout_default) | default(5) }}"
+API_TIMEOUT="{{ k3s_facts_collection_timeout | default(facts_timeout_api) | default(10) }}"
 MAX_RETRIES="{{ facts_max_retries | default(1) }}"
-DEBUG_ENABLED="{{ facts_debug_enabled | default(false) }}"
+DEBUG_ENABLED="{{ k3s_debug_facts | default(facts_debug_enabled) | default(false) }}"
+FALLBACK_ALLOWED="{{ k3s_fallback_mode_allowed | default(true) }}"
 
 # K3s-specific configuration
 K3S_DATA_DIR="{{ k3s_data_dir | default('/var/lib/rancher/k3s') }}"
@@ -130,6 +136,7 @@ collect_k3s_facts() {
         k3s_version=$(safe_exec_with_retry "k3s --version | head -n1 | cut -d' ' -f3" "unknown" "${API_TIMEOUT}")
     fi
 
+{% if k3s_facts_collect_service_status | default(true) %}
     # Check if service exists and is active/enabled
     local service_exists=false
     local service_active=false
@@ -147,7 +154,19 @@ collect_k3s_facts() {
             service_enabled=true
         fi
     fi
+{% else %}
+    local service_exists=false
+    local service_active=false
+    local service_enabled=false
+{% endif %}
 
+    # Get hostname and IP address
+    local hostname
+    hostname=$(hostname)
+    local ip_address
+    ip_address=$(ip -4 addr show scope global | grep -v "docker\|veth\|flannel" | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -n 1 || echo "unknown")
+
+{% if k3s_facts_collect_cluster_state | default(true) %}
     # Check if database exists (for server nodes)
     local database_exists=false
     if [[ -f "${K3S_DATA_DIR}/server/db/state.db" ]]; then
@@ -206,12 +225,6 @@ collect_k3s_facts() {
             first_server=true
         fi
     fi
-
-    # Get hostname and IP address
-    local hostname
-    hostname=$(hostname)
-    local ip_address
-    ip_address=$(ip -4 addr show scope global | grep -v "docker\|veth\|flannel" | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | head -n 1 || echo "unknown")
 
     # Determine server URL automatically based on role and inventory
     local server_url="${K3S_SERVER_URL}"
@@ -289,6 +302,34 @@ collect_k3s_facts() {
             cluster_health="unhealthy"
         fi
     fi
+{% else %}
+    local database_exists=false
+    local token_exists=false
+    local kubeconfig_exists=false
+    local kubeconfig_path=""
+    local kubeconfig_readable=false
+    local kubeconfig_size=0
+    local kubeconfig_permissions=""
+    local server_responsive=false
+    local kubectl_functional=false
+    local first_server=false
+    local server_url="${K3S_SERVER_URL}"
+    local token_hash=""
+    local should_init=false
+    local node_count=0
+    local ready_node_count=0
+    local cluster_health="unknown"
+{% endif %}
+
+{% if k3s_enable_helm_integration | default(true) %}
+    # Helm integration detection
+    local helm_installed=false
+    local helm_version="unknown"
+    if command -v helm >/dev/null 2>&1; then
+        helm_installed=true
+        helm_version=$(safe_exec_with_retry "helm version --short 2>/dev/null | head -n1" "unknown" "${API_TIMEOUT}")
+    fi
+{% endif %}
 
     # Capture detection end time and calculate duration
     local detection_end
@@ -331,6 +372,10 @@ collect_k3s_facts() {
         --arg api_timeout "${API_TIMEOUT}" \
         --arg detection_duration "${detection_duration}" \
         --arg last_updated "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+{% if k3s_enable_helm_integration | default(true) %}
+        --arg helm_installed "${helm_installed}" \
+        --arg helm_version "${helm_version}" \
+{% endif %}
         '{
             cluster: {
                 initialized: ($database_exists | test("true")),
@@ -370,16 +415,30 @@ collect_k3s_facts() {
                 token_hash: $token_hash,
                 should_init: ($should_init | test("true"))
             },
+{% if k3s_facts_collect_inventory_info | default(true) %}
             inventory: {
                 controllers: [{{ '"' + (groups['k3s_controllers'] | default([]) | join('", "')) + '"' if groups['k3s_controllers'] is defined and groups['k3s_controllers'] | length > 0 else '' }}],
                 servers: [{{ '"' + (groups['k3s_servers'] | default([]) | join('", "')) + '"' if groups['k3s_servers'] is defined and groups['k3s_servers'] | length > 0 else '' }}],
                 agents: [{{ '"' + (groups['k3s_agents'] | default([]) | join('", "')) + '"' if groups['k3s_agents'] is defined and groups['k3s_agents'] | length > 0 else '' }}],
                 all_k3s_nodes: [{{ '"' + ((groups['k3s_controllers'] | default([]) + groups['k3s_servers'] | default([]) + groups['k3s_agents'] | default([])) | unique | join('", "')) + '"' if (groups['k3s_controllers'] is defined or groups['k3s_servers'] is defined or groups['k3s_agents'] is defined) and (groups['k3s_controllers'] | default([]) + groups['k3s_servers'] | default([]) + groups['k3s_agents'] | default([])) | length > 0 else '' }}]
             },
+{% else %}
+            inventory: {},
+{% endif %}
+{% if k3s_facts_collect_health_metrics | default(true) %}
             health: {
                 last_check: $last_updated,
                 check_duration_ms: ($detection_duration | tonumber)
             },
+{% else %}
+            health: {},
+{% endif %}
+{% if k3s_enable_helm_integration | default(true) %}
+            helm: {
+                installed: ($helm_installed | test("true")),
+                version: $helm_version
+            },
+{% endif %}
             cache: {
                 enabled: ($cache_enabled | test("true")),
                 ttl_seconds: ($cache_ttl | tonumber),
@@ -404,6 +463,18 @@ main() {
 
     # Collect fresh K3s facts
     json_result=$(collect_k3s_facts)
+
+{% if k3s_validate_facts_schema | default(true) %}
+    # Validate JSON output
+    if ! echo "${json_result}" | jq empty 2>/dev/null; then
+        log_error "Facts output failed JSON validation"
+        if [[ "${FALLBACK_ALLOWED}" == "true" ]]; then
+            json_result='{"error": true, "error_message": "JSON validation failed", "_fallback_mode": true}'
+        else
+            exit 1
+        fi
+    fi
+{% endif %}
 
     # Cache the results
     cache_data "${json_result}"

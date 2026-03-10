@@ -33,6 +33,9 @@ dependencies:
     - role: arillso.system.facts
       vars:
           facts_enable_k3s_detection: true
-          facts_k3s_cache_enabled: true
-          facts_k3s_cache_ttl: 300
+          facts_cache_enabled: "{{ k3s_facts_cache_enabled | default(true) }}"
+          facts_cache_ttl_k3s: "{{ k3s_facts_cache_ttl | default(300) }}"
+          facts_debug_enabled: "{{ k3s_debug_facts | default(false) }}"
+          facts_timeout_default: "{{ k3s_facts_health_check_interval | default(60) }}"
+          facts_timeout_api: "{{ k3s_facts_collection_timeout | default(30) }}"
       when: k3s_auto_facts | default(true) | bool

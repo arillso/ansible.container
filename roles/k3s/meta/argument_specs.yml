@@ -281,6 +281,66 @@ argument_specs:
                 default: true
                 description: "Enable automatic facts collection"
 
+            k3s_facts_collect_cluster_state:
+                type: "bool"
+                default: true
+                description: "Collect cluster state in facts (initialization, health, node counts)"
+
+            k3s_facts_collect_service_status:
+                type: "bool"
+                default: true
+                description: "Collect K3s service status in facts (active, enabled, version)"
+
+            k3s_facts_collect_inventory_info:
+                type: "bool"
+                default: true
+                description: "Collect Ansible inventory group information in facts"
+
+            k3s_facts_collect_health_metrics:
+                type: "bool"
+                default: true
+                description: "Collect health check metrics in facts (duration, timestamps)"
+
+            k3s_facts_cache_enabled:
+                type: "bool"
+                default: true
+                description: "Enable caching of collected K3s facts"
+
+            k3s_facts_cache_ttl:
+                type: "int"
+                default: 300
+                description: "Cache time-to-live in seconds for K3s facts"
+
+            k3s_facts_health_check_interval:
+                type: "int"
+                default: 60
+                description: "Timeout in seconds for health check commands"
+
+            k3s_debug_facts:
+                type: "bool"
+                default: false
+                description: "Enable debug logging in the facts collection script"
+
+            k3s_fallback_mode_allowed:
+                type: "bool"
+                default: true
+                description: "Allow fallback mode on errors (outputs error JSON instead of failing)"
+
+            k3s_facts_collection_timeout:
+                type: "int"
+                default: 30
+                description: "Timeout in seconds for API calls during facts collection"
+
+            k3s_validate_facts_schema:
+                type: "bool"
+                default: true
+                description: "Validate facts output is valid JSON before caching"
+
+            k3s_enable_helm_integration:
+                type: "bool"
+                default: true
+                description: "Detect Helm installation and version in facts output"
+
     server_init:
         short_description: "K3s server initialization entry point"
         description: |

@@ -146,7 +146,6 @@ k3s_debug_facts: false
 k3s_fallback_mode_allowed: true
 
 # K3s Auto-Facts behavior control
-k3s_require_facts_role: false
 k3s_facts_collection_timeout: 30
 k3s_validate_facts_schema: true
 
