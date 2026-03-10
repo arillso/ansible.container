@@ -4,6 +4,7 @@ exclude_paths:
     - .github/
     - .venv/
     - venv/
+    - roles/fleet/meta/argument_specs.yml # Duplicate merge keys not supported by ruamel.yaml
 
 skip_list:
     - galaxy[version-incorrect]
