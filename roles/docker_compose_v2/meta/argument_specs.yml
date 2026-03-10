@@ -132,7 +132,7 @@ argument_specs:
             docker_compose_v2_pull:
                 type: str
                 description:
-                    - Always pull images before starting the application. Set to 'true' to enable.
+                    - "Pull policy for images. Valid values: 'always', 'missing', 'never', 'build'."
 
             docker_compose_v2_recreate:
                 type: str

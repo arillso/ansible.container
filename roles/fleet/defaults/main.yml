@@ -93,8 +93,8 @@ fleet_secret_timeout: 60
 fleet_resource_timeout: 300
 
 # Fleet authentication defaults (used by auth entry point)
-fleet_git_username: ""
-fleet_git_token: ""
-fleet_git_ssh_private_key: ""
-fleet_git_known_hosts: ""
-fleet_client_secret_name: ""
+fleet_git_username: "{{ omit }}"
+fleet_git_token: "{{ omit }}"
+fleet_git_ssh_private_key: "{{ omit }}"
+fleet_git_known_hosts: "{{ omit }}"
+fleet_client_secret_name: "{{ omit }}"
