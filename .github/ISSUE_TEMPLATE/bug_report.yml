@@ -93,7 +93,7 @@ body:
       attributes:
           label: Ansible Version
           description: Output of `ansible --version`
-          placeholder: e.g., ansible [core 2.15.0]
+          placeholder: e.g., ansible [core 2.18.0]
       validations:
           required: true
 
