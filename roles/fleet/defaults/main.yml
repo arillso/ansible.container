@@ -83,9 +83,18 @@ fleet_defaults:
     force_update: false
     service_account: "default"
 
+fleet_registration_tokens: []
+
 fleet_api_version: "fleet.cattle.io/v1alpha1"
 fleet_state: "present"
 fleet_validate_manifests: true
 fleet_dry_run: false
 fleet_secret_timeout: 60
 fleet_resource_timeout: 300
+
+# Fleet authentication defaults (used by auth entry point)
+fleet_git_username: ""
+fleet_git_token: ""
+fleet_git_ssh_private_key: ""
+fleet_git_known_hosts: ""
+fleet_client_secret_name: ""
