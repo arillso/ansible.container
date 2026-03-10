@@ -1,334 +1,167 @@
 # Contributing to arillso.container
 
-Thank you for your interest in contributing to the arillso.container Ansible collection! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing! This document provides guidelines and instructions.
 
-## Code of Conduct
+## Prerequisites
 
-By participating in this project, you agree to maintain a respectful and collaborative environment.
-
-## Getting Started
-
-### Prerequisites
-
-- Python 3.11 or higher
-- Ansible 2.16 or higher
+- Ansible >= 2.18
+- Python >= 3.12
 - Git
 - Docker (for testing)
 
-### Development Setup
+## Development Setup
 
-1. Fork the repository on GitHub
-2. Clone your fork locally:
+### 1. Fork and Clone
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/ansible.container.git
 cd ansible.container
+git remote add upstream https://github.com/arillso/ansible.container.git
 ```
 
-3. Install development dependencies:
+### 2. Install Dependencies
 
 ```bash
-pip install -r requirements.txt
-ansible-galaxy collection install -r requirements.yml
+make install-dev
 ```
 
-4. Create a new branch for your feature or fix:
+### 3. Create a Branch
 
 ```bash
 git checkout -b feature/your-feature-name
+# or
+git checkout -b fix/issue-description
 ```
 
-## Project Structure
+## Coding Standards
 
-```
-ansible.container/
-├── roles/               # Ansible roles
-│   ├── docker/
-│   ├── k3s/
-│   └── ...
-├── plugins/
-│   └── filter/         # Custom filter plugins
-├── tests/
-│   ├── integration/    # Integration tests
-│   └── unit/           # Unit tests
-├── examples/           # Example playbooks
-├── .github/
-│   └── workflows/      # CI/CD workflows
-└── docs/               # Additional documentation
-```
+### YAML
 
-## Development Guidelines
-
-### Code Style
-
-#### YAML Files
-
-- Use 2 spaces for indentation
+- Use 4 spaces for indentation (no tabs)
 - Use lowercase with underscores for variable names
-- Prefix role variables with the role name (e.g., `docker_daemon_config`)
-- Use descriptive variable names
-- Add comments for complex logic
-- Keep lines under 160 characters when possible
+- Prefix role variables with the role name
+- Keep lines under 160 characters
+- Require `---` document start
 
-#### Python Files
+### Python
 
 - Follow PEP 8 style guidelines
 - Use 4 spaces for indentation
-- Add docstrings for all functions and classes
-- Use type hints where applicable
-- Keep functions focused and single-purpose
+- Line length: 100 characters (enforced by black/ruff)
+- Add docstrings for functions and classes
 
 ### Ansible Best Practices
 
-1. **Idempotency**: All tasks must be idempotent
-2. **Handlers**: Use handlers for service restarts and reloads
-3. **Variables**: Document all variables in `defaults/main.yml`
-4. **Argument Specs**: Always provide `meta/argument_specs.yml` for roles
-5. **Tags**: Use meaningful tags for task organization
-6. **Privilege Escalation**: Use `become: true` only when necessary
-7. **OS Support**: Test on multiple distributions when possible
+- **Idempotency**: All tasks must be idempotent
+- **Handlers**: Use handlers for service restarts and reloads
+- **FQCN**: Use Fully Qualified Collection Names for modules
+- **Variables**: Document all variables in `defaults/main.yml`
+- **Argument Specs**: Always provide `meta/argument_specs.yml`
+- **Tags**: Use meaningful tags for task organization
 
-### Creating a New Role
+### Role Structure
 
-1. Create the role structure:
-
-```bash
-ansible-galaxy role init roles/your_role_name
+```
+roles/ROLE_NAME/
+├── defaults/
+│   └── main.yml              # User-configurable variables
+├── handlers/
+│   └── main.yml              # Service handlers
+├── meta/
+│   ├── main.yml              # Role metadata
+│   └── argument_specs.yml    # Variable specifications
+├── tasks/
+│   ├── main.yml              # Main entry point
+│   ├── install.yml           # Installation tasks
+│   ├── configure.yml         # Configuration tasks
+│   └── service.yml           # Service management
+├── templates/                # Jinja2 templates
+├── vars/
+│   ├── Debian.yml            # Debian-specific variables
+│   └── RedHat.yml            # RedHat-specific variables
+└── README.md                 # Role documentation
 ```
 
-2. Required files:
-    - `README.md` - Role documentation with Features, Quick Start
-    - `defaults/main.yml` - Default variables with comments
-    - `meta/argument_specs.yml` - Argument specifications
-    - `meta/main.yml` - Role metadata and dependencies
-    - `tasks/main.yml` - Main task file
-
-3. Update collection metadata:
-    - Add role to main `README.md`
-    - Add role to `CHANGELOG.md` under [Unreleased]
-    - Create example playbook in `examples/`
-
-### Writing Tests
-
-#### Unit Tests
-
-For filter plugins and Python code:
-
-```python
-# tests/unit/plugins/filter/test_fleet_filters.py
-import pytest
-from ansible_collections.arillso.container.plugins.filter.fleet_filters import to_camel_case
-
-def test_to_camel_case():
-    assert to_camel_case("hello_world") == "helloWorld"
-    assert to_camel_case("test_case_example") == "testCaseExample"
-```
-
-Run unit tests:
-
-```bash
-pytest tests/unit/
-```
-
-#### Integration Tests
-
-Create test playbooks in `tests/integration/targets/`:
-
-```yaml
-# tests/integration/targets/docker/tasks/main.yml
----
-- name: Install Docker
-  include_role:
-      name: arillso.container.docker
-
-- name: Verify Docker is installed
-  command: docker --version
-  register: docker_version
-  changed_when: false
-
-- name: Check Docker service is running
-  service:
-      name: docker
-      state: started
-  check_mode: true
-  register: docker_service
-  failed_when: docker_service.changed
-```
-
-Run integration tests:
-
-```bash
-ansible-test integration docker --docker
-```
-
-#### Molecule Tests
-
-For role testing with Molecule:
-
-```bash
-cd roles/docker
-molecule test
-```
+## Testing
 
 ### Linting
 
-Before submitting, run all linters:
-
 ```bash
-# Ansible linting
-ansible-lint
-
-# YAML linting
-yamllint .
-
-# Python linting
-ruff check .
-black --check .
-pylint plugins/
-
-# Markdown linting
-markdownlint-cli2 "**/*.md"
+make lint
 ```
 
-Fix issues automatically where possible:
+This runs ansible-lint, yamllint, and Python linters (ruff, black).
+
+### Unit Tests
 
 ```bash
-black .
-ruff check --fix .
+make test
+```
+
+### Auto-format
+
+```bash
+make format
+```
+
+### Build Collection
+
+```bash
+make build
 ```
 
 ## Submitting Changes
 
 ### Commit Messages
 
-Follow the Conventional Commits specification:
+Write clear, descriptive commit messages:
 
 ```
-type(scope): subject
+Brief summary (50 chars or less)
 
-body (optional)
+- Detailed description with bullet points
+- Reference related issues
 
-footer (optional)
-```
-
-Types:
-
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation changes
-- `style`: Code style changes (formatting, etc.)
-- `refactor`: Code refactoring
-- `test`: Adding or updating tests
-- `chore`: Maintenance tasks
-
-Examples:
-
-```
-feat(docker): add support for Docker daemon metrics
-
-Add configuration options for enabling Prometheus metrics
-endpoint on Docker daemon.
-
-Closes #123
-```
-
-```
-fix(k3s): correct token retrieval in HA mode
-
-The token was not being correctly retrieved when using
-external datastore. This fix ensures the token is fetched
-from the correct location.
+Fixes #123
 ```
 
 ### Pull Request Process
 
-1. **Update Documentation**:
-    - Update role README if behavior changes
-    - Update CHANGELOG.md under [Unreleased]
-    - Add or update example playbooks
+1. Ensure your branch is up to date with `main`
+2. Run `make lint` and fix all issues
+3. Update `CHANGELOG.md` under `[Unreleased]`
+4. Update relevant documentation
+5. Create PR using our [PR template](.github/pull_request_template.md)
+6. Fill out all template sections and link related issues
 
-2. **Add Tests**:
-    - Add unit tests for Python code
-    - Add integration tests for new roles or features
-    - Ensure all tests pass locally
+### PR Review
 
-3. **Run Linters**:
-    - Fix all linting errors
-    - Ensure CI checks will pass
-
-4. **Create Pull Request**:
-    - Use a descriptive title following conventional commits
-    - Reference related issues
-    - Describe changes and motivation
-    - Include testing information
-    - Add screenshots for UI changes (if applicable)
-
-5. **Pull Request Template**:
-
-```markdown
-## Description
-
-Brief description of changes
-
-## Type of Change
-
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Breaking change
-- [ ] Documentation update
-
-## Testing
-
-- [ ] Unit tests added/updated
-- [ ] Integration tests added/updated
-- [ ] Tested on: [list distributions/versions]
-
-## Checklist
-
-- [ ] Code follows project style guidelines
-- [ ] Documentation updated
-- [ ] CHANGELOG.md updated
-- [ ] All tests pass
-- [ ] Linting passes
-```
+- A maintainer will review your PR
+- Address any requested changes
+- All CI checks must pass
+- At least one maintainer approval required
 
 ## Release Process
 
 **Note**: Only maintainers can create releases.
 
-1. Update `CHANGELOG.md`:
-    - Move items from [Unreleased] to new version section
-    - Add release date
-
-2. Update `galaxy.yml`:
-    - Bump version number (follow semver)
-
-3. Create and push tag:
+1. Update `CHANGELOG.md` - move items from `[Unreleased]` to new version
+2. Update `galaxy.yml` version (semantic versioning)
+3. Create and push tag (without `v` prefix):
 
 ```bash
-git tag 0.1.0
-git push origin 0.1.0
+git tag 1.0.1
+git push origin 1.0.1
 ```
 
-4. GitHub Actions will automatically:
-    - Build the collection
-    - Publish to Ansible Galaxy
-    - Create GitHub Release
+GitHub Actions automatically publishes to Ansible Galaxy and creates a GitHub Release.
 
 ## Getting Help
 
-- **Issues**: Open an issue on GitHub for bugs or feature requests
+- **Issues**: Use GitHub issues for bugs and feature requests
 - **Discussions**: Use GitHub Discussions for questions
-- **Documentation**: Check [guide.arillso.io][docs]
+- **Templates**: Use our issue templates for structured reports
 
-[docs]: https://guide.arillso.io?utm_source=github&utm_medium=contributing&utm_campaign=documentation
+---
 
-## Recognition
-
-Contributors will be:
-
-- Listed in release notes
-- Credited in the CHANGELOG
-- Added to the contributors list
-
-Thank you for contributing to arillso.container!
+**Thank you for contributing!**
