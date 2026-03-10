@@ -10,7 +10,7 @@ set -euo pipefail
 error_handler() {
     local exit_code=$?
     local line_number=$1
-    if [[ "${FALLBACK_ALLOWED}" == "true" ]]; then
+    if [[ "${FALLBACK_ALLOWED:-true}" == "true" ]]; then
         echo "{\"error\": true, \"error_code\": ${exit_code}, \"error_line\": ${line_number}, \"_fallback_mode\": true}" >&1
         exit 0  # Exit with success to ensure Ansible can parse the error JSON
     else
@@ -24,7 +24,7 @@ trap 'error_handler ${LINENO}' ERR
 CACHE_ENABLED="{{ k3s_facts_cache_enabled | default(facts_cache_enabled) | default(true) }}"
 CACHE_TTL="{{ k3s_facts_cache_ttl | default(facts_cache_ttl_k3s) | default(facts_cache_default_ttl) | default(300) }}"
 CACHE_DIR="{{ facts_cache_dir | default('/var/cache/ansible-facts') }}"
-HEALTH_TIMEOUT="{{ k3s_facts_health_check_interval | default(facts_timeout_default) | default(5) }}"
+HEALTH_TIMEOUT="{{ k3s_facts_health_check_timeout | default(facts_timeout_default) | default(5) }}"
 API_TIMEOUT="{{ k3s_facts_collection_timeout | default(facts_timeout_api) | default(10) }}"
 MAX_RETRIES="{{ facts_max_retries | default(1) }}"
 DEBUG_ENABLED="{{ k3s_debug_facts | default(facts_debug_enabled) | default(false) }}"
@@ -321,7 +321,7 @@ collect_k3s_facts() {
     local cluster_health="unknown"
 {% endif %}
 
-{% if k3s_enable_helm_integration | default(true) %}
+{% if k3s_enable_helm_integration | default(false) %}
     # Helm integration detection
     local helm_installed=false
     local helm_version="unknown"
@@ -329,6 +329,9 @@ collect_k3s_facts() {
         helm_installed=true
         helm_version=$(safe_exec_with_retry "helm version --short 2>/dev/null | head -n1" "unknown" "${API_TIMEOUT}")
     fi
+{% else %}
+    local helm_installed=false
+    local helm_version="unknown"
 {% endif %}
 
     # Capture detection end time and calculate duration
@@ -372,10 +375,8 @@ collect_k3s_facts() {
         --arg api_timeout "${API_TIMEOUT}" \
         --arg detection_duration "${detection_duration}" \
         --arg last_updated "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-{% if k3s_enable_helm_integration | default(true) %}
         --arg helm_installed "${helm_installed}" \
         --arg helm_version "${helm_version}" \
-{% endif %}
         '{
             cluster: {
                 initialized: ($database_exists | test("true")),
@@ -433,12 +434,10 @@ collect_k3s_facts() {
 {% else %}
             health: {},
 {% endif %}
-{% if k3s_enable_helm_integration | default(true) %}
             helm: {
                 installed: ($helm_installed | test("true")),
                 version: $helm_version
             },
-{% endif %}
             cache: {
                 enabled: ($cache_enabled | test("true")),
                 ttl_seconds: ($cache_ttl | tonumber),
@@ -468,7 +467,7 @@ main() {
     # Validate JSON output
     if ! echo "${json_result}" | jq empty 2>/dev/null; then
         log_error "Facts output failed JSON validation"
-        if [[ "${FALLBACK_ALLOWED}" == "true" ]]; then
+        if [[ "${FALLBACK_ALLOWED:-true}" == "true" ]]; then
             json_result='{"error": true, "error_message": "JSON validation failed", "_fallback_mode": true}'
         else
             exit 1

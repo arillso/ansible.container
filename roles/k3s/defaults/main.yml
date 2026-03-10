@@ -138,7 +138,7 @@ k3s_facts_collect_health_metrics: true
 # K3s facts caching configuration
 k3s_facts_cache_enabled: true
 k3s_facts_cache_ttl: 300
-k3s_facts_health_check_interval: 60
+k3s_facts_health_check_timeout: 60
 
 # K3s Role Auto-Facts Configuration
 k3s_auto_facts: true
@@ -150,4 +150,4 @@ k3s_facts_collection_timeout: 30
 k3s_validate_facts_schema: true
 
 # K3s Helm Integration
-k3s_enable_helm_integration: true
+k3s_enable_helm_integration: false

@@ -311,7 +311,7 @@ argument_specs:
                 default: 300
                 description: "Cache time-to-live in seconds for K3s facts"
 
-            k3s_facts_health_check_interval:
+            k3s_facts_health_check_timeout:
                 type: "int"
                 default: 60
                 description: "Timeout in seconds for health check commands"
@@ -338,7 +338,7 @@ argument_specs:
 
             k3s_enable_helm_integration:
                 type: "bool"
-                default: true
+                default: false
                 description: "Detect Helm installation and version in facts output"
 
     server_init:
