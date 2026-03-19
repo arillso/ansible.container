@@ -151,6 +151,24 @@
       - groups['k3s_servers'] is defined
       - groups['k3s_servers'] | length > 0
 
+# K3s upgrade path validation - only one minor version step allowed
+- name: Validate k3s upgrade path
+  vars:
+      current_minor: "{{ ansible_local.k3s.service.version | regex_replace('^v\\d+\\.(\\d+)\\..*', '\\1') | int }}"
+      target_minor: "{{ k3s_version | regex_replace('^v\\d+\\.(\\d+)\\..*', '\\1') | int }}"
+  ansible.builtin.assert:
+      that:
+          - (target_minor | int) >= (current_minor | int)
+          - (target_minor | int) - (current_minor | int) <= 1
+      fail_msg: >-
+          K3s version change not allowed from
+          {{ ansible_local.k3s.service.version }} to {{ k3s_version }}.
+          Downgrades are not supported. Upgrades must be one minor version at a time.
+  when:
+      - ansible_local.k3s.service.binary_installed | bool
+      - ansible_local.k3s.service.version | default('unknown') != 'unknown'
+      - ansible_local.k3s.service.version != k3s_version
+
 # K3s binary installation - skip if already installed according to facts
 - name: Download k3s binary
   ansible.builtin.get_url:
@@ -161,7 +179,9 @@
       group: root
       checksum: "{{ k3s_binary_checksum if k3s_binary_checksum else omit }}"
   become: true
-  when: not ansible_local.k3s.service.binary_installed | bool
+  when: >-
+      not ansible_local.k3s.service.binary_installed | bool
+      or ansible_local.k3s.service.version != k3s_version
   notify: restart k3s
 
 - name: Create k3s configuration directory
