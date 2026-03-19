@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-03-19
+
+### Added
+
+- Added k3s upgrade path validation: blocks downgrades and enforces one-minor-version-at-a-time upgrades
+- Added automatic k3s binary upgrade detection by comparing installed version with target `k3s_version`
+- Added upgrade documentation to k3s role README
+
 ## [1.2.0] - 2026-03-18
 
 ### Added

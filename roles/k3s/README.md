@@ -9,6 +9,25 @@ Installs and configures K3s, a lightweight Kubernetes distribution optimized for
 - **Cluster Configuration**: Configure cluster networking, storage, and ingress
 - **Token Management**: Secure cluster join tokens
 - **Systemd Integration**: Manage K3s as systemd service
+- **Upgrade Management**: Controlled upgrades with upgrade path validation
+
+## Upgrading K3s
+
+To upgrade k3s, update the `k3s_version` variable and re-run the role. The role will automatically detect the version change and replace the binary.
+
+```yaml
+k3s_version: "v1.30.2+k3s1"
+```
+
+### Upgrade Path Rules
+
+The role enforces the following constraints:
+
+- **One minor version at a time**: Upgrading from `v1.28.x` to `v1.30.x` is not allowed. Upgrade to `v1.29.x` first.
+- **No downgrades**: K3s does not support downgrades. Attempting to set a lower version will fail with an error.
+- **Patch upgrades**: Upgrading within the same minor version (e.g., `v1.29.2` → `v1.29.5`) is always allowed.
+
+If the upgrade path validation cannot determine the installed version (e.g., on a fresh install), the check is skipped and the specified version is installed directly.
 
 ## Documentation
 
