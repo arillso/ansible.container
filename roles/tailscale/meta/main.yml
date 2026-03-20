@@ -1,6 +1,7 @@
 ---
 galaxy_info:
-    author: "arillso (@arillso)"
+    role_name: tailscale
+    author: Arillso Team
     description: "Manages Tailscale Kubernetes resources including ProxyGroups, Ingress, and Egress services."
     license: MIT
     min_ansible_version: "2.15"
@@ -22,3 +23,6 @@ galaxy_info:
         - kubernetes
         - container
         - networking
+        - vpn
+
+dependencies: []
