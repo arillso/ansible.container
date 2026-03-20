@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.3] - 2026-03-21
+
+### Fixed
+
+- Fixed missing `meta/main.yml` in tailscale role causing Galaxy import warning "Could not get role description, no role metadata found" (#57)
+- Added missing AppArmor proc rules for containerd: `/proc/thread-self/mountinfo r` and `/proc/*/net/** r` to prevent AppArmor denials in k3s role (#58)
+
 ## [1.3.2] - 2026-03-20
 
 ### Fixed
