@@ -1,0 +1,24 @@
+---
+galaxy_info:
+    author: "arillso (@arillso)"
+    description: "Manages Tailscale Kubernetes resources including ProxyGroups, Ingress, and Egress services."
+    license: MIT
+    min_ansible_version: "2.15"
+    platforms:
+        - name: Ubuntu
+          versions:
+              - focal
+              - jammy
+        - name: Debian
+          versions:
+              - bullseye
+              - bookworm
+        - name: EL
+          versions:
+              - "8"
+              - "9"
+    galaxy_tags:
+        - tailscale
+        - kubernetes
+        - container
+        - networking
