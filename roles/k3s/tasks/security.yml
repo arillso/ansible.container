@@ -5,7 +5,7 @@
 
 - name: Detect security framework in use
   ansible.builtin.set_fact:
-      security_framework: >-
+      k3s_security_framework: >-
           {%- if ansible_selinux.status is defined and ansible_selinux.status != "disabled" -%}
             selinux
           {%- elif ansible_apparmor is defined and ansible_apparmor.status == "enabled" -%}
@@ -16,12 +16,12 @@
 
 - name: Display detected security framework
   ansible.builtin.debug:
-      msg: "Detected security framework: {{ security_framework }}"
+      msg: "Detected security framework: {{ k3s_security_framework }}"
   when: k3s_debug_security | default(false) | bool
 
 # SELinux Configuration Block
 - name: SELinux configuration tasks
-  when: security_framework == "selinux"
+  when: k3s_security_framework == "selinux"
   block:
       - name: Install SELinux management packages
         ansible.builtin.package:
@@ -118,6 +118,7 @@
 
 # AppArmor Configuration Block
 - name: AppArmor configuration tasks
+  when: k3s_security_framework == "apparmor"
   block:
       - name: Install AppArmor utilities
         ansible.builtin.package:
@@ -133,7 +134,7 @@
             content: |
                 #include <tunables/global>
 
-                /usr/local/bin/k3s {
+                /usr/local/bin/k3s flags=(attach_disconnected,mediate_deleted) {
                   #include <abstractions/base>
                   #include <abstractions/nameservice>
                   #include <abstractions/user-tmp>
@@ -147,6 +148,7 @@
                   capability sys_chroot,
                   capability sys_ptrace,
                   capability dac_override,
+                  capability dac_read_search,
 
                   # K3s binary and subprocess execution
                   /usr/local/bin/k3s mr,
@@ -158,7 +160,7 @@
                   /proc/sys/** rw,
                   /sys/** rw,
 
-                  # K3s data directory with file locking (k flag)
+                  # K3s data directory with file locking (k flag required for flock on .lock file)
                   /var/lib/rancher/k3s/** rwixk,
                   /etc/rancher/k3s/** rw,
                   /etc/rancher/node/** rw,
@@ -182,6 +184,11 @@
 
                   # Allow ptrace for containerd
                   ptrace (read),
+
+                  # Required for containerd overlay snapshotter (overlayfs mounts)
+                  mount,
+                  umount,
+                  pivot_root,
                 }
             dest: /etc/apparmor.d/k3s
             mode: "0644"
@@ -248,7 +255,7 @@
 #   ansible.builtin.debug:
 #       msg: |
 #           K3s Security Configuration Summary:
-#           - Security Framework: {{ security_framework }}
+#           - Security Framework: {{ k3s_security_framework }}
 #           - SELinux Status: {{ ansible_selinux.status | default('not_detected') }}
 #           - AppArmor Status: {{ ansible_apparmor.status | default('not_detected') }}
 #           - Audit Logging: {{ k3s_audit_log_enabled | default(false) }}

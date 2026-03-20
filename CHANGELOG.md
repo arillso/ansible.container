@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.2] - 2026-03-20
+
+### Fixed
+
+- Fixed remaining k3s handler name case mismatches: `reload systemd` → `Reload systemd` and `restart k3s` → `Restart k3s` in systemd service task
+- Added `meta: flush_handlers` before k3s server health check to ensure server restarts before agents attempt to connect
+- Fixed AppArmor configuration block missing `when: k3s_security_framework == "apparmor"` condition, causing AppArmor tasks to run on all systems
+- Renamed `security_framework` set_fact variable to `k3s_security_framework` to follow role naming convention and prevent collisions with other roles
+
 ## [1.3.1] - 2026-03-20
 
 ### Fixed
