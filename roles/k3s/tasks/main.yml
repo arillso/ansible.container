@@ -237,8 +237,8 @@
       group: root
   become: true
   notify:
-      - reload systemd
-      - restart k3s
+      - Reload systemd
+      - Restart k3s
 
 - name: Enable and start k3s service
   ansible.builtin.systemd:
@@ -247,6 +247,10 @@
       state: "{{ k3s_service_state }}"
       daemon_reload: true
   become: true
+
+# Flush handlers before health check so server restarts before agents try to connect
+- name: Flush handlers to apply service restarts
+  ansible.builtin.meta: flush_handlers
 
 - name: Determine k3s server host for health check
   ansible.builtin.set_fact:
