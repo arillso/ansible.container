@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-03-20
+
+### Fixed
+
+- Fixed k3s role handler name case mismatch: `restart k3s` → `Restart k3s` causing deployment failures when k3s binary or config changes trigger a service restart
+
 ## [1.3.0] - 2026-03-19
 
 ### Added

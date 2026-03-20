@@ -182,7 +182,7 @@
   when: >-
       not ansible_local.k3s.service.binary_installed | bool
       or ansible_local.k3s.service.version != k3s_version
-  notify: restart k3s
+  notify: Restart k3s
 
 - name: Create k3s configuration directory
   ansible.builtin.file:
@@ -215,7 +215,7 @@
       owner: root
       group: root
   become: true
-  notify: restart k3s
+  notify: Restart k3s
 
 - name: Create k3s registries config
   ansible.builtin.template:
@@ -226,7 +226,7 @@
       group: root
   become: true
   when: k3s_private_registries | length > 0
-  notify: restart k3s
+  notify: Restart k3s
 
 - name: Create k3s systemd service
   ansible.builtin.template:
