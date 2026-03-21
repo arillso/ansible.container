@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Added missing AppArmor rule `/var/lib/kubelet/** rwk` to k3s security profile for kubelet pod management including etc-hosts, projected volumes, and plugin sockets
+- Added AppArmor rule `/var/lib/kubelet/plugins/** rwxk` for CSI driver and device plugin binary execution
+- Added AppArmor rules for CNI state (`/var/lib/cni/** rwk`) and CNI binary execution (`/opt/cni/bin/** rix`)
+- Added `unix,` AppArmor rule for Unix domain socket mediation required on kernel ≥ 6.17
 
 ## [1.3.3] - 2026-03-20
 
