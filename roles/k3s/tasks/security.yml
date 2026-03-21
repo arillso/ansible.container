@@ -179,6 +179,7 @@
 
                   # Kubelet pod management (etc-hosts, projected volumes, plugins)
                   /var/lib/kubelet/** rwk,
+                  /var/lib/kubelet/plugins/** rwxk,
 
                   # Container runtime requirements
                   /run/** rw,
