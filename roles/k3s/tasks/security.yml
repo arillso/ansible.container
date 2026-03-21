@@ -179,7 +179,7 @@
 
                   # Kubelet pod management
                   /var/lib/kubelet/** rwk,
-                  /var/lib/kubelet/plugins/** rwxk,
+                  /var/lib/kubelet/plugins/** rwixk,
                   /var/log/pods/** rw,
 
                   # CNI plugins (state and binaries)
