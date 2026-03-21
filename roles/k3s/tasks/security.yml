@@ -173,6 +173,7 @@
                   # Process and system info (broad /proc/** needed for containerd/kubelet)
                   /proc/** r,
                   /proc/thread-self/fd/** rw,
+                  /proc/thread-self/attr/** rw,
                   /proc/sys/fs/pipe-max-size r,
                   /etc/machine-id r,
                   /sys/devices/virtual/dmi/id/product_uuid r,

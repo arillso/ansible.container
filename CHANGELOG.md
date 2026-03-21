@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.7] - 2026-03-21
+
+### Fixed
+
+- Added AppArmor rule `/proc/thread-self/attr/** rw` to k3s security profile; required for containerd to apply AppArmor profiles to container exec processes (`apparmor failed to apply profile: write /proc/thread-self/attr/apparmor/exec: operation not permitted`)
+
 ## [1.3.6] - 2026-03-21
 
 ### Fixed
