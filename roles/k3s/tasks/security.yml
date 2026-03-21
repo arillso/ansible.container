@@ -134,27 +134,32 @@
             content: |
                 #include <tunables/global>
 
-                /usr/local/bin/k3s flags=(attach_disconnected,mediate_deleted) {
+                /usr/local/bin/k3s flags=(attach_disconnected,mediate_deleted,complain) {
                   #include <abstractions/base>
                   #include <abstractions/nameservice>
                   #include <abstractions/user-tmp>
 
                   # Core capabilities
-                  capability sys_admin,
-                  capability net_admin,
-                  capability sys_resource,
-                  capability setuid,
-                  capability setgid,
-                  capability sys_chroot,
-                  capability sys_ptrace,
+                  capability chown,
                   capability dac_override,
                   capability dac_read_search,
+                  capability fowner,
+                  capability fsetid,
+                  capability net_admin,
+                  capability setgid,
+                  capability setuid,
+                  capability sys_admin,
+                  capability sys_chroot,
+                  capability sys_ptrace,
+                  capability sys_resource,
 
                   # K3s binary and subprocess execution
                   /usr/local/bin/k3s mr,
                   /usr/sbin/xtables-nft-multi ix,
                   /usr/sbin/nft ix,
                   /usr/sbin/modprobe ix,
+                  /usr/bin/mount ix,
+                  /usr/bin/umount ix,
 
                   # Network and cgroup access
                   /proc/sys/** rw,
@@ -165,16 +170,21 @@
                   /etc/rancher/k3s/** rw,
                   /etc/rancher/node/** rw,
 
-                  # Process and system info
-                  /proc/*/stat r,
-                  /proc/*/cpuset r,
-                  /proc/*/mountinfo r,
-                  /proc/thread-self/mountinfo r,
-                  /proc/*/cgroup r,
-                  /proc/*/net/** r,
+                  # Process and system info (broad /proc/** needed for containerd/kubelet)
+                  /proc/** r,
+                  /proc/thread-self/fd/** rw,
                   /proc/sys/fs/pipe-max-size r,
                   /etc/machine-id r,
                   /sys/devices/virtual/dmi/id/product_uuid r,
+
+                  # Kubelet pod management
+                  /var/lib/kubelet/** rwk,
+                  /var/lib/kubelet/plugins/** rwxk,
+                  /var/log/pods/** rw,
+
+                  # CNI plugins (state and binaries)
+                  /var/lib/cni/** rwk,
+                  /opt/cni/bin/** rix,
 
                   # Container runtime requirements
                   /run/** rw,
@@ -186,6 +196,9 @@
 
                   # Allow ptrace for containerd
                   ptrace (read),
+
+                  # Unix domain sockets (required for kernel >= 6.17 AppArmor socket mediation)
+                  unix,
 
                   # Required for containerd overlay snapshotter (overlayfs mounts)
                   mount,
