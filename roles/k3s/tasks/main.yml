@@ -178,6 +178,7 @@
       owner: root
       group: root
       checksum: "{{ k3s_binary_checksum if k3s_binary_checksum else omit }}"
+      force: true
   become: true
   when: >-
       not ansible_local.k3s.service.binary_installed | bool

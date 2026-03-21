@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.6] - 2026-03-21
+
+### Fixed
+
+- Fixed k3s binary upgrade being skipped due to HTTP 304 Not Modified from cached ETag; added `force: true` to `get_url` so the binary is always re-downloaded when the installed version does not match the target version
+
 ## [1.3.5] - 2026-03-21
 
 ### Fixed
