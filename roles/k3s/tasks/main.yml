@@ -169,7 +169,31 @@
       - ansible_local.k3s.service.version | default('unknown') != 'unknown'
       - ansible_local.k3s.service.version != k3s_version
 
-# K3s binary installation - skip if already installed according to facts
+# K3s binary installation - checksum-verified download
+- name: Download k3s SHA256 checksum file
+  ansible.builtin.get_url:
+      url: "https://github.com/k3s-io/k3s/releases/download/{{ k3s_version }}/sha256sum-{{ k3s_arch }}.txt"
+      dest: "/tmp/k3s-sha256sum-{{ k3s_version }}.txt"
+      mode: "0644"
+      force: true
+  become: true
+  when: >-
+      (not ansible_local.k3s.service.binary_installed | bool
+      or ansible_local.k3s.service.version != k3s_version)
+      and not k3s_binary_checksum
+
+- name: Extract k3s binary checksum from release file
+  ansible.builtin.shell:
+      cmd: "set -o pipefail && grep ' k3s{{ k3s_suffix | default('') }}$' /tmp/k3s-sha256sum-{{ k3s_version }}.txt | awk '{print $1}'"
+      executable: /bin/bash
+  register: k3s_release_checksum
+  changed_when: false
+  become: true
+  when: >-
+      (not ansible_local.k3s.service.binary_installed | bool
+      or ansible_local.k3s.service.version != k3s_version)
+      and not k3s_binary_checksum
+
 - name: Download k3s binary
   ansible.builtin.get_url:
       url: "https://github.com/k3s-io/k3s/releases/download/{{ k3s_version }}/k3s{{ k3s_suffix | default('') }}"
@@ -177,7 +201,7 @@
       mode: "0755"
       owner: root
       group: root
-      checksum: "{{ k3s_binary_checksum if k3s_binary_checksum else omit }}"
+      checksum: "sha256:{{ k3s_binary_checksum if k3s_binary_checksum else k3s_release_checksum.stdout }}"
   become: true
   when: >-
       not ansible_local.k3s.service.binary_installed | bool
