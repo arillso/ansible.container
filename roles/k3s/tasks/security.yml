@@ -176,6 +176,9 @@
                   /etc/machine-id r,
                   /sys/devices/virtual/dmi/id/product_uuid r,
 
+                  # Kubelet pod management (etc-hosts, projected volumes, plugins)
+                  /var/lib/kubelet/** rwk,
+
                   # Container runtime requirements
                   /run/** rw,
                   /var/run/** rw,
