@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fixed k3s binary upgrade being skipped due to HTTP 304 Not Modified from cached ETag; added `force: true` to `get_url` so the binary is always re-downloaded when the installed version does not match the target version
+- Fixed k3s binary upgrade being skipped due to HTTP 304 Not Modified from cached ETag; replaced `force: true` workaround with proper SHA256 checksum verification fetched from the k3s GitHub release — Ansible now compares the local binary against the expected checksum locally, bypassing HTTP cache entirely
 
 ## [1.3.5] - 2026-03-21
 
