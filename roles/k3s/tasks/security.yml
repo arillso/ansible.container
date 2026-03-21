@@ -170,6 +170,7 @@
                   /proc/*/cpuset r,
                   /proc/*/mountinfo r,
                   /proc/thread-self/mountinfo r,
+                  /proc/thread-self/fd/** rw,
                   /proc/*/cgroup r,
                   /proc/*/net/** r,
                   /proc/sys/fs/pipe-max-size r,
