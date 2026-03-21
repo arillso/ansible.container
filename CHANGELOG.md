@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.5] - 2026-03-21
+
+### Fixed
+
+- Fixed invalid AppArmor permission `rwxk` → `rwixk` for `/var/lib/kubelet/plugins/**` in k3s security profile; bare `x` must be preceded by an exec qualifier (`i`, `p`, or `u`)
+
 ## [1.3.4] - 2026-03-21
 
 ### Fixed
