@@ -55,7 +55,6 @@ k3s_node_taints: []
 
 # K3s system resources
 k3s_max_pods: 110
-k3s_node_ip_max_pods: 110
 
 # K3s additional configuration
 k3s_extra_server_args: []
