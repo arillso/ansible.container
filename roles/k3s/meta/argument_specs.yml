@@ -165,10 +165,6 @@ argument_specs:
                 default: 110
                 description: "Maximum number of pods per node"
 
-            k3s_node_ip_max_pods:
-                type: "int"
-                default: 110
-                description: "Maximum number of pods per node IP"
 
             k3s_extra_server_args:
                 type: "list"
