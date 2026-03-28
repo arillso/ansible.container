@@ -132,6 +132,8 @@
       - name: Deploy cri-containerd AppArmor profile with change_profile support
         ansible.builtin.copy:
             content: |
+                # Based on containerd default profile — review on major containerd upgrades.
+                # change_profile -> **, added for AppArmor 4.x (kernel >= 6.8) compatibility.
                 #include <tunables/global>
 
                 profile cri-containerd.apparmor.d flags=(attach_disconnected,mediate_deleted) {
@@ -181,7 +183,9 @@
         register: cri_containerd_profile_updated
 
       - name: Reload cri-containerd AppArmor profile
-        ansible.builtin.command: apparmor_parser -r /etc/apparmor.d/cri-containerd.apparmor.d
+        ansible.builtin.shell: >
+            apparmor_parser -r /etc/apparmor.d/cri-containerd.apparmor.d ||
+            apparmor_parser /etc/apparmor.d/cri-containerd.apparmor.d
         become: true
         when: cri_containerd_profile_updated is changed
         changed_when: true
