@@ -1,9 +1,16 @@
 ---
 - name: "Ubuntu : create keyrings directory"
+  become: true
   ansible.builtin.file:
       path: /etc/apt/keyrings
       state: directory
       mode: "0755"
+
+- name: "Ubuntu : remove legacy GPG key"
+  become: true
+  ansible.builtin.file:
+      path: /etc/apt/trusted.gpg.d/docker.asc
+      state: absent
 
 - name: "Ubuntu : add key"
   ansible.builtin.get_url:
