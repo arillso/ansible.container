@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.10] - 2026-03-28
+
+### Fixed
+
+- Deploy `/etc/apparmor.d/cri-containerd.apparmor.d` with `change_profile -> **,` in k3s role;
+  on Ubuntu 24.04 (kernel 6.8, AppArmor 4.x) containerd generates this profile dynamically
+  without the rule, causing `kubectl exec` to fail with
+  `apparmor failed to apply profile: write fsmount:fscontext:proc/thread-self/attr/apparmor/exec:
+  operation not permitted`. Pre-deploying the fixed profile ensures runc can apply AppArmor
+  profiles to exec'd container processes.
+
 ## [1.3.9] - 2026-03-28
 
 ### Fixed
