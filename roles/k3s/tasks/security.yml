@@ -205,6 +205,10 @@
                   mount,
                   umount,
                   pivot_root,
+
+                  # Required for AppArmor 4.x (kernel >= 6.x): containerd writes AppArmor
+                  # exec profile via fsmount LSM hook when applying profiles to containers
+                  fsmount,
                 }
             dest: /etc/apparmor.d/k3s
             mode: "0644"
