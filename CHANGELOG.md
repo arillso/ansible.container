@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.8] - 2026-03-28
+
+### Fixed
+
+- Added `fsmount,` AppArmor rule to k3s security profile; required for AppArmor 4.x (kernel >= 6.x) where containerd writes the AppArmor exec profile via the `fsmount` LSM hook when applying profiles to container processes (`apparmor failed to apply profile: write fsmount:fscontext:proc/thread-self/attr/apparmor/exec: operation not permitted`)
+- Moved Docker GPG key from deprecated `/etc/apt/trusted.gpg.d/` to `/etc/apt/keyrings/` and added task to create the keyrings directory; fixes apt warnings on Ubuntu 22.04+ that treat keys outside `/etc/apt/keyrings/` as untrusted
+
 ## [1.3.7] - 2026-03-21
 
 ### Fixed
