@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.9] - 2026-03-28
+
+### Fixed
+
+- Replaced invalid `fsmount,` AppArmor rule (parse error: `unexpected TOK_END_OF_RULE, expecting TOK_MODE`) with `change_profile -> **,` in k3s security profile; this allows containerd to write the target profile name to `/proc/thread-self/attr/apparmor/exec` before exec, which is how AppArmor profiles are applied to container processes
+
 ## [1.3.8] - 2026-03-28
 
 ### Fixed
