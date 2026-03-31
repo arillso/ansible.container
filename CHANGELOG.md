@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.11] - 2026-03-31
+
+### Fixed
+
+- Replaced restrictive AppArmor signal rules (`signal (receive) peer=unconfined` and `signal (receive) peer=cri-containerd.apparmor.d`) with unrestricted `signal,` in k3s security profile; runc requires full signal capabilities (send/receive) to deliver SIGTERM/SIGKILL to container init processes during pod termination
+
 ## [1.3.10] - 2026-03-28
 
 ### Fixed
