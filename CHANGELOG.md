@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.12] - 2026-04-01
+
+### Changed
+
+- Reverted unrestricted `signal,` AppArmor rule back to targeted peer-specific rules (`signal (receive) peer=unconfined` and `signal (receive) peer=cri-containerd.apparmor.d`) in k3s security profile; restricts signal reception to known peers (host and containerd manager) for a tighter security posture
+
 ## [1.3.11] - 2026-03-31
 
 ### Fixed

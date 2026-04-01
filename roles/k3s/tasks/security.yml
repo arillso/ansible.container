@@ -145,9 +145,10 @@
                   file,
                   umount,
 
-                  # Allow all signal operations (send/receive) — required for runc to
-                  # signal container init processes (SIGTERM/SIGKILL) during pod termination.
-                  signal,
+                  # Host (privileged) processes may send signals to container processes.
+                  signal (receive) peer=unconfined,
+                  # Manager may send signals to container processes.
+                  signal (receive) peer=cri-containerd.apparmor.d,
 
                   deny @{PROC}/* w,
                   deny @{PROC}/{[^1-9],[^1-9][^0-9],[^1-9s][^0-9y][^0-9s],[^1-9][^0-9][^0-9][^0-9]*}/** w,
