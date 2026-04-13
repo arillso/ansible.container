@@ -13,7 +13,7 @@ argument_specs:
                     - Specifies the version of Docker Compose to install. Leave blank for the latest version.
                     - Specify a specific version to install an older or specific release.
                 # renovate: datasource=github-releases depName=docker/compose
-                default: "5.1.1"
+                default: "5.1.2"
 
             docker_compose_v2_packages:
                 type: list
