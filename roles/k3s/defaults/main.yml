@@ -107,6 +107,10 @@ k3s_selinux_custom_policy: false
 # AppArmor profile disabled by default - K3s requires many system operations
 # (mount, file_lock, proc access) that are difficult to whitelist correctly
 k3s_apparmor_profile: false
+# Deploy and load the cri-containerd AppArmor profile for container workloads.
+# Set to false to skip deployment AND remove any previously deployed profile
+# (e.g. as workaround for kernel 6.17 profile-stacking bugs).
+k3s_cri_apparmor_profile_enabled: true
 k3s_debug_security: false
 
 # K3s private registry configuration
