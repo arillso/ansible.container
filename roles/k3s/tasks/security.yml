@@ -222,7 +222,9 @@
             path: /etc/apparmor.d/cri-containerd.apparmor.d
             state: absent
         become: true
-        when: not (k3s_cri_apparmor_profile_enabled | default(true) | bool)
+        when:
+            - not (k3s_cri_apparmor_profile_enabled | default(true) | bool)
+            - cri_containerd_profile_file.stat.exists | default(false)
         notify: Restart k3s
 
       - name: Create AppArmor profile for K3s
