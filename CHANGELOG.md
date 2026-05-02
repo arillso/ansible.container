@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.13] - 2026-05-03
+
+### Added
+
+- New `k3s_cri_apparmor_profile_enabled` variable (default `true`,
+  backwards-compatible) to opt out of deploying the `cri-containerd.apparmor.d`
+  profile in the k3s role; when set to `false` the role unloads the profile
+  from the kernel, removes the file, and notifies `Restart k3s`. Workaround
+  for kernel 6.17 AppArmor profile-stacking bugs
+  ([k3s-io/k3s#13625](https://github.com/k3s-io/k3s/issues/13625),
+  [containerd/containerd#12886](https://github.com/containerd/containerd/issues/12886))
+  which cause pod termination to hang and flood dmesg with SIGURG denials
+
 ## [1.3.12] - 2026-04-01
 
 ### Changed

@@ -272,6 +272,14 @@ argument_specs:
                 default: false
                 description: "Apply AppArmor profile for K3s"
 
+            k3s_cri_apparmor_profile_enabled:
+                type: "bool"
+                default: true
+                description: >-
+                    Deploy and load the cri-containerd AppArmor profile.
+                    When false, any existing profile is unloaded and removed
+                    (e.g. workaround for kernel 6.17 profile-stacking bugs).
+
             k3s_debug_security:
                 type: "bool"
                 default: false

@@ -183,14 +183,47 @@
             mode: "0644"
         become: true
         register: cri_containerd_profile_updated
+        when: k3s_cri_apparmor_profile_enabled | default(true) | bool
 
       - name: Reload cri-containerd AppArmor profile
         ansible.builtin.shell: >
             apparmor_parser -r /etc/apparmor.d/cri-containerd.apparmor.d ||
             apparmor_parser /etc/apparmor.d/cri-containerd.apparmor.d
         become: true
-        when: cri_containerd_profile_updated is changed
+        when:
+            - k3s_cri_apparmor_profile_enabled | default(true) | bool
+            - cri_containerd_profile_updated is changed
         changed_when: true
+
+      # Disable path: remove any previously deployed cri-containerd profile.
+      # Workaround for kernel 6.17 profile-stacking signal-rule bug
+      # (k3s-io/k3s#13625, containerd/containerd#12886) that breaks pod
+      # termination and floods dmesg with SIGURG denials.
+      - name: Stat existing cri-containerd AppArmor profile
+        ansible.builtin.stat:
+            path: /etc/apparmor.d/cri-containerd.apparmor.d
+        register: cri_containerd_profile_file
+        when: not (k3s_cri_apparmor_profile_enabled | default(true) | bool)
+
+      - name: Unload cri-containerd AppArmor profile from kernel
+        ansible.builtin.command:
+            cmd: apparmor_parser -R /etc/apparmor.d/cri-containerd.apparmor.d
+        become: true
+        when:
+            - not (k3s_cri_apparmor_profile_enabled | default(true) | bool)
+            - cri_containerd_profile_file.stat.exists | default(false)
+        register: cri_containerd_profile_unloaded
+        changed_when: cri_containerd_profile_unloaded.rc == 0
+        failed_when: false
+        notify: Restart k3s
+
+      - name: Remove cri-containerd AppArmor profile file
+        ansible.builtin.file:
+            path: /etc/apparmor.d/cri-containerd.apparmor.d
+            state: absent
+        become: true
+        when: not (k3s_cri_apparmor_profile_enabled | default(true) | bool)
+        notify: Restart k3s
 
       - name: Create AppArmor profile for K3s
         ansible.builtin.copy:
