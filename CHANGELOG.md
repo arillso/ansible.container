@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- New `k3s_etcd_s3_access_key` / `k3s_etcd_s3_secret_key` variables in the k3s
+  role: render `etcd-s3-access-key` / `etcd-s3-secret-key` into the server
+  config so scheduled etcd snapshots can authenticate against S3-compatible
+  storage (e.g. Cloudflare R2). The config file is deployed with mode `0600`,
+  so credentials stay root-only on disk. Both variables are optional and
+  omitted when unset — existing consumers are unaffected.
+
 ## [1.3.13] - 2026-05-03
 
 ### Added

@@ -123,6 +123,14 @@
 {%-   set _ = k3s_config.update({'etcd-s3-folder': k3s_etcd_s3_folder}) -%}
 {%- endif -%}
 
+{%- if k3s_etcd_s3_access_key is defined and k3s_etcd_s3_access_key -%}
+{%-   set _ = k3s_config.update({'etcd-s3-access-key': k3s_etcd_s3_access_key}) -%}
+{%- endif -%}
+
+{%- if k3s_etcd_s3_secret_key is defined and k3s_etcd_s3_secret_key -%}
+{%-   set _ = k3s_config.update({'etcd-s3-secret-key': k3s_etcd_s3_secret_key}) -%}
+{%- endif -%}
+
 {#- === NODE CONFIGURATION === -#}
 {%- if k3s_node_name is defined and k3s_node_name -%}
 {%-   set _ = k3s_config.update({'node-name': k3s_node_name}) -%}
