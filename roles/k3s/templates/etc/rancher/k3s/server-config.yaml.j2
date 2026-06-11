@@ -103,7 +103,10 @@
 {%- endif -%}
 
 {#- S3 Backup Integration -#}
-{%- if k3s_etcd_s3 is defined and k3s_etcd_s3 -%}
+{#- `| bool` guards against string-typed truthiness: consumers commonly set
+    this via a Jinja expression (e.g. env-lookup gate), and without native
+    templating that yields the string "False" — which is truthy. -#}
+{%- if k3s_etcd_s3 is defined and k3s_etcd_s3 | bool -%}
 {%-   set _ = k3s_config.update({'etcd-s3': true}) -%}
 {%- endif -%}
 
