@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-06-12
+
 ### Added
 
 - New `k3s_etcd_s3_access_key` / `k3s_etcd_s3_secret_key` variables in the k3s
