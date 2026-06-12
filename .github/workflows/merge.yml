@@ -14,6 +14,8 @@ concurrency:
 
 permissions:
     contents: read
+    security-events: write
+    actions: read
 
 jobs:
     ci:
@@ -26,6 +28,3 @@ jobs:
 
     security-secrets:
         uses: arillso/.github/.github/workflows/security-secrets.yml@2026-06-02
-        permissions:
-            contents: read
-            actions: read
