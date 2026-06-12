@@ -1,3 +1,4 @@
+---
 # Lefthook git hooks — run `lefthook install` once after cloning.
 # Tools without a system binary are installed on-demand via `npx --yes`.
 # System binaries: yamllint, gitleaks (>= v8.18 for `git --staged` subcommand),
