@@ -35,6 +35,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   template gates each with `is defined`, so a default would change behaviour —
   and the two credential keys are marked `no_log: true`.
 
+### Fixed
+
+- `docker_compose_v2` role: removed bogus `"{{ omit }}"` defaults for optional
+  variables. The literal placeholder string broke argument-spec validation for
+  non-`str`-typed vars (`docker_compose_v2_scale` as `dict`,
+  `_files`/`_profiles`/`_services` as `list[str]`) under Ansible 2.18+.
+  Optional vars are now intentionally undefined and the module-call kwargs
+  apply `| default(omit)` to emit a real omit sentinel. End behaviour is
+  unchanged for consumers that did not override these vars.
+
 ## [1.3.13] - 2026-05-03
 
 ### Added

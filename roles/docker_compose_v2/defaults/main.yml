@@ -1,6 +1,6 @@
 ---
 # renovate: datasource=github-releases depName=docker/compose
-docker_compose_v2_version: "5.1.4"
+docker_compose_v2_version: "5.1.3"
 docker_compose_v2_packages:
     - name: "{{ 'docker-compose-plugin=' + docker_compose_v2_version if docker_compose_v2_version != '' else 'docker-compose-plugin' }}"
 docker_compose_v2_directory_path: "/etc/docker/compose"
@@ -9,34 +9,22 @@ docker_compose_v2_use_file: true
 docker_compose_v2_config: []
 docker_compose_v2_project: ""
 docker_compose_v2_api_version: "auto"
-docker_compose_v2_ca_cert: "{{ omit }}"
-docker_compose_v2_client_cert: "{{ omit }}"
-docker_compose_v2_client_key: "{{ omit }}"
 docker_compose_v2_debug: false
 docker_compose_v2_dependencies: true
 docker_compose_v2_docker_host: "unix:///var/run/docker.sock"
-docker_compose_v2_env_file: "{{ omit }}"
-docker_compose_v2_files: "{{ omit }}"
 docker_compose_v2_hostname_check: false
 docker_compose_v2_nocache: false
-docker_compose_v2_profiles: "{{ omit }}"
-docker_compose_v2_project_name: "{{ omit }}"
 docker_compose_v2_pull: policy
 docker_compose_v2_recreate: "auto"
 docker_compose_v2_remove_images: all
 docker_compose_v2_remove_orphans: false
 docker_compose_v2_remove_volumes: false
 docker_compose_v2_restarted: false
-docker_compose_v2_services: "{{ omit }}"
-docker_compose_v2_ssl_version: "{{ omit }}"
 docker_compose_v2_state: "present"
 docker_compose_v2_stopped: false
-docker_compose_v2_timeout:
 docker_compose_v2_tls: false
-docker_compose_v2_tls_hostname: "{{ omit }}"
 docker_compose_v2_validate_certs: false
-docker_compose_v2_cli_context: "{{ omit }}"
-docker_compose_v2_docker_cli: "{{ omit }}"
-docker_compose_v2_build: "{{ omit }}"
-docker_compose_v2_ca_path: "{{ omit }}"
-docker_compose_v2_scale: "{{ omit }}"
+
+# Optional module params are intentionally undefined here (not "{{ omit }}",
+# which would store the literal string and fail arg-spec validation for
+# non-str types); tasks/main.yml applies | default(omit) per kwarg.
