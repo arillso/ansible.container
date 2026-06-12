@@ -33,11 +33,7 @@ k3s_node_ip: "{{ ansible_default_ipv4.address }}"
 k3s_bind_address: "{{ ansible_default_ipv4.address }}"
 k3s_https_listen_port: 6443
 
-# Readiness probe for the server API (wait_for on k3s_https_listen_port).
-# `delay` is an unconditional pre-sleep on every run; `timeout` already
-# covers the cold-bootstrap race, so consumers running against an
-# already-converged server can override k3s_health_check_delay: 0 to skip
-# the idle wait. Defaults preserve the historical behaviour.
+# Readiness probe tuning; set k3s_health_check_delay: 0 to skip idle wait on converged servers.
 k3s_health_check_delay: 30
 k3s_health_check_timeout: 600
 k3s_health_check_sleep: 10
