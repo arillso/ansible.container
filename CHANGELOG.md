@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   storage (e.g. Cloudflare R2). The config file is deployed with mode `0600`,
   so credentials stay root-only on disk. Both variables are optional and
   omitted when unset — existing consumers are unaffected.
+- New `k3s_health_check_delay` / `k3s_health_check_timeout` /
+  `k3s_health_check_sleep` variables (defaults `30` / `600` / `10`,
+  backwards-compatible) parametrise the server API readiness probe in the
+  k3s role. The `wait_for` task previously hard-coded `delay: 30`, an
+  unconditional pre-sleep on every run; consumers running against an
+  already-converged server can now set `k3s_health_check_delay: 0` to skip
+  the idle wait while `timeout`/`sleep` still cover the cold-bootstrap race.
 
 ### Changed
 

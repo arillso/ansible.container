@@ -294,9 +294,9 @@
   ansible.builtin.wait_for:
       port: "{{ k3s_https_listen_port }}"
       host: "{{ k3s_health_check_host }}"
-      delay: 30
-      timeout: 600
-      sleep: 10
+      delay: "{{ k3s_health_check_delay }}"
+      timeout: "{{ k3s_health_check_timeout }}"
+      sleep: "{{ k3s_health_check_sleep }}"
   when: k3s_role == "server"
 
 # - name: Set kubeconfig permissions
