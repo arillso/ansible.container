@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- New `k3s_etcd_s3_access_key` / `k3s_etcd_s3_secret_key` variables in the k3s
+  role: render `etcd-s3-access-key` / `etcd-s3-secret-key` into the server
+  config so scheduled etcd snapshots can authenticate against S3-compatible
+  storage (e.g. Cloudflare R2). The config file is deployed with mode `0600`,
+  so credentials stay root-only on disk. Both variables are optional and
+  omitted when unset — existing consumers are unaffected.
+
+### Changed
+
+- Documented the full etcd snapshot variable family in the k3s role's
+  `argument_specs.yml` (`k3s_etcd_expose_metrics`,
+  `k3s_etcd_snapshot_schedule_cron`, `k3s_etcd_snapshot_retention`,
+  `k3s_etcd_snapshot_dir`, `k3s_etcd_s3`, `k3s_etcd_s3_endpoint`,
+  `k3s_etcd_s3_region`, `k3s_etcd_s3_bucket`, `k3s_etcd_s3_folder` plus the two
+  new credential variables). These were previously template-only and
+  undocumented. All are `required: false` and carry no spec default — the
+  template gates each with `is defined`, so a default would change behaviour —
+  and the two credential keys are marked `no_log: true`.
+
 ## [1.3.13] - 2026-05-03
 
 ### Added

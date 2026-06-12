@@ -165,6 +165,96 @@ argument_specs:
                 default: 110
                 description: "Maximum number of pods per node"
 
+            # etcd snapshot configuration. All variables are optional and
+            # intentionally carry no spec default: the server-config template
+            # gates each one with `is defined`, so a default here would make
+            # the key render unconditionally and change behaviour. Leave them
+            # undefined to omit the corresponding etcd flag.
+            k3s_etcd_expose_metrics:
+                type: "bool"
+                required: false
+                description: >-
+                    Expose etcd metrics (`etcd-expose-metrics`). Omitted when
+                    undefined.
+
+            k3s_etcd_snapshot_schedule_cron:
+                type: "str"
+                required: false
+                description: >-
+                    Cron schedule for automatic etcd snapshots
+                    (`etcd-snapshot-schedule-cron`, e.g. `0 */6 * * *`).
+                    Omitted when undefined.
+
+            k3s_etcd_snapshot_retention:
+                type: "int"
+                required: false
+                description: >-
+                    Number of etcd snapshots to retain
+                    (`etcd-snapshot-retention`). Applies to both local and S3
+                    snapshots. Omitted when undefined.
+
+            k3s_etcd_snapshot_dir:
+                type: "str"
+                required: false
+                description: >-
+                    Directory for local etcd snapshots (`etcd-snapshot-dir`).
+                    Omitted when undefined (K3s default location).
+
+            k3s_etcd_s3:
+                type: "bool"
+                required: false
+                description: >-
+                    Enable uploading etcd snapshots to an S3-compatible store
+                    (`etcd-s3`). Passed through `| bool`, so a string value
+                    such as "False" is treated correctly. Omitted when
+                    undefined.
+
+            k3s_etcd_s3_endpoint:
+                type: "str"
+                required: false
+                description: >-
+                    S3 endpoint host for etcd snapshot uploads
+                    (`etcd-s3-endpoint`), without scheme. Omitted when
+                    undefined.
+
+            k3s_etcd_s3_region:
+                type: "str"
+                required: false
+                description: >-
+                    S3 region for etcd snapshot uploads (`etcd-s3-region`,
+                    e.g. `auto` for Cloudflare R2). Omitted when undefined.
+
+            k3s_etcd_s3_bucket:
+                type: "str"
+                required: false
+                description: >-
+                    S3 bucket for etcd snapshot uploads (`etcd-s3-bucket`).
+                    Omitted when undefined.
+
+            k3s_etcd_s3_folder:
+                type: "str"
+                required: false
+                description: >-
+                    Folder/prefix within the S3 bucket for etcd snapshots
+                    (`etcd-s3-folder`). Omitted when undefined.
+
+            k3s_etcd_s3_access_key:
+                type: "str"
+                required: false
+                no_log: true
+                description: >-
+                    Access key for the S3-compatible etcd snapshot store
+                    (`etcd-s3-access-key`). Rendered into the server config
+                    (mode 0600). Omitted when undefined.
+
+            k3s_etcd_s3_secret_key:
+                type: "str"
+                required: false
+                no_log: true
+                description: >-
+                    Secret key for the S3-compatible etcd snapshot store
+                    (`etcd-s3-secret-key`). Rendered into the server config
+                    (mode 0600). Omitted when undefined.
 
             k3s_extra_server_args:
                 type: "list"

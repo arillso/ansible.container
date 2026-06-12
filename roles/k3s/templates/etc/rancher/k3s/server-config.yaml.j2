@@ -103,7 +103,10 @@
 {%- endif -%}
 
 {#- S3 Backup Integration -#}
-{%- if k3s_etcd_s3 is defined and k3s_etcd_s3 -%}
+{#- `| bool` guards against string-typed truthiness: consumers commonly set
+    this via a Jinja expression (e.g. env-lookup gate), and without native
+    templating that yields the string "False" — which is truthy. -#}
+{%- if k3s_etcd_s3 is defined and k3s_etcd_s3 | bool -%}
 {%-   set _ = k3s_config.update({'etcd-s3': true}) -%}
 {%- endif -%}
 
@@ -121,6 +124,14 @@
 
 {%- if k3s_etcd_s3_folder is defined and k3s_etcd_s3_folder -%}
 {%-   set _ = k3s_config.update({'etcd-s3-folder': k3s_etcd_s3_folder}) -%}
+{%- endif -%}
+
+{%- if k3s_etcd_s3_access_key is defined and k3s_etcd_s3_access_key -%}
+{%-   set _ = k3s_config.update({'etcd-s3-access-key': k3s_etcd_s3_access_key}) -%}
+{%- endif -%}
+
+{%- if k3s_etcd_s3_secret_key is defined and k3s_etcd_s3_secret_key -%}
+{%-   set _ = k3s_config.update({'etcd-s3-secret-key': k3s_etcd_s3_secret_key}) -%}
 {%- endif -%}
 
 {#- === NODE CONFIGURATION === -#}
