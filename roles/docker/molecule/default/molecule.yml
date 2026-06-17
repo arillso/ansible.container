@@ -30,8 +30,9 @@ provisioner:
     name: ansible
     config_options:
         defaults:
-            callbacks_enabled: profile_tasks, timer, yaml
-            stdout_callback: yaml
+            callbacks_enabled: profile_tasks, timer
+            stdout_callback: ansible.builtin.default
+            result_format: yaml
     playbooks:
         converge: converge.yml
         verify: verify.yml
