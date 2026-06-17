@@ -9,6 +9,16 @@
           - traefik
           - servicelb
       k3s_write_kubeconfig_mode: "0644"
+  pre_tasks:
+      # The k3s install script needs curl, which the base test images
+      # do not ship. Install it before the role runs.
+      - name: Ensure curl is present
+        ansible.builtin.apt:
+            name: curl
+            state: present
+            update_cache: true
+        when: ansible_os_family == "Debian"
+
   tasks:
       - name: Include k3s role
         ansible.builtin.include_role:

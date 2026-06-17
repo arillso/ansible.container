@@ -3,6 +3,11 @@
   hosts: all
   become: true
   vars:
+      # Install whatever docker-ce the upstream repo currently offers.
+      # The default pins an exact patch version, but the bare
+      # `docker-ce=28.5.2` never matches apt's full version string
+      # (e.g. 5:28.5.2-1~debian.12~bookworm), so CI must not pin.
+      docker_version: ""
       docker_daemon_config:
           log-driver: json-file
           log-opts:
