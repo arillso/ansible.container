@@ -28,6 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Molecule (CI)**: run the docker and k3s scenarios on both Ubuntu 22.04 and
   Debian 12 (was Ubuntu-only), restoring the two-distro coverage from the
   pre-KVM docker-driver setup.
+- Align the release workflow with the org convention: set
+  `name: Release - Ansible Collection`, simplify `run-name` to
+  `Release <ref>`, use a `release-<ref>` concurrency group, rename the job to
+  `release`, and pin the reusable workflow to `@2026-06-18`.
 
 ## [1.4.0] - 2026-06-12
 
