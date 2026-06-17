@@ -6,37 +6,41 @@ docker_daemon:
     log-driver: journald
     live-restore: true
 
+# Consumed by the arillso.system.systemd role (systemd_units interface):
+# each entry is {name: <full unit filename>, unit: {Section: {Key: Value}}}.
 docker_systemd_units:
-    - name: docker-prune
-      type: service
-      systemd_unit_generic_options:
-          - "Description=Docker Image Prune Service"
-      systemd_unit_options:
-          - "Type=oneshot"
-          - "ExecStart=/usr/bin/docker system prune -af --filter 'until=1h'"
+    - name: docker-prune.service
+      unit:
+          Unit:
+              Description: Docker Image Prune Service
+          Service:
+              Type: oneshot
+              ExecStart: "/usr/bin/docker system prune -af --filter 'until=1h'"
 
-    - name: docker-prune
-      type: timer
-      systemd_unit_generic_options:
-          - "Description=Run docker image prune regularly"
-      systemd_unit_options:
-          - "OnCalendar=*:0/5"
-          - "Persistent=true"
+    - name: docker-prune.timer
+      unit:
+          Unit:
+              Description: Run docker image prune regularly
+          Timer:
+              OnCalendar: "*:0/5"
+              Persistent: true
+          Install:
+              WantedBy: timers.target
 
-    - name: docker-prune-volumes
-      type: service
-      systemd_unit_generic_options:
-          - "Description=Docker Image Prune Service"
-      systemd_unit_options:
-          - "Type=oneshot"
-          - "ExecStart=/usr/bin/docker system prune -af --volumes"
+    - name: docker-prune-volumes.service
+      unit:
+          Unit:
+              Description: Docker Volume Prune Service
+          Service:
+              Type: oneshot
+              ExecStart: "/usr/bin/docker system prune -af --volumes"
 
-    - name: docker-prune-volumes
-      type: timer
-      systemd_unit_generic_options:
-          - "Description=Run docker image prune volumes regularly"
-      systemd_unit_options:
-          - "OnCalendar=weekly"
-          - "Persistent=true"
-      systemd_unit_install_options:
-          - "WantedBy=timers.target"
+    - name: docker-prune-volumes.timer
+      unit:
+          Unit:
+              Description: Run docker image prune volumes regularly
+          Timer:
+              OnCalendar: weekly
+              Persistent: true
+          Install:
+              WantedBy: timers.target

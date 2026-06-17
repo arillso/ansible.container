@@ -3,4 +3,4 @@ collections:
     - name: community.docker
       version: ">=3.4.11"
     - name: arillso.system
-      version: ">=0.0.17"
+      version: ">=1.0.0"

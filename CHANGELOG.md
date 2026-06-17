@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **docker role**: the Docker prune service/timer setup called
+  `arillso.system.systemd_unit`, a role that no longer exists in
+  `arillso.system` (replaced by the `systemd` role with a `systemd_units`
+  list interface), so the role failed with "role
+  'arillso.system.systemd_unit' was not found". Rewrite the prune units in
+  the `systemd_units` format and call `arillso.system.systemd`.
+
+### Changed
+
+- **Dependency**: raise the `arillso.system` lower bound from `>=0.0.17` to
+  `>=1.0.0` — the `systemd` role with the `systemd_units` interface the docker
+  role now uses is only available from 1.0.0 onwards.
+
 ## [1.4.0] - 2026-06-12
 
 ### Added
