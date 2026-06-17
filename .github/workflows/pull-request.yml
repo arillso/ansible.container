@@ -30,12 +30,16 @@ jobs:
             enable_unit_tests: true
 
     molecule-docker:
-        # Roles keep molecule scenarios under roles/<role>/molecule/ rather
-        # than extensions/molecule/, so scenarios_root is set per role and
+        # docker (dockerd) and k3s (modprobe/cgroups) need a real kernel,
+        # so they run under the KVM (molecule-qemu) reusable rather than
+        # the docker driver. Roles keep molecule scenarios under
+        # roles/<role>/molecule/, so scenarios_root is set per role and
         # the matrix is pinned to the single `default` scenario. The
         # concurrency-suffix keeps each role's nested call out of the
-        # caller's concurrency group (see ansible.system pull-request.yml).
-        uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-06-14
+        # caller's concurrency group.
+        # NOTE: branch ref while the KVM reusable PoC is validated; pin to
+        # a date tag once arillso/.github merges it.
+        uses: arillso/.github/.github/workflows/ci-ansible-molecule-kvm.yml@feat/ci-ansible-molecule-kvm
         with:
             collection_namespace: arillso
             collection_name: container
@@ -45,7 +49,7 @@ jobs:
             concurrency-suffix: molecule-docker
 
     molecule-k3s:
-        uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-06-14
+        uses: arillso/.github/.github/workflows/ci-ansible-molecule-kvm.yml@feat/ci-ansible-molecule-kvm
         with:
             collection_namespace: arillso
             collection_name: container
