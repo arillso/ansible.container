@@ -65,16 +65,15 @@
   notify:
       - Restart docker
 
-- name: Create Docker Prune Service and Timer File
+- name: Create Docker Prune Service and Timer Files
   ansible.builtin.include_role:
-      name: arillso.system.systemd_unit
+      name: arillso.system.systemd
   vars:
-      systemd_unit_name: "{{ item.name }}"
-      systemd_unit_type: "{{ item.type }}"
-      systemd_unit_generic_options: "{{ item.systemd_unit_generic_options | default('') }}"
-      systemd_unit_options: "{{ item.systemd_unit_options | default('') }}"
-      systemd_unit_install_options: "{{ item.systemd_unit_install_options | default('') }}"
-  loop: "{{ docker_systemd_units }}"
+      # Only the unit-file entry point; service/journald management stays
+      # off so this call just writes the prune unit files.
+      systemd_service_enabled: false
+      systemd_journald_enabled: false
+      systemd_units: "{{ docker_systemd_units }}"
 
 - name: Enable and start systemd timers for Docker
   become: true
@@ -83,7 +82,7 @@
       enabled: true
       daemon_reload: true
   loop: "{{ docker_systemd_units }}"
-  when: item.type == 'timer'
+  when: item.name is search('\.timer$')
 
 - name: Run handlers
   ansible.builtin.meta: flush_handlers

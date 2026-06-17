@@ -3,4 +3,4 @@ collections:
     - name: kubernetes.core
       version: ">=2.4.0"
     - name: arillso.system
-      version: ">=0.0.17"
+      version: ">=1.0.0"

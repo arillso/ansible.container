@@ -29,6 +29,35 @@ jobs:
             python_version: "3.12"
             enable_unit_tests: true
 
+    molecule-docker:
+        # docker (dockerd) and k3s (modprobe/cgroups) need a real kernel,
+        # so they run with the qemu (KVM) molecule driver rather than the
+        # docker driver. Roles keep molecule scenarios under
+        # roles/<role>/molecule/, so scenarios_root is set per role and
+        # the matrix is pinned to the single `default` scenario. The
+        # concurrency-suffix keeps each role's nested call out of the
+        # caller's concurrency group.
+        uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-06-18
+        with:
+            collection_namespace: arillso
+            collection_name: container
+            driver: qemu
+            python_version: "3.12"
+            scenarios_root: roles/docker/molecule
+            scenarios: '["default"]'
+            concurrency-suffix: molecule-docker
+
+    molecule-k3s:
+        uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-06-18
+        with:
+            collection_namespace: arillso
+            collection_name: container
+            driver: qemu
+            python_version: "3.12"
+            scenarios_root: roles/k3s/molecule
+            scenarios: '["default"]'
+            concurrency-suffix: molecule-k3s
+
     security-secrets:
         uses: arillso/.github/.github/workflows/security-secrets.yml@2026-06-14
 

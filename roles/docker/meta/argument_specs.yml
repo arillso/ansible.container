@@ -266,23 +266,16 @@ argument_specs:
             docker_systemd_units:
                 type: list
                 elements: dict
-                description: List of systemd units to create for Docker pruning tasks.
+                description: >-
+                    Systemd units to create for Docker pruning, in the
+                    arillso.system.systemd `systemd_units` format.
                 options:
                     name:
                         type: str
-                        description: The name of the systemd unit.
-                    type:
-                        type: str
-                        description: The type of the systemd unit, e.g., service or timer.
-                    systemd_unit_generic_options:
-                        type: list
-                        elements: str
-                        description: Generic systemd options for the unit.
-                    systemd_unit_options:
-                        type: list
-                        elements: str
-                        description: Specific options for the systemd service or timer.
-                    systemd_unit_install_options:
-                        type: list
-                        elements: str
-                        description: Install options for the systemd unit.
+                        required: true
+                        description: Full unit filename, including the .service/.timer suffix.
+                    unit:
+                        type: dict
+                        description: >-
+                            Structured unit definition as {Section: {Key: Value}};
+                            rendered to an INI unit file by the systemd role.
