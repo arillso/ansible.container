@@ -37,9 +37,7 @@ jobs:
         # the matrix is pinned to the single `default` scenario. The
         # concurrency-suffix keeps each role's nested call out of the
         # caller's concurrency group.
-        # NOTE: branch ref while the KVM reusable PoC is validated; pin to
-        # a date tag once arillso/.github merges it.
-        uses: arillso/.github/.github/workflows/ci-ansible-molecule-kvm.yml@feat/ci-ansible-molecule-kvm
+        uses: arillso/.github/.github/workflows/ci-ansible-molecule-kvm.yml@2026-06-17
         with:
             collection_namespace: arillso
             collection_name: container
@@ -49,7 +47,7 @@ jobs:
             concurrency-suffix: molecule-docker
 
     molecule-k3s:
-        uses: arillso/.github/.github/workflows/ci-ansible-molecule-kvm.yml@feat/ci-ansible-molecule-kvm
+        uses: arillso/.github/.github/workflows/ci-ansible-molecule-kvm.yml@2026-06-17
         with:
             collection_namespace: arillso
             collection_name: container
