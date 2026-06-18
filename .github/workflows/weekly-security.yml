@@ -1,5 +1,5 @@
 ---
-name: Nightly Security Scan
+name: Weekly Security Scan
 run-name: |
     Security Scan by @${{ github.actor }}
 

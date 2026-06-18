@@ -34,6 +34,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `release`, and pin the reusable workflow to `@2026-06-18`.
 - `.python-version` `3.14` → `3.13` (org-wide target — `3.14` is rejected by
   `ansible-test`, which supports at most `3.13`).
+- Rename `nightly-security.yml` → `weekly-security.yml` (`name: Weekly Security
+Scan`) to match the cadence-honest org workflow-naming convention; the cron
+  was already weekly (`0 2 * * 1`).
+- `LICENSE` copyright `2025` → `2023-2026` (org range `FIRST-CURRENT`,
+  consistent with the README).
 
 ## [1.4.0] - 2026-06-12
 
@@ -109,7 +114,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   on Ubuntu 24.04 (kernel 6.8, AppArmor 4.x) containerd generates this profile dynamically
   without the rule, causing `kubectl exec` to fail with
   `apparmor failed to apply profile: write fsmount:fscontext:proc/thread-self/attr/apparmor/exec:
-  operation not permitted`. Pre-deploying the fixed profile ensures runc can apply AppArmor
+operation not permitted`. Pre-deploying the fixed profile ensures runc can apply AppArmor
   profiles to exec'd container processes.
 
 ## [1.3.9] - 2026-03-28

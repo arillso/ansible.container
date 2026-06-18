@@ -13,7 +13,7 @@ ansible.container/
 ├── .github/workflows/
 │   ├── pull-request.yml    # Lint, tests, per-role molecule, secret scan, Claude review
 │   ├── merge.yml           # CI + secret scan on push to main
-│   ├── nightly-security.yml # Scheduled weekly secret scan
+│   ├── weekly-security.yml # Scheduled weekly secret scan
 │   └── tag.yml             # Galaxy publishing (triggered by tag)
 ├── roles/
 │   ├── docker/
@@ -126,7 +126,7 @@ Event-focused workflows calling reusables from `arillso/.github`:
 
 - `pull-request.yml` - Lint, unit/integration tests, per-role molecule, secret scan, and Claude review on PRs
 - `merge.yml` - Same CI plus secret scan on push to `main`
-- `nightly-security.yml` - Scheduled weekly secret scan
+- `weekly-security.yml` - Scheduled weekly secret scan
 - `tag.yml` - Publishes to Ansible Galaxy on tag push (e.g. `0.0.8`)
 
 ### Release Process
