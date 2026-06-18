@@ -19,6 +19,9 @@ argument_specs:
                         type: str
                         description: Defines the log driver to be used by Docker daemon.
                         default: "journald"
+                    log-opts:
+                        type: dict
+                        description: Logging driver options passed to the configured log-driver.
                     live-restore:
                         type: bool
                         description: Enables live restore of Docker when true.

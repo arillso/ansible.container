@@ -10,6 +10,9 @@
       docker_version: ""
       docker_daemon:
           log-driver: json-file
+          log-opts:
+              max-size: "10m"
+              max-file: "3"
           storage-driver: overlay2
           features:
               buildkit: true
