@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **fleet argument_specs**: the main entry point used six separate `<<:` merge
+  keys in one mapping, which `ruamel.yaml` (used by ansible-lint) rejects as
+  duplicate keys. Consolidated into a single YAML 1.1 list-form merge
+  (`<<: [*a, *b, ...]`); the merged result is byte-for-key identical.
+- **omit defaults**: `docker_login` and `fleet` declared optional parameters
+  with a string `default: "{{ omit }}"`, which fails argument-spec validation on
+  Ansible 2.18+ for non-string types. Removed the string-omit defaults; the
+  `docker_login` tasks now resolve those values with `| default(omit)`.
+
 - **docker role**: the Docker prune service/timer setup called
   `arillso.system.systemd_unit`, a role that no longer exists in
   `arillso.system` (replaced by the `systemd` role with a `systemd_units`
@@ -39,6 +48,13 @@ Scan`) to match the cadence-honest org workflow-naming convention; the cron
   was already weekly (`0 2 * * 1`).
 - `LICENSE` copyright `2025` → `2023-2026` (org range `FIRST-CURRENT`,
   consistent with the README).
+- **Role metadata**: drop EOL Ubuntu `focal` (and Debian `buster` where present)
+  from `galaxy_info.platforms` across all roles; ensure `jammy`/`noble` and
+  `bullseye`/`bookworm` are listed.
+- **Role READMEs**: add a `Troubleshooting` section to the `docker`, `k3s`, and
+  `fleet` READMEs and correct the `helm` README, which documented a non-existent
+  `helm_version` binary install — the role drives the K3s-embedded Helm
+  controller via `HelmChart` CRDs, so the Quick Start now uses `helm_charts`.
 
 ## [1.4.0] - 2026-06-12
 

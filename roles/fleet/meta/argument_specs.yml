@@ -661,33 +661,20 @@ argument_specs:
         author:
             - "Arillso Team"
         options:
-            # GitRepo Management
+            # Explicit toggle keys (win over merged anchors on conflict)
             fleet_enable_gitrepos:
                 description: "Enable Fleet GitRepo management"
                 type: "bool"
                 default: false
 
-            <<: *gitrepo_options
-
-            # Bundle Management
             fleet_enable_bundles:
                 description: "Enable Fleet Bundle management"
                 type: "bool"
                 default: false
 
-            <<: *bundle_options
-
-            # Cluster Management
-            <<: *cluster_options
-
-            # Workspace Management
-            <<: *workspace_options
-
-            # ClusterRegistrationToken Management
-            <<: *registration_token_options
-
-            # Global Configuration
-            <<: *common_fleet_options
+            # Merge all option groups in a single merge key (YAML 1.1 list form)
+            # GitRepo, Bundle, Cluster, Workspace, RegistrationToken, Global
+            <<: [*gitrepo_options, *bundle_options, *cluster_options, *workspace_options, *registration_token_options, *common_fleet_options]
 
     # Auth-specific entry point
     auth:

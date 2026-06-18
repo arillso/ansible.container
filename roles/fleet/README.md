@@ -26,6 +26,19 @@ For detailed documentation including all variables, examples, and usage instruct
             fleet_namespace: cattle-fleet-system
 ```
 
+## Troubleshooting
+
+- **GitRepo does not sync**: inspect the GitRepo status with
+  `kubectl -n <fleet-namespace> get gitrepo` and the controller logs. Missing or
+  incorrect Git authentication (the `auth` entry point) is a common cause.
+- **Cluster not registered / agent not connecting**: verify the
+  ClusterRegistrationToken is valid and the downstream agent can reach the Fleet
+  controller; check `kubectl -n <fleet-namespace> get clusters`.
+- **Resources never reconcile**: confirm the Fleet controller and agents are
+  running (`kubectl -n <fleet-namespace> get pods`) before re-running the role.
+
+For detailed guidance see <https://guide.arillso.io>.
+
 ## License
 
 MIT

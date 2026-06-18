@@ -47,6 +47,20 @@ For detailed documentation including all variables, examples, and usage instruct
                 cluster-init: true
 ```
 
+## Troubleshooting
+
+- **Node stays `NotReady`**: check the K3s service (`systemctl status k3s` on
+  servers, `k3s-agent` on agents) and `journalctl -u k3s` for CNI or kubelet
+  errors before re-running the role.
+- **Agents fail to join the cluster**: a mismatched or missing join token is the
+  usual cause. Verify the token configured for agents matches the server token
+  and that the server API endpoint is reachable on port 6443.
+- **Upgrade is rejected**: the role enforces one-minor-version-at-a-time and no
+  downgrades (see *Upgrading K3s* above). Set an allowed `k3s_version` if the
+  upgrade-path validation fails.
+
+For detailed guidance see <https://guide.arillso.io>.
+
 ## License
 
 MIT
