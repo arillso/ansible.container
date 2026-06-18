@@ -18,6 +18,16 @@ platforms:
       vm_cpus: 2
       vm_memory: 2048
 
+    - name: docker-debian-12
+      image_url: https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2
+      image_checksum: sha512:https://cloud.debian.org/images/cloud/bookworm/latest/SHA512SUMS
+      image_arch: x86_64
+      network_mode: user
+      network_ssh_port: 2223
+      network_ssh_user: debian
+      vm_cpus: 2
+      vm_memory: 2048
+
 provisioner:
     name: ansible
     config_options:
@@ -28,6 +38,8 @@ provisioner:
     inventory:
         host_vars:
             docker-ubuntu-22.04:
+                ansible_become: true
+            docker-debian-12:
                 ansible_become: true
     playbooks:
         converge: converge.yml

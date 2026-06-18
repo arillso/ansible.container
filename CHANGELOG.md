@@ -15,12 +15,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   list interface), so the role failed with "role
   'arillso.system.systemd_unit' was not found". Rewrite the prune units in
   the `systemd_units` format and call `arillso.system.systemd`.
+- **docker role**: add the missing `log-opts` option to the `docker_daemon`
+  argument spec. `log-opts` is a valid `daemon.json` key but was absent from
+  the spec, so passing it (e.g. log rotation `max-size`/`max-file`) failed
+  argument validation.
 
 ### Changed
 
 - **Dependency**: raise the `arillso.system` lower bound from `>=0.0.17` to
   `>=1.0.0` — the `systemd` role with the `systemd_units` interface the docker
   role now uses is only available from 1.0.0 onwards.
+- **Molecule (CI)**: run the docker and k3s scenarios on both Ubuntu 22.04 and
+  Debian 12 (was Ubuntu-only), restoring the two-distro coverage from the
+  pre-KVM docker-driver setup.
 
 ## [1.4.0] - 2026-06-12
 
