@@ -20,6 +20,7 @@ platforms:
 
     - name: docker-debian-12
       image_url: https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2
+      image_checksum: sha512:https://cloud.debian.org/images/cloud/bookworm/latest/SHA512SUMS
       image_arch: x86_64
       network_mode: user
       network_ssh_port: 2223
