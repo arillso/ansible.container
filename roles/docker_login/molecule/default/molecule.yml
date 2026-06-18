@@ -1,0 +1,54 @@
+---
+dependency:
+    name: galaxy
+    options:
+        requirements-file: requirements.yml
+
+driver:
+    name: molecule-qemu
+
+platforms:
+    - name: docker-login-ubuntu-22.04
+      image_url: https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img
+      image_checksum: sha256:https://cloud-images.ubuntu.com/jammy/current/SHA256SUMS
+      image_arch: x86_64
+      network_mode: user
+      network_ssh_port: 2222
+      network_ssh_user: ubuntu
+      vm_cpus: 2
+      vm_memory: 2048
+
+provisioner:
+    name: ansible
+    config_options:
+        defaults:
+            callbacks_enabled: profile_tasks, timer
+            stdout_callback: ansible.builtin.default
+            result_format: yaml
+    inventory:
+        host_vars:
+            docker-login-ubuntu-22.04:
+                ansible_become: true
+    playbooks:
+        prepare: prepare.yml
+        converge: converge.yml
+        verify: verify.yml
+
+verifier:
+    name: ansible
+
+scenario:
+    name: default
+    test_sequence:
+        - dependency
+        - cleanup
+        - destroy
+        - syntax
+        - create
+        - prepare
+        - converge
+        - idempotence
+        - side_effect
+        - verify
+        - cleanup
+        - destroy

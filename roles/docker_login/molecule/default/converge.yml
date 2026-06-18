@@ -1,0 +1,17 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+      # The local registry:2 started in prepare.yml runs without auth,
+      # so any credentials succeed. We log into the plain-HTTP registry
+      # on localhost:5000 (no TLS) using dummy credentials.
+      docker_login_registry_url: "localhost:5000"
+      docker_login_username: "moleculeuser"
+      docker_login_password: "moleculepass"
+      docker_login_tls: false
+      docker_login_validate_certs: false
+  tasks:
+      - name: Include docker_login role
+        ansible.builtin.include_role:
+            name: arillso.container.docker_login

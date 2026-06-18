@@ -58,6 +58,61 @@ jobs:
             scenarios: '["default"]'
             concurrency-suffix: molecule-k3s
 
+    molecule-docker-login:
+        uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-06-18
+        with:
+            collection_namespace: arillso
+            collection_name: container
+            driver: qemu
+            python_version: "3.12"
+            scenarios_root: roles/docker_login/molecule
+            scenarios: '["default"]'
+            concurrency-suffix: molecule-docker-login
+
+    molecule-docker-compose-v2:
+        uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-06-18
+        with:
+            collection_namespace: arillso
+            collection_name: container
+            driver: qemu
+            python_version: "3.12"
+            scenarios_root: roles/docker_compose_v2/molecule
+            scenarios: '["default"]'
+            concurrency-suffix: molecule-docker-compose-v2
+
+    molecule-helm:
+        uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-06-18
+        with:
+            collection_namespace: arillso
+            collection_name: container
+            driver: qemu
+            python_version: "3.12"
+            scenarios_root: roles/helm/molecule
+            scenarios: '["default"]'
+            concurrency-suffix: molecule-helm
+
+    molecule-fleet:
+        uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-06-18
+        with:
+            collection_namespace: arillso
+            collection_name: container
+            driver: qemu
+            python_version: "3.12"
+            scenarios_root: roles/fleet/molecule
+            scenarios: '["default"]'
+            concurrency-suffix: molecule-fleet
+
+    molecule-tailscale:
+        uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-06-18
+        with:
+            collection_namespace: arillso
+            collection_name: container
+            driver: qemu
+            python_version: "3.12"
+            scenarios_root: roles/tailscale/molecule
+            scenarios: '["default"]'
+            concurrency-suffix: molecule-tailscale
+
     security-secrets:
         uses: arillso/.github/.github/workflows/security-secrets.yml@2026-06-18
 

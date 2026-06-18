@@ -1,0 +1,16 @@
+---
+# Full converge: docker_compose_v2 installs the compose plugin and
+# deploys a compose project, which needs a running Docker daemon and
+# the docker-ce apt repository. We install Docker via the docker role
+# first so the converge step has both.
+- name: Prepare
+  hosts: all
+  become: true
+  vars:
+      # Do not pin docker-ce; apt's full version string never matches a
+      # bare "docker-ce=<x>" pin (see roles/docker/molecule converge).
+      docker_version: ""
+  tasks:
+      - name: Install Docker
+        ansible.builtin.include_role:
+            name: arillso.container.docker

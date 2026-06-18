@@ -1,0 +1,21 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  tasks:
+      - name: Read the Docker client config
+        ansible.builtin.slurp:
+            path: /root/.docker/config.json
+        register: docker_login_config
+
+      - name: Parse the Docker client config
+        ansible.builtin.set_fact:
+            docker_login_config_json: "{{ docker_login_config.content | b64decode | from_json }}"
+
+      - name: Verify the local registry is recorded as an authenticated endpoint
+        ansible.builtin.assert:
+            that:
+                - "'auths' in docker_login_config_json"
+                - "'localhost:5000' in docker_login_config_json.auths"
+            fail_msg: "docker_login did not record an auth entry for localhost:5000"
+            success_msg: "docker_login authenticated against localhost:5000 successfully"
