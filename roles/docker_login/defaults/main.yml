@@ -1,19 +1,14 @@
 ---
 docker_login_api_version: "auto"
-docker_login_ca_cert: "{{ omit }}"
-docker_login_client_cert: "{{ omit }}"
-docker_login_client_key: "{{ omit }}"
 docker_login_config_path: "~/.docker/config.json"
 docker_login_debug: false
 docker_login_docker_host: "unix://var/run/docker.sock"
 docker_login_password: ""
 docker_login_reauthorize: false
 docker_login_registry_url: "https://index.docker.io/v1/"
-docker_login_ssl_version: "{{ omit }}"
 docker_login_state: "present"
 docker_login_timeout: 60
 docker_login_tls: false
-docker_login_tls_hostname: "{{ omit }}"
 docker_login_use_ssh_client: false
 docker_login_username: ""
 docker_login_validate_certs: false

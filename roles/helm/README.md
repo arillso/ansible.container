@@ -4,11 +4,12 @@ Installs and manages Helm, the package manager for Kubernetes.
 
 ## Features
 
-- **Helm Installation**: Install Helm binary from official releases
-- **Version Management**: Install specific Helm versions or latest
+- **Chart Deployment**: Deploy Helm charts via the K3s-embedded Helm controller
+  (`helm.cattle.io/v1` HelmChart CRDs) — no separate Helm binary required
 - **Repository Management**: Add and manage Helm chart repositories
 - **Chart Operations**: Install, upgrade, and remove Helm charts
-- **Multi-Architecture**: Support for x86_64 and ARM architectures
+- **Per-Chart Versioning**: Pin a chart `version` per entry in `helm_charts`
+- **Validation**: Optional cluster reachability and deployment-wait checks
 
 ## Documentation
 
@@ -23,7 +24,14 @@ For detailed documentation including all variables, examples, and usage instruct
   roles:
       - role: arillso.container.helm
         vars:
-            helm_version: "3.13.0"
+            helm_enable_charts: true
+            helm_charts:
+                - name: "cert-manager"
+                  chart: "cert-manager"
+                  repository: "jetstack"
+                  version: "v1.13.2"
+                  namespace: "cert-manager"
+                  create_namespace: true
 ```
 
 ## License

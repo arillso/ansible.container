@@ -28,6 +28,21 @@ For detailed documentation including all variables, examples, and usage instruct
                 live-restore: true
 ```
 
+## Troubleshooting
+
+- **Docker service does not start after a config change**: an invalid
+  `docker_daemon` value writes a malformed `/etc/docker/daemon.json`. Validate
+  the daemon config (`dockerd --validate` or `docker info`) and check
+  `journalctl -u docker` for the parse error.
+- **Logs grow without bound or rotation is ignored**: confirm the log driver
+  and its `log-opts` are set under `docker_daemon` and that the chosen driver
+  actually supports the options you provided.
+- **Repository or GPG key errors during install**: ensure the host distribution
+  is one of the supported platforms (see `meta/main.yml`) and that the official
+  Docker apt/yum repository is reachable from the host.
+
+For detailed guidance see <https://guide.arillso.io>.
+
 ## License
 
 MIT

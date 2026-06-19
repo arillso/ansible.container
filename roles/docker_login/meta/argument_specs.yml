@@ -17,19 +17,16 @@ argument_specs:
                 type: str
                 description:
                     - Path to the CA certificate for server verification.
-                default: "{{ omit }}"
 
             docker_login_client_cert:
                 type: str
                 description:
                     - Path to the client's TLS certificate for Docker daemon communication.
-                default: "{{ omit }}"
 
             docker_login_client_key:
                 type: str
                 description:
                     - Path to the client's TLS key for Docker daemon communication.
-                default: "{{ omit }}"
 
             docker_login_config_path:
                 type: str
@@ -71,7 +68,6 @@ argument_specs:
                 type: str
                 description:
                     - Specify a valid SSL version number for secure communication.
-                default: "{{ omit }}"
 
             docker_login_state:
                 type: str
@@ -95,7 +91,6 @@ argument_specs:
                 type: str
                 description:
                     - Expected name of the Docker Host server for authenticity verification.
-                default: "{{ omit }}"
 
             docker_login_use_ssh_client:
                 type: bool

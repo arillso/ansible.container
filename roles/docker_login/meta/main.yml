@@ -7,11 +7,12 @@ galaxy_info:
     platforms:
         - name: Debian
           versions:
-              - buster
               - bullseye
+              - bookworm
         - name: Ubuntu
           versions:
-              - focal
+              - jammy
+              - noble
         - name: EL
           versions:
               - "8"
