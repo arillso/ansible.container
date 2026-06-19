@@ -15,5 +15,5 @@
       timeout: "{{ docker_login_timeout }}"
       tls: "{{ docker_login_tls }}"
       tls_hostname: "{{ docker_login_tls_hostname | default(omit) }}"
-      tls_verify: "{{ docker_login_tls_verify }}"
+      tls_verify: "{{ docker_login_validate_certs }}"
       username: "{{ docker_login_username }}"
