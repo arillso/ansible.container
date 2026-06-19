@@ -1,0 +1,12 @@
+---
+# Verify is not part of the test_sequence for this syntax-only
+# scenario (the role needs a live Kubernetes cluster to converge, so
+# there is nothing host-local to assert). Kept as a placeholder so the
+# provisioner playbook reference resolves.
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+      - name: No host-local verification for a cluster-bound role
+        ansible.builtin.debug:
+            msg: "tailscale requires a live Kubernetes cluster; verify is deferred."

@@ -1,0 +1,57 @@
+---
+# SYNTAX-ONLY scenario.
+#
+# The helm role drives a live Kubernetes API (HelmChart CRDs via
+# kubernetes.core / the k3s Helm controller). It cannot converge
+# without a running cluster, and standing up k3s here would make this
+# leg slow (~10 min VM + cluster) and flaky. We therefore stop the
+# test_sequence after `syntax`, which still catches playbook/role
+# wiring and template errors cheaply. A full converge against a real
+# cluster is deferred (mirrors how kernel-/cluster-bound roles are
+# documented elsewhere in the collection).
+dependency:
+    name: galaxy
+    options:
+        requirements-file: requirements.yml
+
+driver:
+    name: molecule-qemu
+
+platforms:
+    - name: helm-ubuntu-22.04
+      image_url: https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img
+      image_checksum: sha256:https://cloud-images.ubuntu.com/jammy/current/SHA256SUMS
+      image_arch: x86_64
+      network_mode: user
+      network_ssh_port: 2222
+      network_ssh_user: ubuntu
+      vm_cpus: 2
+      vm_memory: 2048
+
+provisioner:
+    name: ansible
+    config_options:
+        defaults:
+            callbacks_enabled: profile_tasks, timer
+            stdout_callback: ansible.builtin.default
+            result_format: yaml
+    inventory:
+        host_vars:
+            helm-ubuntu-22.04:
+                ansible_become: true
+    playbooks:
+        converge: converge.yml
+        verify: verify.yml
+
+verifier:
+    name: ansible
+
+scenario:
+    name: default
+    test_sequence:
+        - dependency
+        - cleanup
+        - destroy
+        - syntax
+        - cleanup
+        - destroy

@@ -1,0 +1,9 @@
+---
+- name: Side effect
+  hosts: all
+  gather_facts: false
+
+  tasks:
+      - name: No side-effect step required for this role
+        ansible.builtin.debug:
+            msg: "No side-effect step required."

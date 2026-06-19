@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Molecule coverage** for the five previously-untested roles, each with a
+  `default` scenario under `roles/<role>/molecule/default/` and a matching
+  `molecule-<role>` job wired into `pull-request.yml` (qemu/KVM driver,
+  Ubuntu 22.04 cloud image, pinned to `ci-ansible-molecule.yml@2026-06-18`).
+- **docker_login** molecule — full converge: a `prepare.yml` installs Docker via
+  the `docker` role and starts a throwaway local `registry:2` container,
+  converge logs into `localhost:5000`, and verify asserts the registry appears
+  under `auths` in the Docker client config.
+- **docker_compose_v2** molecule — full converge: `prepare.yml` installs Docker,
+  converge deploys a minimal `nginx` compose project, and verify asserts the
+  compose plugin, the rendered project file, the systemd unit and a running
+  container.
+- **helm**, **fleet**, **tailscale** molecule — syntax-only scenarios
+  (`test_sequence` stops after `syntax`). These roles drive a live Kubernetes
+  API (HelmChart CRDs, Rancher Fleet GitOps CRDs, the Tailscale operator CRDs)
+  and cannot converge without a running cluster; standing up k3s per role would
+  make CI slow and flaky, so the converge/verify against a real cluster is
+  deferred and documented at the top of each `molecule.yml`. Syntax checking
+  still validates playbook/role wiring cheaply.
+
 ### Fixed
 
 - **fleet argument_specs**: the main entry point used six separate `<<:` merge
@@ -31,6 +53,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Renovate**: track the `python_version` CI input via Renovate. Each
+  `python_version:` in `pull-request.yml`/`merge.yml` carries a
+  `# renovate: datasource=github-releases depName=python/cpython` marker, and
+  the local regex manager now scans `.github/workflows/*.yml`, so the Python
+  version is bumped automatically instead of drifting hardcoded.
 - **Dependency**: raise the `arillso.system` lower bound from `>=0.0.17` to
   `>=1.0.0` — the `systemd` role with the `systemd_units` interface the docker
   role now uses is only available from 1.0.0 onwards.

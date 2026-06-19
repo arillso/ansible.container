@@ -1,0 +1,11 @@
+---
+# Exercised by the `syntax` step only (see molecule.yml). Converge
+# against a live cluster is deferred; the role needs a running
+# Kubernetes API to apply HelmChart resources.
+- name: Converge
+  hosts: all
+  become: true
+  tasks:
+      - name: Include helm role
+        ansible.builtin.include_role:
+            name: arillso.container.helm

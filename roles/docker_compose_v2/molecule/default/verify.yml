@@ -1,0 +1,53 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  tasks:
+      - name: Check the docker compose plugin is available
+        ansible.builtin.command: docker compose version
+        register: docker_compose_v2_version_out
+        changed_when: false
+
+      - name: Verify the compose plugin reports a version
+        ansible.builtin.assert:
+            that:
+                - docker_compose_v2_version_out.rc == 0
+                - "'Docker Compose version' in docker_compose_v2_version_out.stdout"
+            fail_msg: "docker compose plugin is not installed"
+            success_msg: "docker compose plugin is installed"
+
+      - name: Check the generated compose project file exists
+        ansible.builtin.stat:
+            path: /etc/docker/compose/molecule/docker-compose.yml
+        register: docker_compose_v2_file
+
+      - name: Verify the compose project file was rendered
+        ansible.builtin.assert:
+            that:
+                - docker_compose_v2_file.stat.exists
+            fail_msg: "compose project file was not created"
+            success_msg: "compose project file exists"
+
+      - name: Check the systemd unit template was installed
+        ansible.builtin.stat:
+            path: /etc/systemd/system/docker-compose@.service
+        register: docker_compose_v2_unit
+
+      - name: Verify the systemd unit template exists
+        ansible.builtin.assert:
+            that:
+                - docker_compose_v2_unit.stat.exists
+            fail_msg: "docker-compose@.service unit was not created"
+            success_msg: "docker-compose@.service unit exists"
+
+      - name: List running compose containers
+        ansible.builtin.command: docker ps --filter "name=molecule" --format "{{ '{{' }}.Names{{ '}}' }}"
+        register: docker_compose_v2_ps
+        changed_when: false
+
+      - name: Verify the compose project deployed a container
+        ansible.builtin.assert:
+            that:
+                - docker_compose_v2_ps.stdout | length > 0
+            fail_msg: "compose project did not start any containers"
+            success_msg: "compose project started containers"

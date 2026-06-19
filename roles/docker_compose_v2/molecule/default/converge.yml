@@ -1,0 +1,24 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+      # Do not pin the plugin version: apt has no candidate for an exact
+      # `docker-compose-plugin=5.1.4` on the CI image (same class of issue
+      # the docker role avoids by leaving docker_version empty). Empty
+      # version installs whatever the docker-ce repo currently offers.
+      docker_compose_v2_version: ""
+      docker_compose_v2_project: "molecule"
+      # Deploy a minimal compose project from a templated file so we
+      # exercise both the systemd unit and the docker_compose_v2 module.
+      docker_compose_v2_use_file: true
+      docker_compose_v2_config:
+          services:
+              web:
+                  image: nginx:alpine
+                  ports:
+                      - "8080:80"
+  tasks:
+      - name: Include docker_compose_v2 role
+        ansible.builtin.include_role:
+            name: arillso.container.docker_compose_v2

@@ -1,0 +1,42 @@
+---
+# Full converge: docker_login needs a running Docker daemon and a
+# registry to authenticate against. We install Docker via the docker
+# role and spin up a throwaway local registry:2 container that the
+# converge step then logs into.
+- name: Prepare
+  hosts: all
+  become: true
+  vars:
+      # Do not pin docker-ce; apt's full version string never matches a
+      # bare "docker-ce=<x>" pin (see roles/docker/molecule converge).
+      docker_version: ""
+  tasks:
+      - name: Install Docker
+        ansible.builtin.include_role:
+            name: arillso.container.docker
+
+      - name: Install pip (cloud image ships no pip3)
+        ansible.builtin.apt:
+            name: python3-pip
+            state: present
+            update_cache: true
+
+      - name: Install Python Docker SDK for community.docker modules
+        ansible.builtin.pip:
+            name: docker
+            state: present
+
+      - name: Run a throwaway local registry to authenticate against
+        community.docker.docker_container:
+            name: molecule-registry
+            image: registry:2
+            state: started
+            restart_policy: "no"
+            published_ports:
+                - "5000:5000"
+
+      - name: Wait for the local registry to accept connections
+        ansible.builtin.wait_for:
+            host: 127.0.0.1
+            port: 5000
+            timeout: 60
