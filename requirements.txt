@@ -11,7 +11,7 @@ black>=26.5.1
 molecule>=26.4.0
 molecule-plugins[docker]>=25.8.12
 molecule-qemu>=0.5.12
-pytest>=9.1.0
+pytest>=9.1.1
 pytest-ansible>=26.4.0
 pytest-cov>=7.1.0
 
