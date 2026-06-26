@@ -18,8 +18,13 @@
       - fleet-bundles
       - fleet-namespace
 
-- name: "Manage Fleet Bundles"
-  kubernetes.core.k8s:
+# Each Bundle apply blocks up to wait_timeout (Ready condition). Run the
+# applies in parallel (async/poll:0) so total runtime is bounded by the
+# slowest Bundle, not the sum. The blocking wait stays inside each async
+# job (the k8s module still runs wait:true in the background); async_status
+# only polls for module completion.
+- name: "Manage Fleet Bundles (async)"
+  kubernetes.core.k8s: &fleet_bundle_apply
       definition:
           apiVersion: "{{ fleet_api_version }}"
           kind: Bundle
@@ -76,8 +81,66 @@
           status: "True"
       wait_timeout: 300
   loop: "{{ fleet_bundles }}"
+  when:
+      - fleet_bundles | length > 0
+      - fleet_async_enabled | bool
+      - not ansible_check_mode
+  async: "{{ fleet_async_timeout }}"
+  poll: 0
+  # Fire-and-forget always reports changed (no module result yet); the real
+  # changed/failed status is surfaced by the async_status wait task below.
+  changed_when: false
+  register: fleet_bundle_async
+  tags:
+      - fleet
+      - fleet-bundles
+
+- name: "Wait for Fleet Bundle apply jobs"
+  ansible.builtin.async_status:
+      jid: "{{ item.ansible_job_id }}"
+  loop: "{{ fleet_bundle_async.results | default([]) }}"
+  loop_control:
+      label: "{{ item.item.name | default('') }}"
+  when:
+      - fleet_bundles | length > 0
+      - fleet_async_enabled | bool
+      - not ansible_check_mode
+      - item.ansible_job_id is defined
+  register: fleet_bundle_async_wait
+  until: fleet_bundle_async_wait.finished
+  retries: "{{ fleet_async_retries }}"
+  delay: "{{ fleet_async_delay }}"
+  tags:
+      - fleet
+      - fleet-bundles
+
+# Synchronous fallback: check_mode (async unsupported) or async disabled.
+- name: "Manage Fleet Bundles (sync)"
+  kubernetes.core.k8s: *fleet_bundle_apply
+  loop: "{{ fleet_bundles }}"
+  when:
+      - fleet_bundles | length > 0
+      - not (fleet_async_enabled | bool) or ansible_check_mode
+  register: fleet_bundle_sync
+  tags:
+      - fleet
+      - fleet-bundles
+
+# Normalize both paths to a single .results shape carrying the original
+# bundle as .item, so downstream consumers stay path-agnostic. The
+# async_status loop nests the original bundle at item.item.item; the sync
+# path already exposes it at item.item.
+- name: "Collect Fleet Bundle deployment results"
+  ansible.builtin.set_fact:
+      fleet_bundle_results:
+          results: >-
+              {{
+                (fleet_bundle_sync.results | default([]))
+                if (not (fleet_async_enabled | bool) or ansible_check_mode)
+                else (fleet_bundle_async_wait.results | default([]))
+                     | map(attribute='item') | list
+              }}
   when: fleet_bundles | length > 0
-  register: fleet_bundle_results
   tags:
       - fleet
       - fleet-bundles

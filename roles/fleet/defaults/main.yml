@@ -92,6 +92,21 @@ fleet_dry_run: false
 fleet_secret_timeout: 60
 fleet_resource_timeout: 300
 
+# Async execution for resource deploys with blocking waits (Bundles,
+# Clusters). When enabled, k8s applies are fired in parallel
+# (async/poll:0) and a single async_status loop waits for completion,
+# instead of running each item serially up to fleet_resource_timeout.
+# Automatically bypassed in check_mode (async is unsupported there).
+fleet_async_enabled: true
+# Per-job async timeout in seconds. Should be >= the per-item k8s
+# wait_timeout so a job is never reaped while still legitimately waiting.
+fleet_async_timeout: 600
+# async_status poll retries / delay. retries * delay must comfortably
+# exceed fleet_async_timeout so the poller does not give up before jobs do
+# (150 * 5 = 750s > 600s timeout, ~25% headroom).
+fleet_async_retries: 150
+fleet_async_delay: 5
+
 # Fleet authentication parameters (auth entry point) are intentionally left
 # undefined here. They are declared as optional in meta/argument_specs.yml and
 # resolved with default(omit) where consumed, so no string-omit defaults are set.
