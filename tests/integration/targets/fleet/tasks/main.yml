@@ -1,0 +1,98 @@
+---
+# Integration tests for the fleet role.
+#
+# DISABLED in CI (see aliases): exercising this role end-to-end requires a
+# running K3s cluster with the Rancher Fleet CRDs and controller installed
+# (the Bundle resource is applied with wait_condition type=Ready, which only
+# reconciles once the Fleet controller is present). Plain CI runners and the
+# default ansible-test containers do not ship Fleet, so this target is gated
+# behind `disabled` and the `k3s` dependency. Run it manually against a
+# cluster that has Fleet deployed:
+#
+#     ansible-test integration fleet --allow-disabled
+#
+# The test covers the main Bundle path with inline resources (no Git auth
+# required), verifies the Bundle was created, then tears it down again.
+
+- name: Resolve kubeconfig path for the test cluster
+  ansible.builtin.set_fact:
+      fleet_test_kubeconfig: "{{ fleet_kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
+      fleet_test_bundle: integration-fleet-bundle
+      fleet_test_namespace: fleet-default
+
+- name: Apply fleet role with an inline-resource bundle
+  ansible.builtin.include_role:
+      name: arillso.container.fleet
+  vars:
+      fleet_enable_bundles: true
+      fleet_kubeconfig_path: "{{ fleet_test_kubeconfig }}"
+      fleet_bundles:
+          - name: "{{ fleet_test_bundle }}"
+            namespace: "{{ fleet_test_namespace }}"
+            create_namespace: true
+            target_namespace: default
+            resources:
+                - name: integration-fleet-cm
+                  content: |
+                      apiVersion: v1
+                      kind: ConfigMap
+                      metadata:
+                          name: integration-fleet-cm
+                          namespace: default
+                      data:
+                          managed-by: arillso-fleet-integration
+
+- name: Verify the Fleet Bundle exists
+  kubernetes.core.k8s_info:
+      kubeconfig: "{{ fleet_test_kubeconfig }}"
+      api_version: fleet.cattle.io/v1alpha1
+      kind: Bundle
+      name: "{{ fleet_test_bundle }}"
+      namespace: "{{ fleet_test_namespace }}"
+  register: fleet_bundle_info
+
+- name: Assert the Fleet Bundle was created
+  ansible.builtin.assert:
+      that:
+          - fleet_bundle_info.resources | length == 1
+      fail_msg: "Fleet Bundle '{{ fleet_test_bundle }}' was not created"
+      success_msg: "Fleet Bundle '{{ fleet_test_bundle }}' created successfully"
+
+- name: Tear down the Fleet Bundle
+  ansible.builtin.include_role:
+      name: arillso.container.fleet
+  vars:
+      fleet_enable_bundles: true
+      fleet_kubeconfig_path: "{{ fleet_test_kubeconfig }}"
+      fleet_state: absent
+      fleet_bundles:
+          - name: "{{ fleet_test_bundle }}"
+            namespace: "{{ fleet_test_namespace }}"
+            create_namespace: false
+            target_namespace: default
+            resources:
+                - name: integration-fleet-cm
+                  content: |
+                      apiVersion: v1
+                      kind: ConfigMap
+                      metadata:
+                          name: integration-fleet-cm
+                          namespace: default
+                      data:
+                          managed-by: arillso-fleet-integration
+
+- name: Verify the Fleet Bundle is gone after teardown
+  kubernetes.core.k8s_info:
+      kubeconfig: "{{ fleet_test_kubeconfig }}"
+      api_version: fleet.cattle.io/v1alpha1
+      kind: Bundle
+      name: "{{ fleet_test_bundle }}"
+      namespace: "{{ fleet_test_namespace }}"
+  register: fleet_bundle_removed
+
+- name: Assert the Fleet Bundle was removed
+  ansible.builtin.assert:
+      that:
+          - fleet_bundle_removed.resources | length == 0
+      fail_msg: "Fleet Bundle '{{ fleet_test_bundle }}' still present after state=absent"
+      success_msg: "Fleet Bundle '{{ fleet_test_bundle }}' removed successfully"

@@ -1,0 +1,93 @@
+---
+# Integration tests for docker_compose_v2 role
+# Covers the main path: install the compose plugin, render an inline project
+# definition, bring it up via community.docker.docker_compose_v2, verify the
+# container is running, check idempotency, then tear the project down again.
+
+- name: Define inline Docker Compose project for the test
+  ansible.builtin.set_fact:
+      compose_test_project: integration-compose
+      compose_test_definition:
+          services:
+              web:
+                  image: nginx:alpine
+                  container_name: integration-compose-web
+                  ports:
+                      - "127.0.0.1:18080:80"
+
+- name: Apply docker_compose_v2 role (first run, inline definition)
+  ansible.builtin.include_role:
+      name: arillso.container.docker_compose_v2
+  vars:
+      docker_compose_v2_project: "{{ compose_test_project }}"
+      docker_compose_v2_use_file: false
+      docker_compose_v2_config: "{{ compose_test_definition }}"
+      docker_compose_v2_state: present
+
+- name: Verify the compose plugin is available
+  ansible.builtin.command: docker compose version
+  register: compose_version
+  changed_when: false
+
+- name: Display compose plugin version
+  ansible.builtin.debug:
+      var: compose_version.stdout
+
+- name: Gather running containers for the compose project
+  community.docker.docker_container_info:
+      name: integration-compose-web
+  register: compose_container
+
+- name: Assert the compose service container is running
+  ansible.builtin.assert:
+      that:
+          - compose_container.exists
+          - compose_container.container.State.Running
+      fail_msg: "docker_compose_v2 did not start the expected service container"
+      success_msg: "docker_compose_v2 brought the compose project up correctly"
+
+- name: Apply docker_compose_v2 role again
+  ansible.builtin.include_role:
+      name: arillso.container.docker_compose_v2
+  vars:
+      docker_compose_v2_project: "{{ compose_test_project }}"
+      docker_compose_v2_use_file: false
+      docker_compose_v2_config: "{{ compose_test_definition }}"
+      docker_compose_v2_state: present
+
+- name: Gather the container again after the second apply
+  community.docker.docker_container_info:
+      name: integration-compose-web
+  register: compose_container_rerun
+
+- name: Assert the second apply was a no-op (container not recreated)
+  ansible.builtin.assert:
+      that:
+          - compose_container_rerun.exists
+          - compose_container_rerun.container.Id == compose_container.container.Id
+      fail_msg: >-
+          docker_compose_v2 recreated the container on a no-op re-run (not
+          idempotent): {{ compose_container.container.Id }} -> {{ compose_container_rerun.container.Id }}
+      success_msg: "docker_compose_v2 second apply was idempotent (same container Id)"
+
+- name: Tear down the compose project
+  ansible.builtin.include_role:
+      name: arillso.container.docker_compose_v2
+  vars:
+      docker_compose_v2_project: "{{ compose_test_project }}"
+      docker_compose_v2_use_file: false
+      docker_compose_v2_config: "{{ compose_test_definition }}"
+      docker_compose_v2_state: absent
+      docker_compose_v2_remove_volumes: true
+
+- name: Verify the compose service container is gone after teardown
+  community.docker.docker_container_info:
+      name: integration-compose-web
+  register: compose_container_removed
+
+- name: Assert the compose project was removed
+  ansible.builtin.assert:
+      that:
+          - not compose_container_removed.exists
+      fail_msg: "docker_compose_v2 left the service container running after state=absent"
+      success_msg: "docker_compose_v2 tore the compose project down correctly"
