@@ -87,6 +87,9 @@
       - not ansible_check_mode
   async: "{{ fleet_async_timeout }}"
   poll: 0
+  # Fire-and-forget always reports changed (no module result yet); the real
+  # changed/failed status is surfaced by the async_status wait task below.
+  changed_when: false
   register: fleet_bundle_async
   tags:
       - fleet

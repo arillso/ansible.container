@@ -102,8 +102,9 @@ fleet_async_enabled: true
 # wait_timeout so a job is never reaped while still legitimately waiting.
 fleet_async_timeout: 600
 # async_status poll retries / delay. retries * delay must comfortably
-# exceed fleet_async_timeout so the poller does not give up before jobs do.
-fleet_async_retries: 120
+# exceed fleet_async_timeout so the poller does not give up before jobs do
+# (150 * 5 = 750s > 600s timeout, ~25% headroom).
+fleet_async_retries: 150
 fleet_async_delay: 5
 
 # Fleet authentication parameters (auth entry point) are intentionally left
