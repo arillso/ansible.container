@@ -92,6 +92,16 @@ fleet_dry_run: false
 fleet_secret_timeout: 60
 fleet_resource_timeout: 300
 
+# Whether "Manage Fleet Bundles" blocks until each Bundle reports Ready.
+# Bundles are applied in a serial loop, so with wait enabled the play time
+# grows with the number of bundles (up to fleet_bundle_wait_timeout each).
+# Set false (globally, or per bundle via `wait: false` on the item) to apply
+# stable bundles fire-and-forget and let Fleet reconcile them asynchronously,
+# trading the readiness gate for a much shorter run. Mirrors the per-item
+# wait handling already used in clusters.yml.
+fleet_bundle_wait: true
+fleet_bundle_wait_timeout: 300
+
 # Fleet authentication parameters (auth entry point) are intentionally left
 # undefined here. They are declared as optional in meta/argument_specs.yml and
 # resolved with default(omit) where consumed, so no string-omit defaults are set.

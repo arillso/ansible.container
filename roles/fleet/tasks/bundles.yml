@@ -70,11 +70,12 @@
               diff:
                   comparePatches: "{{ item.diff.compare_patches | default([]) }}"
       state: "{{ fleet_state }}"
-      wait: true
-      wait_condition:
-          type: Ready
-          status: "True"
-      wait_timeout: 300
+      # Per-bundle override of the readiness gate, falling back to the role
+      # default. When wait is false the Bundle is applied without blocking on
+      # Ready, so a long serial loop no longer stacks up wait_timeout per item.
+      wait: "{{ item.wait | default(fleet_bundle_wait) | bool }}"
+      wait_condition: "{{ {'type': 'Ready', 'status': 'True'} if (item.wait | default(fleet_bundle_wait) | bool) else omit }}"
+      wait_timeout: "{{ item.wait_timeout | default(fleet_bundle_wait_timeout) | int if (item.wait | default(fleet_bundle_wait) | bool) else omit }}"
   loop: "{{ fleet_bundles }}"
   when: fleet_bundles | length > 0
   register: fleet_bundle_results
