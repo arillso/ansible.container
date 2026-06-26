@@ -58,6 +58,14 @@
                 "description": "Enable dry-run mode for Fleet operations"
                 "type": "bool"
                 "default": false
+            "fleet_bundle_wait":
+                "description": "Whether Manage Fleet Bundles waits for each Bundle to report Ready (per-bundle overridable via the bundle's wait key)"
+                "type": "bool"
+                "default": true
+            "fleet_bundle_wait_timeout":
+                "description": "Default seconds to wait for a Bundle to report Ready when waiting is enabled"
+                "type": "int"
+                "default": 300
             "fleet_secret_timeout":
                 "description": "Timeout in seconds for secret operations"
                 "type": "int"
@@ -228,6 +236,12 @@
                         "description": "Pause Bundle deployment"
                         "type": "bool"
                         "default": false
+                    "wait":
+                        "description": "Wait for the Bundle to report Ready (overrides fleet_bundle_wait)"
+                        "type": "bool"
+                    "wait_timeout":
+                        "description": "Seconds to wait for Ready when wait is enabled (overrides fleet_bundle_wait_timeout)"
+                        "type": "int"
                     "keep_resources":
                         "description": "Keep resources when Bundle is deleted"
                         "type": "bool"
