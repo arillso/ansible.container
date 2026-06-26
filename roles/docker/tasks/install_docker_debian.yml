@@ -1,4 +1,17 @@
 ---
+- name: "Debian : ensure deb822 dependency"
+  become: true
+  ansible.builtin.apt:
+      name: python3-debian
+      state: present
+      update_cache: true
+
+- name: "Debian : remove legacy docker.list"
+  become: true
+  ansible.builtin.file:
+      path: /etc/apt/sources.list.d/docker.list
+      state: absent
+
 - name: "Debian : add key"
   become: true
   ansible.builtin.get_url:
