@@ -10,7 +10,7 @@
       - "/etc/rancher/k3s/k3s.yaml"
       - "/var/lib/rancher/k3s/server/cred/admin.kubeconfig"
       - "/root/.kube/config"
-      - "{{ ansible_env.HOME | default('/root') }}/.kube/config"
+      - "{{ ansible_facts['env']['HOME'] | default('/root') }}/.kube/config"
   when: helm_kubeconfig_path is not defined or helm_kubeconfig_path == ""
   run_once: true
 

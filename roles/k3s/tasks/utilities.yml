@@ -46,7 +46,7 @@
   become: true
   when:
       - k3s_create_bash_completion | default(true) | bool
-      - ansible_os_family in ['Debian', 'RedHat']
+      - ansible_facts['os_family'] in ['Debian', 'RedHat']
 
 - name: Create K3s bash completion
   ansible.builtin.shell: |
@@ -54,7 +54,7 @@
   become: true
   when:
       - k3s_create_bash_completion | default(true) | bool
-      - ansible_os_family in ['Debian', 'RedHat']
+      - ansible_facts['os_family'] in ['Debian', 'RedHat']
       - k3s_completion_test is defined
       - k3s_completion_test.rc == 0
   changed_when: true
@@ -67,7 +67,7 @@
       - k3s_create_bash_completion | default(true) | bool
       - k3s_create_symlinks | bool
       - "'kubectl' in k3s_symlink_commands"
-      - ansible_os_family in ['Debian', 'RedHat']
+      - ansible_facts['os_family'] in ['Debian', 'RedHat']
       - k3s_completion_test is defined
       - k3s_completion_test.rc == 0
   changed_when: true
