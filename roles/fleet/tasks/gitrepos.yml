@@ -18,6 +18,10 @@
       - fleet-gitrepos
       - fleet-namespace
 
+# Not converted to async: GitRepo applies have no wait (the k8s call only
+# creates/updates the CR and returns immediately; the Fleet controller
+# reconciles the repo asynchronously on its own). Firing these in parallel
+# would add job/polling overhead for no latency gain. Kept synchronous.
 - name: "Manage Fleet GitRepos"
   kubernetes.core.k8s:
       kubeconfig: "{{ fleet_kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"

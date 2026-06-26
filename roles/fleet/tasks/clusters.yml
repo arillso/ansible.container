@@ -18,8 +18,12 @@
       - fleet-clusters
       - fleet-namespace
 
-- name: "Manage Fleet Clusters"
-  kubernetes.core.k8s:
+# Clusters with a kubeconfig_secret block on the Ready condition (up to
+# wait_timeout each); fire them in parallel (async/poll:0) so total runtime
+# is bounded by the slowest cluster. The wait stays inside each async job;
+# async_status only polls for module completion.
+- name: "Manage Fleet Clusters (async)"
+  kubernetes.core.k8s: &fleet_cluster_apply
       kubeconfig: "{{ fleet_kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
       api_version: "{{ fleet_api_version }}"
       kind: Cluster
@@ -38,7 +42,59 @@
   loop: "{{ fleet_clusters }}"
   when:
       - fleet_clusters | length > 0
-  register: fleet_cluster_results
+      - fleet_async_enabled | bool
+      - not ansible_check_mode
+  async: "{{ fleet_async_timeout }}"
+  poll: 0
+  register: fleet_cluster_async
+  tags:
+      - fleet
+      - fleet-clusters
+
+- name: "Wait for Fleet Cluster apply jobs"
+  ansible.builtin.async_status:
+      jid: "{{ item.ansible_job_id }}"
+  loop: "{{ fleet_cluster_async.results | default([]) }}"
+  loop_control:
+      label: "{{ item.item.name | default('') }}"
+  when:
+      - fleet_clusters | length > 0
+      - fleet_async_enabled | bool
+      - not ansible_check_mode
+      - item.ansible_job_id is defined
+  register: fleet_cluster_async_wait
+  until: fleet_cluster_async_wait.finished
+  retries: "{{ fleet_async_retries }}"
+  delay: "{{ fleet_async_delay }}"
+  tags:
+      - fleet
+      - fleet-clusters
+
+# Synchronous fallback: check_mode (async unsupported) or async disabled.
+- name: "Manage Fleet Clusters (sync)"
+  kubernetes.core.k8s: *fleet_cluster_apply
+  loop: "{{ fleet_clusters }}"
+  when:
+      - fleet_clusters | length > 0
+      - not (fleet_async_enabled | bool) or ansible_check_mode
+  register: fleet_cluster_sync
+  tags:
+      - fleet
+      - fleet-clusters
+
+# Normalize both paths to a single .results shape carrying the original
+# cluster as .item (see bundles.yml for the nesting rationale).
+- name: "Collect Fleet Cluster registration results"
+  ansible.builtin.set_fact:
+      fleet_cluster_results:
+          results: >-
+              {{
+                (fleet_cluster_sync.results | default([]))
+                if (not (fleet_async_enabled | bool) or ansible_check_mode)
+                else (fleet_cluster_async_wait.results | default([]))
+                     | map(attribute='item') | list
+              }}
+  when: fleet_clusters | length > 0
   tags:
       - fleet
       - fleet-clusters

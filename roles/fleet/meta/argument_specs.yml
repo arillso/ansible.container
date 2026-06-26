@@ -63,6 +63,33 @@ _common_options: &common_fleet_options
         type: "int"
         default: 300
 
+    fleet_async_enabled:
+        description:
+            - "Fire resource deploys with blocking waits (Bundles, Clusters)"
+            - "in parallel via async/poll:0 instead of serially."
+            - "Automatically bypassed in check_mode (async is unsupported there)."
+        type: "bool"
+        default: true
+
+    fleet_async_timeout:
+        description:
+            - "Per-job async timeout in seconds for fire-and-forget k8s applies."
+            - "Should be >= the per-item k8s wait_timeout."
+        type: "int"
+        default: 600
+
+    fleet_async_retries:
+        description:
+            - "Number of async_status poll retries."
+            - "retries * delay must exceed fleet_async_timeout."
+        type: "int"
+        default: 120
+
+    fleet_async_delay:
+        description: "Delay in seconds between async_status poll retries"
+        type: "int"
+        default: 5
+
 _cluster_selector_options: &cluster_selector_options
     cluster_selector:
         description: "Cluster selector for targeting"
