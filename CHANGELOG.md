@@ -79,9 +79,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `release`, and pin the reusable workflow to `@2026-06-18`.
 - `.python-version` `3.14` → `3.13` (org-wide target — `3.14` is rejected by
   `ansible-test`, which supports at most `3.13`).
-- Rename `nightly-security.yml` → `weekly-security.yml` (`name: Weekly Security
-Scan`) to match the cadence-honest org workflow-naming convention; the cron
-  was already weekly (`0 2 * * 1`).
+- Security scan runs as `nightly-security.yml` (`name: Nightly Security Scan`)
+  on a daily cron (`0 2 * * *`). Per the repo-standard visibility rule, public
+  repos run the scan daily (free Actions minutes); private repos run it weekly.
 - `LICENSE` copyright `2025` → `2023-2026` (org range `FIRST-CURRENT`,
   consistent with the README).
 - **Role metadata**: drop EOL Ubuntu `focal` (and Debian `buster` where present)
