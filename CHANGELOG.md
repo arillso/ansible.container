@@ -53,6 +53,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Deprecated syntax**: replace top-level `ansible_*` fact references with
+  `ansible_facts['...']` across the docker, k3s and helm roles (and their
+  `defaults`/`argument_specs`), and migrate the docker Debian/Ubuntu
+  repository tasks from the deprecated `ansible.builtin.apt_repository` to
+  `ansible.builtin.deb822_repository`. Removes the `INJECT_FACTS_AS_VARS`
+  (core 2.24) and `apt_repository` (core 2.25) deprecation warnings.
 - **Renovate**: track the `python_version` CI input via Renovate. Each
   `python_version:` in `pull-request.yml`/`merge.yml` carries a
   `# renovate: datasource=github-releases depName=python/cpython` marker, and

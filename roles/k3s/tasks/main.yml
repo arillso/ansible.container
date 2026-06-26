@@ -68,16 +68,16 @@
 - name: Detect system architecture
   ansible.builtin.set_fact:
       k3s_arch: >-
-          {%- if ansible_architecture == "x86_64" -%}
+          {%- if ansible_facts['architecture'] == "x86_64" -%}
             amd64
-          {%- elif ansible_architecture == "aarch64" -%}
+          {%- elif ansible_facts['architecture'] == "aarch64" -%}
             arm64
-          {%- elif ansible_architecture == "armv7l" -%}
+          {%- elif ansible_facts['architecture'] == "armv7l" -%}
             arm
-          {%- elif ansible_architecture == "s390x" -%}
+          {%- elif ansible_facts['architecture'] == "s390x" -%}
             s390x
           {%- else -%}
-            {{ ansible_architecture }}
+            {{ ansible_facts['architecture'] }}
           {%- endif -%}
 
 - name: Set K3s binary suffix based on architecture
@@ -130,7 +130,7 @@
       - ansible_local.k3s.cluster_info.server_url is defined
       - ansible_local.k3s.cluster_info.server_url != ""
       - k3s_role == "agent" or (k3s_role == "server" and not k3s_server_init | bool)
-      - ansible_local.k3s.cluster_info.server_url not in ['https://' + ansible_default_ipv4.address + ':' + k3s_https_listen_port | string, 'https://' + inventory_hostname + ':' + k3s_https_listen_port | string]
+      - ansible_local.k3s.cluster_info.server_url not in ['https://' + ansible_facts['default_ipv4']['address'] + ':' + k3s_https_listen_port | string, 'https://' + inventory_hostname + ':' + k3s_https_listen_port | string]
 
 # Fallback server URL determination from inventory when facts are not available
 - name: Set server URL from inventory (fallback)
@@ -281,8 +281,8 @@
       k3s_health_check_host: >-
           {%- if k3s_bind_address != '0.0.0.0' -%}
             {{ k3s_bind_address }}
-          {%- elif ansible_default_ipv4.address is defined -%}
-            {{ ansible_default_ipv4.address }}
+          {%- elif ansible_facts['default_ipv4']['address'] is defined -%}
+            {{ ansible_facts['default_ipv4']['address'] }}
           {%- elif k3s_node_ip is defined and k3s_node_ip -%}
             {{ k3s_node_ip }}
           {%- else -%}

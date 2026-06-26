@@ -6,9 +6,9 @@
 - name: Detect security framework in use
   ansible.builtin.set_fact:
       k3s_security_framework: >-
-          {%- if ansible_selinux.status is defined and ansible_selinux.status != "disabled" -%}
+          {%- if ansible_facts['selinux']['status'] is defined and ansible_facts['selinux']['status'] != "disabled" -%}
             selinux
-          {%- elif ansible_apparmor is defined and ansible_apparmor.status == "enabled" -%}
+          {%- elif ansible_facts['apparmor'] is defined and ansible_facts['apparmor']['status'] == "enabled" -%}
             apparmor
           {%- else -%}
             none
@@ -31,26 +31,26 @@
                 - policycoreutils-python-utils
             state: present
         become: true
-        when: ansible_os_family == "RedHat"
+        when: ansible_facts['os_family'] == "RedHat"
 
       - name: Check for k3s-selinux package availability
         ansible.builtin.uri:
-            url: "https://rpm.rancher.io/k3s/stable/common/centos/{{ ansible_distribution_major_version }}/noarch/"
+            url: "https://rpm.rancher.io/k3s/stable/common/centos/{{ ansible_facts['distribution_major_version'] }}/noarch/"
             method: GET
             status_code: 200
             timeout: 10
         register: k3s_selinux_repo_check
         failed_when: false
-        when: ansible_os_family == "RedHat"
+        when: ansible_facts['os_family'] == "RedHat"
 
       - name: Install k3s-selinux package
         ansible.builtin.package:
-            name: "https://rpm.rancher.io/k3s/stable/common/centos/{{ ansible_distribution_major_version }}/noarch/k3s-selinux-1.4-1.el{{ ansible_distribution_major_version }}.noarch.rpm"
+            name: "https://rpm.rancher.io/k3s/stable/common/centos/{{ ansible_facts['distribution_major_version'] }}/noarch/k3s-selinux-1.4-1.el{{ ansible_facts['distribution_major_version'] }}.noarch.rpm"
             state: present
             disable_gpg_check: true
         become: true
         when:
-            - ansible_os_family == "RedHat"
+            - ansible_facts['os_family'] == "RedHat"
             - k3s_selinux_repo_check.status == 200
         failed_when: false
         register: k3s_selinux_install
@@ -127,7 +127,7 @@
                 - apparmor-profiles
             state: present
         become: true
-        when: ansible_os_family == "Debian"
+        when: ansible_facts['os_family'] == "Debian"
 
       - name: Deploy cri-containerd AppArmor profile with change_profile support
         ansible.builtin.copy:
