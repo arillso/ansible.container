@@ -1,11 +1,11 @@
 ---
-name: Weekly Security Scan
+name: Nightly Security Scan
 run-name: |
     Security Scan by @${{ github.actor }}
 
 on:
     schedule:
-        - cron: "0 2 * * 1"
+        - cron: "0 2 * * *" # Daily 02:00 UTC (public repo — Actions minutes are free)
     workflow_dispatch:
 
 concurrency:
