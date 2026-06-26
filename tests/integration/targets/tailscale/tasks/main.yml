@@ -27,20 +27,12 @@
       tailscale_test_kubeconfig: /etc/rancher/k3s/k3s.yaml
       tailscale_test_namespace: tailscale
       tailscale_test_proxygroup: integration-ingress
-      # Credential is read from the environment, never committed. It is only
-      # required to bootstrap the operator (out of scope for this role); the
-      # role under test does not consume it directly.
-      tailscale_test_oauth_secret: "{{ lookup('env', 'TS_OAUTH_CLIENT_SECRET') }}"
-
-- name: Fail early if the Tailscale OAuth credential is missing
-  ansible.builtin.assert:
-      that:
-          - tailscale_test_oauth_secret | length > 0
-      fail_msg: >-
-          TS_OAUTH_CLIENT_SECRET is not set. The Tailscale operator cannot be
-          bootstrapped without it, so the tailscale CRDs will be unavailable.
-          Export the credential before running this target with --allow-disabled.
-      success_msg: "Tailscale OAuth credential present in environment"
+      # Prerequisite (out of scope for this role, documented in the header):
+      # a running Tailscale operator with the tailscale.com/v1alpha1 CRDs,
+      # bootstrapped from a TS_OAUTH_CLIENT_SECRET. This target only exercises
+      # the role's ProxyGroup management against those CRDs, so the secret is
+      # not consumed here — the target is `disabled` precisely because that
+      # cluster prerequisite cannot be assumed in CI.
 
 - name: Apply tailscale role with a single ingress ProxyGroup
   ansible.builtin.include_role:

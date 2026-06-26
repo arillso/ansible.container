@@ -32,7 +32,8 @@
             create_namespace: true
             target_namespace: default
             resources:
-                - content: |
+                - name: integration-fleet-cm
+                  content: |
                       apiVersion: v1
                       kind: ConfigMap
                       metadata:
@@ -70,7 +71,8 @@
             create_namespace: false
             target_namespace: default
             resources:
-                - content: |
+                - name: integration-fleet-cm
+                  content: |
                       apiVersion: v1
                       kind: ConfigMap
                       metadata:

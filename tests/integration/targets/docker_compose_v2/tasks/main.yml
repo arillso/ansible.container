@@ -46,7 +46,7 @@
       fail_msg: "docker_compose_v2 did not start the expected service container"
       success_msg: "docker_compose_v2 brought the compose project up correctly"
 
-- name: Apply docker_compose_v2 role again (idempotency check)
+- name: Apply docker_compose_v2 role again
   ansible.builtin.include_role:
       name: arillso.container.docker_compose_v2
   vars:
@@ -54,7 +54,21 @@
       docker_compose_v2_use_file: false
       docker_compose_v2_config: "{{ compose_test_definition }}"
       docker_compose_v2_state: present
-  register: compose_second_run
+
+- name: Gather the container again after the second apply
+  community.docker.docker_container_info:
+      name: integration-compose-web
+  register: compose_container_rerun
+
+- name: Assert the second apply was a no-op (container not recreated)
+  ansible.builtin.assert:
+      that:
+          - compose_container_rerun.exists
+          - compose_container_rerun.container.Id == compose_container.container.Id
+      fail_msg: >-
+          docker_compose_v2 recreated the container on a no-op re-run (not
+          idempotent): {{ compose_container.container.Id }} -> {{ compose_container_rerun.container.Id }}
+      success_msg: "docker_compose_v2 second apply was idempotent (same container Id)"
 
 - name: Tear down the compose project
   ansible.builtin.include_role:
