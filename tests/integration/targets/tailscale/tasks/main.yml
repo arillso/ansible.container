@@ -1,0 +1,104 @@
+---
+# Integration tests for the tailscale role.
+#
+# DISABLED in CI (see aliases). This role does NOT install Tailscale on a host
+# with an auth key; it manages Tailscale Kubernetes resources (ProxyGroups,
+# Ingress/Egress Services) via the tailscale.com/v1alpha1 CRDs. Exercising it
+# end-to-end therefore requires:
+#   * a running K3s cluster (provided via the `k3s` dependency), AND
+#   * the Tailscale Kubernetes operator installed in that cluster, which in
+#     turn needs a Tailscale OAuth client (client id + secret) to register
+#     with the tailnet and to install the ProxyGroup/Connector CRDs.
+#
+# The OAuth client secret is NEVER hardcoded. It is read from the environment
+# (TS_OAUTH_CLIENT_SECRET) and only used to bootstrap the operator; the role
+# itself takes no credentials. CI runners have neither the operator nor a
+# tailnet credential, so this target is gated behind `disabled`. Run manually
+# against a prepared cluster:
+#
+#     TS_OAUTH_CLIENT_ID=... TS_OAUTH_CLIENT_SECRET=... \
+#       ansible-test integration tailscale --allow-disabled
+#
+# The test covers the main ProxyGroup path, verifies the ProxyGroup CR was
+# created, then tears it down again.
+
+- name: Resolve test parameters
+  ansible.builtin.set_fact:
+      tailscale_test_kubeconfig: /etc/rancher/k3s/k3s.yaml
+      tailscale_test_namespace: tailscale
+      tailscale_test_proxygroup: integration-ingress
+      # Credential is read from the environment, never committed. It is only
+      # required to bootstrap the operator (out of scope for this role); the
+      # role under test does not consume it directly.
+      tailscale_test_oauth_secret: "{{ lookup('env', 'TS_OAUTH_CLIENT_SECRET') }}"
+
+- name: Fail early if the Tailscale OAuth credential is missing
+  ansible.builtin.assert:
+      that:
+          - tailscale_test_oauth_secret | length > 0
+      fail_msg: >-
+          TS_OAUTH_CLIENT_SECRET is not set. The Tailscale operator cannot be
+          bootstrapped without it, so the tailscale CRDs will be unavailable.
+          Export the credential before running this target with --allow-disabled.
+      success_msg: "Tailscale OAuth credential present in environment"
+
+- name: Apply tailscale role with a single ingress ProxyGroup
+  ansible.builtin.include_role:
+      name: arillso.container.tailscale
+  vars:
+      tailscale_kubeconfig_path: "{{ tailscale_test_kubeconfig }}"
+      tailscale_state: present
+      tailscale_proxygroups:
+          - name: "{{ tailscale_test_proxygroup }}"
+            namespace: "{{ tailscale_test_namespace }}"
+            type: ingress
+            replicas: 1
+            tags:
+                - "tag:k8s-ingress"
+
+- name: Verify the Tailscale ProxyGroup CR exists
+  kubernetes.core.k8s_info:
+      kubeconfig: "{{ tailscale_test_kubeconfig }}"
+      api_version: tailscale.com/v1alpha1
+      kind: ProxyGroup
+      name: "{{ tailscale_test_proxygroup }}"
+      namespace: "{{ tailscale_test_namespace }}"
+  register: tailscale_proxygroup_info
+
+- name: Assert the ProxyGroup was created
+  ansible.builtin.assert:
+      that:
+          - tailscale_proxygroup_info.resources | length == 1
+          - tailscale_proxygroup_info.resources[0].spec.type == "ingress"
+      fail_msg: "Tailscale ProxyGroup '{{ tailscale_test_proxygroup }}' was not created"
+      success_msg: "Tailscale ProxyGroup '{{ tailscale_test_proxygroup }}' created successfully"
+
+- name: Tear down the Tailscale ProxyGroup
+  ansible.builtin.include_role:
+      name: arillso.container.tailscale
+  vars:
+      tailscale_kubeconfig_path: "{{ tailscale_test_kubeconfig }}"
+      tailscale_state: absent
+      tailscale_proxygroups:
+          - name: "{{ tailscale_test_proxygroup }}"
+            namespace: "{{ tailscale_test_namespace }}"
+            type: ingress
+            replicas: 1
+            tags:
+                - "tag:k8s-ingress"
+
+- name: Verify the ProxyGroup is gone after teardown
+  kubernetes.core.k8s_info:
+      kubeconfig: "{{ tailscale_test_kubeconfig }}"
+      api_version: tailscale.com/v1alpha1
+      kind: ProxyGroup
+      name: "{{ tailscale_test_proxygroup }}"
+      namespace: "{{ tailscale_test_namespace }}"
+  register: tailscale_proxygroup_removed
+
+- name: Assert the ProxyGroup was removed
+  ansible.builtin.assert:
+      that:
+          - tailscale_proxygroup_removed.resources | length == 0
+      fail_msg: "Tailscale ProxyGroup '{{ tailscale_test_proxygroup }}' still present after state=absent"
+      success_msg: "Tailscale ProxyGroup '{{ tailscale_test_proxygroup }}' removed successfully"
