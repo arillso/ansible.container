@@ -16,10 +16,9 @@
             name: arillso.container.docker
 
       - name: Install pip (cloud image ships no pip3)
-        ansible.builtin.apt:
+        ansible.builtin.package:
             name: python3-pip
             state: present
-            update_cache: true
 
       - name: Install Python Docker SDK for community.docker modules
         ansible.builtin.pip:
