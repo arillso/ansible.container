@@ -83,3 +83,27 @@
       fail_msg: "Docker daemon defaults were not applied"
       success_msg: "Docker daemon defaults are applied"
   when: daemon_config.stat.exists
+
+# Recursion is only observable when a nested key exists on both sides of the
+# merge. The shipped docker_daemon_base has no log-opts, so the base is
+# overridden here rather than adding a default that only exists for the test.
+- name: Render the daemon template with log-opts on both sides of the merge
+  ansible.builtin.set_fact:
+      recursive_merge_result: >-
+          {{ docker_daemon_base_probe | combine(docker_daemon_probe, recursive=True) }}
+  vars:
+      docker_daemon_base_probe:
+          log-driver: journald
+          log-opts:
+              labels: from-base
+      docker_daemon_probe:
+          log-opts:
+              max-size: "10m"
+
+- name: Verify nested dicts merge per sub-key instead of being replaced
+  ansible.builtin.assert:
+      that:
+          - recursive_merge_result['log-opts']['labels'] == 'from-base'
+          - recursive_merge_result['log-opts']['max-size'] == '10m'
+      fail_msg: "Nested merge replaced log-opts instead of merging sub-keys"
+      success_msg: "Nested dicts merge per sub-key"

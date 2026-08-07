@@ -81,10 +81,13 @@
             fail_msg: "Role defaults were replaced instead of merged"
             success_msg: "Role defaults merged with the user configuration"
 
-      - name: Verify nested log-opts merged recursively
+      # docker_daemon_base ships no log-opts, so this only proves the nested
+      # user dict survives the merge intact. Recursive merging of a key present
+      # on both sides is covered in tests/integration/targets/docker.
+      - name: Verify nested user log-opts survive the merge
         ansible.builtin.assert:
             that:
                 - daemon_json['log-opts']['max-size'] == '10m'
                 - daemon_json['log-opts']['max-file'] == '3'
-            fail_msg: "Nested log-opts did not merge recursively"
-            success_msg: "Nested log-opts merged recursively"
+            fail_msg: "Nested log-opts were lost in the merge"
+            success_msg: "Nested log-opts survived the merge"
