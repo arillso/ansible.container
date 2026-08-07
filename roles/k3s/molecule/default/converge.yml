@@ -9,6 +9,10 @@
           - traefik
           - servicelb
       k3s_write_kubeconfig_mode: "0644"
+      # Passthrough args must survive alongside the hardening args the role
+      # adds itself; verify.yml asserts both are present.
+      k3s_kube_apiserver_args:
+          - "request-timeout=2m0s"
   pre_tasks:
       # The k3s install script needs curl, which the base test images
       # do not ship. Install it before the role runs.

@@ -326,31 +326,40 @@
 # General Security Hardening
 # K3s configuration directory permissions are set during directory creation in main.yml
 
-# - name: Configure secure file permissions for K3s token file
-#   ansible.builtin.file:
-#       path: "{{ k3s_token_file }}"
-#       mode: "0600"
-#       owner: root
-#       group: root
-#   become: true
-#   when:
-#       - k3s_token_file is defined
-#       - k3s_token_file | length > 0
+# This file runs before K3s is installed, so every permission task below is
+# guarded by a stat check and skips silently on a fresh host.
+- name: Check if K3s token file exists
+  ansible.builtin.stat:
+      path: "{{ k3s_token_file }}"
+  become: true
+  register: k3s_token_file_check
+  when:
+      - k3s_token_file is defined
+      - k3s_token_file | length > 0
+
+- name: Configure secure file permissions for K3s token file
+  ansible.builtin.file:
+      path: "{{ k3s_token_file }}"
+      mode: "0600"
+      owner: root
+      group: root
+  become: true
+  when: k3s_token_file_check.stat.exists | default(false)
 
 - name: Check if K3s server credential directory exists
   ansible.builtin.stat:
       path: "{{ k3s_data_dir }}/server/cred"
   register: k3s_cred_dir_check
 
-# - name: Configure secure file permissions for K3s server credentials directory
-#   ansible.builtin.file:
-#       path: "{{ k3s_data_dir }}/server/cred"
-#       mode: "0700"
-#       owner: root
-#       group: root
-#       state: directory
-#   become: true
-#   when: k3s_cred_dir_check.stat.exists
+- name: Configure secure file permissions for K3s server credentials directory
+  ansible.builtin.file:
+      path: "{{ k3s_data_dir }}/server/cred"
+      mode: "0700"
+      owner: root
+      group: root
+      state: directory
+  become: true
+  when: k3s_cred_dir_check.stat.exists
 
 - name: Configure logrotate for K3s logs
   ansible.builtin.template:
@@ -360,23 +369,3 @@
       owner: root
       group: root
   become: true
-# - name: Set up audit logging for K3s (if enabled)
-#   ansible.builtin.template:
-#       src: etc/kubernetes/audit-policy.yaml.j2
-#       dest: "{{ k3s_config_dir }}/audit-policy.yaml"
-#       mode: "0600"
-#       owner: root
-#       group: root
-#   become: true
-#   when: k3s_audit_log_enabled | default(false) | bool
-
-# - name: Display security configuration summary
-#   ansible.builtin.debug:
-#       msg: |
-#           K3s Security Configuration Summary:
-#           - Security Framework: {{ k3s_security_framework }}
-#           - SELinux Status: {{ ansible_selinux.status | default('not_detected') }}
-#           - AppArmor Status: {{ ansible_apparmor.status | default('not_detected') }}
-#           - Audit Logging: {{ k3s_audit_log_enabled | default(false) }}
-#           - Custom Policies: {{ k3s_selinux_custom_policy | default(false) or k3s_apparmor_profile | default(false) }}
-#   when: k3s_debug_security | default(false) | bool

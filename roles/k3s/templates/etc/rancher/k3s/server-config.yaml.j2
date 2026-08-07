@@ -14,11 +14,15 @@
 {%-   set _ = k3s_config.update({'token': k3s_token}) -%}
 {%- endif -%}
 
-{%- if k3s_secrets_encryption is defined and k3s_secrets_encryption -%}
+{#- Hardening controls below are gated by k3s_security_hardening; setting it to
+    false disables every one of them at once. -#}
+{%- set k3s_hardening = k3s_security_hardening | default(true) | bool -%}
+
+{%- if k3s_hardening and k3s_secrets_encryption | default(false) | bool -%}
 {%-   set _ = k3s_config.update({'secrets-encryption': true}) -%}
 {%- endif -%}
 
-{%- if k3s_protect_kernel_defaults is defined and k3s_protect_kernel_defaults -%}
+{%- if k3s_hardening and k3s_protect_kernel_defaults | default(false) | bool -%}
 {%-   set _ = k3s_config.update({'protect-kernel-defaults': true}) -%}
 {%- endif -%}
 
@@ -216,7 +220,13 @@
 {%- endif -%}
 
 {#- === PERFORMANCE TUNING === -#}
+{#- Hardening args go first so that a duplicate flag in k3s_kubelet_args wins:
+    k3s keeps the last occurrence of a repeated kubelet arg. -#}
 {%- set kubelet_args_list = [] -%}
+{%- if k3s_hardening and k3s_kubelet_read_only_port_disabled | default(false) | bool -%}
+{%-   set _ = kubelet_args_list.append('read-only-port=0') -%}
+{%- endif -%}
+
 {%- if k3s_kubelet_args is defined and k3s_kubelet_args | length > 0 -%}
 {%-   set kubelet_args_list = kubelet_args_list + k3s_kubelet_args -%}
 {%- endif -%}
@@ -243,8 +253,32 @@
 {%- endif -%}
 
 {#- === KUBERNETES COMPONENT ARGUMENTS === -#}
+{#- Hardening args first, user args last: k3s keeps the last occurrence of a
+    repeated apiserver flag, so k3s_kube_apiserver_args still wins. -#}
+{%- set apiserver_args_list = [] -%}
+{%- if k3s_hardening and not k3s_anonymous_auth | default(true) | bool -%}
+{%-   set _ = apiserver_args_list.append('anonymous-auth=false') -%}
+{%- endif -%}
+
+{%- if k3s_hardening and k3s_node_restriction | default(false) | bool -%}
+{%-   set _ = apiserver_args_list.append('enable-admission-plugins=NodeRestriction') -%}
+{%- endif -%}
+
+{%- if k3s_hardening and k3s_audit_log_enabled | default(false) | bool -%}
+{%-   set _ = apiserver_args_list.append('audit-log-path=' + k3s_config_dir | default('/etc/rancher/k3s') + '/audit.log') -%}
+{%-   set _ = apiserver_args_list.append('audit-log-maxage=' + k3s_audit_log_maxage | default(30) | string) -%}
+{%- endif -%}
+
+{%- if k3s_hardening and k3s_pod_security_admission_profile | default('') | length > 0 -%}
+{%-   set _ = apiserver_args_list.append('admission-control-config-file=' + k3s_config_dir | default('/etc/rancher/k3s') + '/psa-config.yaml') -%}
+{%- endif -%}
+
 {%- if k3s_kube_apiserver_args is defined and k3s_kube_apiserver_args | length > 0 -%}
-{%-   set _ = k3s_config.update({'kube-apiserver-arg': k3s_kube_apiserver_args}) -%}
+{%-   set apiserver_args_list = apiserver_args_list + k3s_kube_apiserver_args -%}
+{%- endif -%}
+
+{%- if apiserver_args_list | length > 0 -%}
+{%-   set _ = k3s_config.update({'kube-apiserver-arg': apiserver_args_list}) -%}
 {%- endif -%}
 
 {%- if k3s_kube_controller_manager_args is defined and k3s_kube_controller_manager_args | length > 0 -%}

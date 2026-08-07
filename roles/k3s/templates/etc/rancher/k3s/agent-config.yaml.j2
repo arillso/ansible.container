@@ -159,7 +159,11 @@
 {%- endif -%}
 
 {#- === SECURITY CONFIGURATION === -#}
-{%- if k3s_protect_kernel_defaults is defined and k3s_protect_kernel_defaults -%}
+{#- Hardening controls below are gated by k3s_security_hardening; setting it to
+    false disables every one of them at once. -#}
+{%- set k3s_hardening = k3s_security_hardening | default(true) | bool -%}
+
+{%- if k3s_hardening and k3s_protect_kernel_defaults | default(false) | bool -%}
 {%-   set _ = k3s_agent_config.update({'protect-kernel-defaults': true}) -%}
 {%- endif -%}
 
@@ -189,7 +193,13 @@
 {%- endif -%}
 
 {#- === PERFORMANCE TUNING === -#}
+{#- Hardening args go first so that a duplicate flag in k3s_kubelet_args wins:
+    k3s keeps the last occurrence of a repeated kubelet arg. -#}
 {%- set kubelet_args_list = [] -%}
+{%- if k3s_hardening and k3s_kubelet_read_only_port_disabled | default(false) | bool -%}
+{%-   set _ = kubelet_args_list.append('read-only-port=0') -%}
+{%- endif -%}
+
 {%- if k3s_kubelet_args is defined and k3s_kubelet_args | length > 0 -%}
 {%-   set kubelet_args_list = kubelet_args_list + k3s_kubelet_args -%}
 {%- endif -%}

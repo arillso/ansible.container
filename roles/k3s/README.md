@@ -29,6 +29,23 @@ The role enforces the following constraints:
 
 If the upgrade path validation cannot determine the installed version (e.g., on a fresh install), the check is skipped and the specified version is installed directly.
 
+### Security Hardening Defaults
+
+`k3s_security_hardening` (default `true`) now gates a set of cluster hardening
+controls that were previously never applied. On an existing cluster running with
+default variables, re-running the role changes behaviour:
+
+- **Secrets encryption** is enabled — K3s restarts, no data loss.
+- **`anonymous-auth=false`** breaks anonymous health endpoint probes.
+- **`NodeRestriction`** breaks setups where node credentials modify foreign node
+  objects.
+- **`read-only-port=0`** breaks metric collectors scraping kubelet port 10255.
+
+Set `k3s_security_hardening: false` to keep the previous behaviour, or disable
+individual controls via their own variables. See
+[guide.arillso.io](https://guide.arillso.io/collections/arillso/container/k3s_role.html)
+for the full variable list.
+
 ## Documentation
 
 For detailed documentation including all variables, examples, and usage instructions, see:
@@ -56,7 +73,7 @@ For detailed documentation including all variables, examples, and usage instruct
   usual cause. Verify the token configured for agents matches the server token
   and that the server API endpoint is reachable on port 6443.
 - **Upgrade is rejected**: the role enforces one-minor-version-at-a-time and no
-  downgrades (see *Upgrading K3s* above). Set an allowed `k3s_version` if the
+  downgrades (see _Upgrading K3s_ above). Set an allowed `k3s_version` if the
   upgrade-path validation fails.
 
 For detailed guidance see <https://guide.arillso.io>.

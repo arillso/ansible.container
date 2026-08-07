@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **k3s hardening variables**: eight new variables defined in both
+  `defaults/main.yml` and `meta/argument_specs.yml` —
+  `k3s_secrets_encryption`, `k3s_protect_kernel_defaults`,
+  `k3s_audit_log_enabled`, `k3s_audit_log_maxage`, `k3s_anonymous_auth`,
+  `k3s_node_restriction`, `k3s_kubelet_read_only_port_disabled` and
+  `k3s_pod_security_admission_profile`. All are gated by
+  `k3s_security_hardening`, which previously only covered SELinux/AppArmor.
+- **k3s Pod Security Admission**: optional cluster-wide default profile via
+  `k3s_pod_security_admission_profile` (empty by default, so no behaviour
+  change). Renders `psa-config.yaml` with `kube-system` exempt and wires it as
+  `admission-control-config-file`.
+- **k3s molecule hardening assertions**: `verify.yml` checks the rendered
+  config for the hardening flags, `k3s secrets-encrypt status` for `Enabled`,
+  the credential directory for `0700`, and that a user-supplied
+  `kube-apiserver-arg` survives the hardening merge.
 - **Molecule coverage** for the five previously-untested roles, each with a
   `default` scenario under `roles/<role>/molecule/default/` and a matching
   `molecule-<role>` job wired into `pull-request.yml` (qemu/KVM driver,
@@ -31,6 +46,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **k3s secrets encryption was silently off**: `server-config.yaml.j2`
+  referenced `k3s_secrets_encryption`, `k3s_protect_kernel_defaults` and
+  `k3s_audit_log_enabled`, but none of them were defined in `defaults/main.yml`
+  or `argument_specs.yml`. Every default deployment therefore ran without
+  secrets encryption while `k3s_security_hardening: true` suggested otherwise.
+- **k3s dead permission tasks**: the kubeconfig, token-file and credential
+  directory permission tasks were commented out, making `k3s_kubeconfig_mode`,
+  `k3s_kubeconfig_owner` and `k3s_kubeconfig_group` dead configuration. All
+  three are restored with a `stat` pre-check, since `security.yml` runs before
+  the installation. The orphaned `stat` on the credential directory has its
+  consumer back.
+- **k3s dead security blocks removed**: the commented-out audit-policy task
+  referenced `templates/etc/kubernetes/audit-policy.yaml.j2`, which does not
+  exist in the repository, and the commented-out debug summary duplicated the
+  active debug task in the same file.
 - **k3s `cluster-init` drift on re-runs**: the first server rewrote
   `config.yaml` and restarted k3s on every run after the first. `cluster-init`
   was derived from `k3s_server_init`, which follows `should_init` and requires
@@ -85,6 +115,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **BREAKING — k3s hardening now applies by default**: `k3s_secrets_encryption`,
+  `k3s_anonymous_auth`, `k3s_node_restriction` and
+  `k3s_kubelet_read_only_port_disabled` take effect on existing clusters running
+  default variables. Secrets encryption restarts K3s (no data loss);
+  `anonymous-auth=false` breaks anonymous health probes; `NodeRestriction`
+  breaks node credentials modifying foreign node objects; `read-only-port=0`
+  breaks collectors on kubelet port 10255. Set `k3s_security_hardening: false`
+  to keep the previous behaviour.
+- **k3s apiserver and kubelet args merge instead of overwrite**:
+  `k3s_kube_apiserver_args` and `k3s_kubelet_args` previously replaced the
+  argument list wholesale, leaving no room for role-managed hardening flags.
+  They are now appended after the hardening args, so a user-supplied duplicate
+  still wins (K3s keeps the last occurrence of a repeated flag).
 - **Deprecated syntax**: replace top-level `ansible_*` fact references with
   `ansible_facts['...']` across the docker, k3s and helm roles (and their
   `defaults`/`argument_specs`), and migrate the docker Debian/Ubuntu
