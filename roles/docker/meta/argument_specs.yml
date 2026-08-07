@@ -11,21 +11,30 @@ argument_specs:
                 # renovate: datasource=github-releases depName=moby/moby
                 default: "28.5.2"
 
+            docker_daemon_base:
+                type: dict
+                description: >-
+                    Role-provided base for the Docker daemon configuration. The rendered
+                    /etc/docker/daemon.json is docker_daemon_base recursively merged with
+                    docker_daemon. Override individual keys via docker_daemon rather than
+                    replacing this dict.
+
             docker_daemon:
                 type: dict
-                description: Defines the Docker daemon configuration options.
+                description: >-
+                    User-provided Docker daemon configuration options, merged recursively on
+                    top of docker_daemon_base. Keys set here win; keys left unset are
+                    inherited from the base.
                 options:
                     log-driver:
                         type: str
                         description: Defines the log driver to be used by Docker daemon.
-                        default: "journald"
                     log-opts:
                         type: dict
                         description: Logging driver options passed to the configured log-driver.
                     live-restore:
                         type: bool
                         description: Enables live restore of Docker when true.
-                        default: true
                     registry-mirrors:
                         type: list
                         elements: str
@@ -225,7 +234,9 @@ argument_specs:
                         description: Enable IPv6 networking.
                     no-new-privileges:
                         type: bool
-                        description: Set no-new-privileges by default for new containers.
+                        description: >-
+                            Set no-new-privileges by default for new containers. Enabled by
+                            default via docker_daemon_base; set to false here to opt out.
                     oom-score-adjust:
                         type: int
                         description: Adjust the OOM score.

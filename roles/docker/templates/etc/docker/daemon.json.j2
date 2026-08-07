@@ -1,1 +1,1 @@
-{{ docker_daemon | to_nice_json }}
+{{ docker_daemon_base | combine(docker_daemon, recursive=True) | to_nice_json }}
