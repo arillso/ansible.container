@@ -414,6 +414,15 @@ argument_specs:
                 default: 30
                 description: "Retention in days for rotated audit log files"
 
+            k3s_audit_log_level:
+                type: "str"
+                default: "Metadata"
+                choices: ["None", "Metadata", "Request", "RequestResponse"]
+                description: >-
+                    Audit level for the catch-all rule in the generated audit
+                    policy. Secrets and configmaps are always capped at
+                    Metadata regardless of this setting.
+
             k3s_anonymous_auth:
                 type: "bool"
                 default: false

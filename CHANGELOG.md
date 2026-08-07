@@ -13,9 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `defaults/main.yml` and `meta/argument_specs.yml` —
   `k3s_secrets_encryption`, `k3s_protect_kernel_defaults`,
   `k3s_audit_log_enabled`, `k3s_audit_log_maxage`, `k3s_anonymous_auth`,
-  `k3s_node_restriction`, `k3s_kubelet_read_only_port_disabled` and
-  `k3s_pod_security_admission_profile`. All are gated by
-  `k3s_security_hardening`, which previously only covered SELinux/AppArmor.
+  `k3s_node_restriction`, `k3s_kubelet_read_only_port_disabled`,
+  `k3s_audit_log_level` and `k3s_pod_security_admission_profile`. All are gated
+  by `k3s_security_hardening`, which previously only covered SELinux/AppArmor.
+- **k3s audit policy**: renders `audit-policy.yaml` and passes
+  `audit-policy-file` to the kube-apiserver when audit logging is enabled.
+  Without a policy file the apiserver matches no events and the audit log stays
+  empty. Drops high-volume node/proxy and health-endpoint traffic, caps secrets
+  and configmaps at `Metadata`, and logs everything else at
+  `k3s_audit_log_level`.
 - **k3s Pod Security Admission**: optional cluster-wide default profile via
   `k3s_pod_security_admission_profile` (empty by default, so no behaviour
   change). Renders `psa-config.yaml` with `kube-system` exempt and wires it as

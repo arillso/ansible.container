@@ -264,7 +264,10 @@
 {%-   set _ = apiserver_args_list.append('enable-admission-plugins=NodeRestriction') -%}
 {%- endif -%}
 
+{#- audit-policy-file is mandatory: without a policy the apiserver matches no
+    events and audit.log stays empty. -#}
 {%- if k3s_hardening and k3s_audit_log_enabled | default(false) | bool -%}
+{%-   set _ = apiserver_args_list.append('audit-policy-file=' + k3s_config_dir | default('/etc/rancher/k3s') + '/audit-policy.yaml') -%}
 {%-   set _ = apiserver_args_list.append('audit-log-path=' + k3s_config_dir | default('/etc/rancher/k3s') + '/audit.log') -%}
 {%-   set _ = apiserver_args_list.append('audit-log-maxage=' + k3s_audit_log_maxage | default(30) | string) -%}
 {%- endif -%}

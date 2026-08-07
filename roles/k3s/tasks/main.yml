@@ -244,6 +244,20 @@
       success_msg: "K3s agent configuration validated successfully"
   when: k3s_role == "agent"
 
+- name: Create k3s audit policy
+  ansible.builtin.template:
+      src: etc/rancher/k3s/audit-policy.yaml.j2
+      dest: "{{ k3s_config_dir }}/audit-policy.yaml"
+      mode: "0600"
+      owner: root
+      group: root
+  become: true
+  when:
+      - k3s_role == "server"
+      - k3s_security_hardening | default(true) | bool
+      - k3s_audit_log_enabled | default(false) | bool
+  notify: Restart k3s
+
 - name: Create k3s Pod Security Admission config
   ansible.builtin.template:
       src: etc/rancher/k3s/psa-config.yaml.j2

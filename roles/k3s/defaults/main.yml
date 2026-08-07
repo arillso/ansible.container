@@ -124,6 +124,7 @@ k3s_secrets_encryption: true
 k3s_protect_kernel_defaults: false
 k3s_audit_log_enabled: true
 k3s_audit_log_maxage: 30
+k3s_audit_log_level: "Metadata"
 k3s_anonymous_auth: false
 k3s_node_restriction: true
 k3s_kubelet_read_only_port_disabled: true

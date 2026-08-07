@@ -125,6 +125,21 @@
             fail_msg: "User-supplied apiserver arg was dropped by the hardening merge"
             success_msg: "User apiserver arg survived the hardening merge"
 
+      - name: Check the audit log actually received events
+        ansible.builtin.stat:
+            path: /etc/rancher/k3s/audit.log
+        register: k3s_audit_log
+
+      - name: Verify audit logging is not a no-op
+        ansible.builtin.assert:
+            that:
+                - k3s_audit_log.stat.exists
+                - k3s_audit_log.stat.size > 0
+            fail_msg: >-
+                Audit log is missing or empty — the audit policy is not
+                matching any events.
+            success_msg: "Audit log contains events"
+
       - name: Check secrets encryption status
         ansible.builtin.command: k3s secrets-encrypt status
         register: k3s_secrets_encrypt
