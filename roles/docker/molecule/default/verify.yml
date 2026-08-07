@@ -70,3 +70,21 @@
                 - daemon_json['storage-driver'] == 'overlay2'
             fail_msg: "Docker daemon configuration is incorrect"
             success_msg: "Docker daemon configuration is correct"
+
+      # converge.yml never sets these; they can only come from
+      # docker_daemon_base, so their presence proves the merge ran.
+      - name: Verify role defaults survive a user-provided docker_daemon
+        ansible.builtin.assert:
+            that:
+                - daemon_json['live-restore']
+                - daemon_json['no-new-privileges']
+            fail_msg: "Role defaults were replaced instead of merged"
+            success_msg: "Role defaults merged with the user configuration"
+
+      - name: Verify nested log-opts merged recursively
+        ansible.builtin.assert:
+            that:
+                - daemon_json['log-opts']['max-size'] == '10m'
+                - daemon_json['log-opts']['max-file'] == '3'
+            fail_msg: "Nested log-opts did not merge recursively"
+            success_msg: "Nested log-opts merged recursively"

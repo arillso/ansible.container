@@ -71,3 +71,15 @@
   ansible.builtin.debug:
       var: daemon_json
   when: daemon_config.stat.exists
+
+# This target includes the role without any docker_daemon override, so the
+# rendered config must be exactly the role defaults.
+- name: Verify role defaults are applied when docker_daemon is unset
+  ansible.builtin.assert:
+      that:
+          - daemon_json['log-driver'] == 'journald'
+          - daemon_json['live-restore']
+          - daemon_json['no-new-privileges']
+      fail_msg: "Docker daemon defaults were not applied"
+      success_msg: "Docker daemon defaults are applied"
+  when: daemon_config.stat.exists
