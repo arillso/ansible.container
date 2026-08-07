@@ -14,6 +14,14 @@
       k3s_kube_apiserver_args:
           - "request-timeout=2m0s"
   pre_tasks:
+      # `package` cannot refresh apt metadata, so the Debian family needs
+      # an explicit cache update first; a cloud image ships stale lists and
+      # the install below would fail with "Unable to locate package".
+      - name: Refresh apt cache on the Debian family
+        ansible.builtin.apt:
+            update_cache: true
+        when: ansible_facts['os_family'] == "Debian"
+
       # The k3s install script needs curl, which the base test images
       # do not ship. Install it before the role runs. Uses `package` so
       # the task also runs on the RedHat family; the previous `apt` task

@@ -119,15 +119,28 @@ def test_every_platform_has_host_vars_and_a_unique_port(role):
 
 
 @pytest.mark.parametrize("role", ROLES)
-def test_molecule_playbooks_use_package_not_apt(role):
-    """`apt` tasks silently skip or hard-fail on the RedHat family."""
+def test_molecule_playbooks_install_packages_portably(role):
+    """`apt` installs silently skip or hard-fail on the RedHat family.
+
+    A bare `update_cache` refresh stays allowed — `package` cannot refresh
+    apt metadata — but it must be guarded to the Debian family, and it must
+    not install anything.
+    """
     scenario = REPO_ROOT / "roles" / role / "molecule"
-    offenders = [
-        f.relative_to(REPO_ROOT).as_posix()
-        for f in sorted(scenario.rglob("*.yml"))
-        if "ansible.builtin.apt:" in f.read_text()
-    ]
-    assert not offenders, f"{role}: use ansible.builtin.package instead of apt in {offenders}"
+    offenders = []
+    for path in sorted(scenario.rglob("*.yml")):
+        text = path.read_text()
+        for task in re.findall(
+            r"ansible\.builtin\.apt:\n((?:\s+\S.*\n)+?)(?=\s*(?:-\s|\w)|\Z)", text
+        ):
+            installs = "name:" in task
+            guarded = 'os_family\'] == "Debian"' in text or 'os_family == "Debian"' in text
+            if installs or not guarded:
+                offenders.append(path.relative_to(REPO_ROOT).as_posix())
+    assert not offenders, (
+        f"{role}: install via ansible.builtin.package; apt only for a "
+        f"Debian-guarded cache refresh — offenders: {offenders}"
+    )
 
 
 def test_rocky_resolves_to_the_redhat_vars_and_tasks():
@@ -175,6 +188,7 @@ def test_redhat_vars_pin_uses_rpm_compatible_wildcard():
     assert any("docker-ce-' + docker_version + '*" in e for e in entries), entries
     # apt syntax in a RedHat vars file would break dnf
     assert not any("docker-ce=" in e for e in entries), entries
-    # the EL repos ship no python3-docker; the SDK comes via pip
+    # the EL repos ship no python3-docker, and pip is not the SDK, so the
+    # role installs neither; scenarios that need the SDK install it
     assert "python3-docker" not in entries, entries
-    assert "python3-pip" in entries, entries
+    assert "python3-pip" not in entries, entries
