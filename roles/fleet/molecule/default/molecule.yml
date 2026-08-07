@@ -29,11 +29,13 @@ platforms:
 
     - name: fleet-rocky-9
       image_url: https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2
-      # No image_checksum: Rocky publishes BSD-style CHECKSUM files
-      # (`SHA256 (file) = <hash>`), which get_url's checksum-by-URL
-      # only understands in GNU coreutils format. The `.latest.`
-      # image is a moving target, so a literal hash would go stale
-      # at the next respin; pin one here if verification is needed.
+      # Empty on purpose: the driver always passes image_checksum on to
+      # get_url, so the key cannot be left out, and get_url treats an
+      # empty value as "do not verify". Rocky's CHECKSUM file lists the
+      # versioned image name, which never matches the `.latest.` URL
+      # used here. Pin a literal sha256:<hash> against a versioned
+      # image URL if verification is needed.
+      image_checksum: ""
       image_arch: x86_64
       network_mode: user
       network_ssh_port: 2223
