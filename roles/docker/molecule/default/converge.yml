@@ -6,7 +6,9 @@
       # Install whatever docker-ce the upstream repo currently offers.
       # The default pins an exact patch version, but the bare
       # `docker-ce=28.5.2` never matches apt's full version string
-      # (e.g. 5:28.5.2-1~debian.12~bookworm), so CI must not pin.
+      # (e.g. 5:28.5.2-1~debian.12~bookworm), so CI must not pin on the
+      # Debian family. Left empty for every platform so the matrix
+      # exercises one code path.
       docker_version: ""
       # Recursion is only observable when the same nested key exists on BOTH
       # sides of the merge. The shipped docker_daemon_base has no log-opts, so

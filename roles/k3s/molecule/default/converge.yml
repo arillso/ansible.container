@@ -19,13 +19,13 @@
           NO_PROXY: "localhost,127.0.0.1,10.0.0.0/8"
   pre_tasks:
       # The k3s install script needs curl, which the base test images
-      # do not ship. Install it before the role runs.
+      # do not ship. Install it before the role runs. Uses `package` so
+      # the task also runs on the RedHat family; the previous `apt` task
+      # was guarded to Debian and left curl missing everywhere else.
       - name: Ensure curl is present
-        ansible.builtin.apt:
+        ansible.builtin.package:
             name: curl
             state: present
-            update_cache: true
-        when: ansible_facts['os_family'] == "Debian"
 
   tasks:
       - name: Include k3s role
