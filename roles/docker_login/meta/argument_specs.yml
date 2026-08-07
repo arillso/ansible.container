@@ -48,6 +48,7 @@ argument_specs:
 
             docker_login_password:
                 type: str
+                no_log: true
                 description:
                     - The plaintext password for the registry account.
                 default: ""
