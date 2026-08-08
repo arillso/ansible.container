@@ -23,24 +23,27 @@
         ansible.builtin.include_role:
             name: arillso.container.docker_compose_v2
 
-      # A container that fails to start is not reported by the role: the
-      # module reports the `up` itself as changed and moves on. The next
-      # `up` then recreates the stopped container, which surfaces as an
-      # idempotence failure on the launch task instead of as the start
-      # error it actually is. Assert the container is running here so the
-      # real cause fails the converge step with a readable message.
+      # Diagnostic: the launch task reports `changed` on the idempotence
+      # run while the container keeps running and nothing is recreated.
+      # The module derives `changed` from the compose events on stderr, so
+      # print the raw state and events here to identify which event the
+      # module counts. Remove once the cause is known.
       - name: Read the state of the compose containers
         ansible.builtin.command:
-            cmd: docker compose ps --format '{{ "{{" }}.Name{{ "}}" }} {{ "{{" }}.State{{ "}}" }}'
+            cmd: docker compose ps --all --format '{{ "{{" }}.Name{{ "}}" }} {{ "{{" }}.State{{ "}}" }} {{ "{{" }}.Image{{ "}}" }}'
             chdir: "/etc/docker/compose/molecule"
         register: docker_compose_v2_state_out
         changed_when: false
 
-      - name: Verify the compose container is running
-        ansible.builtin.assert:
-            that:
-                - "'running' in docker_compose_v2_state_out.stdout"
-            fail_msg: >-
-                compose container is not running:
-                {{ docker_compose_v2_state_out.stdout | default('no output') }}
-            success_msg: "compose container is running"
+      - name: Re-run the compose up the module performs
+        ansible.builtin.command:
+            cmd: docker compose up --detach --no-color --quiet-pull
+            chdir: "/etc/docker/compose/molecule"
+        register: docker_compose_v2_up_out
+        changed_when: false
+
+      - name: Show the container state and the compose events
+        ansible.builtin.debug:
+            msg:
+                - "state: {{ docker_compose_v2_state_out.stdout_lines }}"
+                - "up stderr: {{ docker_compose_v2_up_out.stderr_lines }}"

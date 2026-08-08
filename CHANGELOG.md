@@ -31,13 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **docker_compose_v2 molecule idempotence**: the `default` scenario failed on
-  the launch task with `Idempotence test failed`. A container that fails to
-  start is not surfaced by the module — it reports the `up` as changed and
-  continues, and the idempotence run then recreates the stopped container,
-  which reads as a non-idempotent task rather than as the start error it is.
-  Converge now asserts the container is running, so the actual cause fails the
-  converge step with a readable message.
 - **Secret masking**: tasks that read, render or transport credentials ran
   without `no_log: true`, so the values were printed with `-v` or in the task
   result. The k3s cluster join token (`slurp` + `set_fact` in
