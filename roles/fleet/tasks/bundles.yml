@@ -87,8 +87,9 @@
       - not ansible_check_mode
   async: "{{ fleet_async_timeout }}"
   poll: 0
-  # Fire-and-forget always reports changed (no module result yet); the real
-  # changed/failed status is surfaced by the async_status wait task below.
+  # Fire-and-forget only hands back a job id, so there is no module result to
+  # judge yet; the wait task below reports the apply's real changed/failed
+  # status once the job has finished.
   changed_when: false
   register: fleet_bundle_async
   tags:
@@ -110,12 +111,11 @@
   until: fleet_bundle_async_wait.finished
   retries: "{{ fleet_async_retries }}"
   delay: "{{ fleet_async_delay }}"
-  # Polling a job is not itself a change: async_status returns a fresh
-  # result on every run and would report changed even when the underlying
-  # apply was a no-op, which breaks idempotence. The real changed status
-  # of the apply is carried by the sync path, which is the one that runs
-  # in check_mode.
-  changed_when: false
+  # Polling itself is not a change, but the finished job carries the wrapped
+  # module's result: report changed only once the job is done and the apply
+  # actually changed something. Hardcoding false here would hide a real
+  # non-idempotent apply.
+  changed_when: fleet_bundle_async_wait.finished | default(false) and fleet_bundle_async_wait.changed | default(false)
   tags:
       - fleet
       - fleet-bundles
