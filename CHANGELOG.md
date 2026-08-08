@@ -157,6 +157,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   outright. Both resources now apply synchronously; the `fleet_async_enabled`,
   `fleet_async_timeout`, `fleet_async_retries` and `fleet_async_delay`
   variables are gone with the path they configured.
+- **fleet applied Bundles and one namespace without a kubeconfig**: the Bundle
+  apply and the ClusterRegistrationToken namespace task omitted the
+  `kubeconfig` parameter every other task in the role passes, so they fell back
+  to the module default and failed with "Could not create API client: Invalid
+  kube-config file" wherever the k3s kubeconfig is not the ambient default.
 - **fleet Bundle targets ignored the documented spelling**: `bundles.yml`
   passed `targets` to the API verbatim while the argument spec documents (and
   validates) snake_case keys, so a spec-conformant `cluster_selector` reached
