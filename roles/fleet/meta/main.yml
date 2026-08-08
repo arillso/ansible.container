@@ -17,7 +17,6 @@ galaxy_info:
               - bookworm
         - name: EL
           versions:
-              - "8"
               - "9"
 
     galaxy_tags:

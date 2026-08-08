@@ -27,6 +27,28 @@ platforms:
       vm_cpus: 2
       vm_memory: 2048
 
+    - name: fleet-rocky-9
+      image_url: https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2
+      # Empty on purpose: the driver always passes image_checksum on to
+      # get_url, so the key cannot be left out, and get_url treats an
+      # empty value as "do not verify". Rocky's CHECKSUM file lists the
+      # versioned image name, which never matches the `.latest.` URL
+      # used here. Pin a literal sha256:<hash> against a versioned
+      # image URL if verification is needed.
+      image_checksum: ""
+      # Log in as root. molecule-qemu renders the cloud-init user groups
+      # from the *runner's* `ansible_os_family`, which is Debian on the
+      # GitHub runner, so a non-root user on Rocky is created with
+      # `admin`/`sudo` — neither group exists there, cloud-init aborts and
+      # the SSH key is never installed. The root branch of the template
+      # sets no groups and is unaffected.
+      image_arch: x86_64
+      network_mode: user
+      network_ssh_port: 2223
+      network_ssh_user: root
+      vm_cpus: 2
+      vm_memory: 2048
+
 provisioner:
     name: ansible
     config_options:
@@ -37,6 +59,8 @@ provisioner:
     inventory:
         host_vars:
             fleet-ubuntu-22.04:
+                ansible_become: true
+            fleet-rocky-9:
                 ansible_become: true
     playbooks:
         converge: converge.yml
