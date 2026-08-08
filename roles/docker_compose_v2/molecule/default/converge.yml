@@ -22,3 +22,25 @@
       - name: Include docker_compose_v2 role
         ansible.builtin.include_role:
             name: arillso.container.docker_compose_v2
+
+      # A container that fails to start is not reported by the role: the
+      # module reports the `up` itself as changed and moves on. The next
+      # `up` then recreates the stopped container, which surfaces as an
+      # idempotence failure on the launch task instead of as the start
+      # error it actually is. Assert the container is running here so the
+      # real cause fails the converge step with a readable message.
+      - name: Read the state of the compose containers
+        ansible.builtin.command:
+            cmd: docker compose ps --format '{{ "{{" }}.Name{{ "}}" }} {{ "{{" }}.State{{ "}}" }}'
+            chdir: "/etc/docker/compose/molecule"
+        register: docker_compose_v2_state_out
+        changed_when: false
+
+      - name: Verify the compose container is running
+        ansible.builtin.assert:
+            that:
+                - "'running' in docker_compose_v2_state_out.stdout"
+            fail_msg: >-
+                compose container is not running:
+                {{ docker_compose_v2_state_out.stdout | default('no output') }}
+            success_msg: "compose container is running"
