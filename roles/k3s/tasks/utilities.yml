@@ -33,6 +33,9 @@
       owner: root
       group: root
   become: true
+  # The rendered file carries K3S_TOKEN; without this the join credential
+  # would end up in the task output on every --diff run.
+  no_log: true
   notify: Restart k3s
   when: k3s_environment_vars | length > 0
 

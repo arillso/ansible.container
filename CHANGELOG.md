@@ -62,8 +62,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `EnvironmentFile=-` makes systemd treat the missing file as fine, so k3s ran
   without proxy settings and failed image pulls silently. The task is active
   again and notifies `Restart k3s` instead of the stale lowercase handler name
-  `restart k3s`, which no longer exists. `verify.yml` asserts the file is
-  rendered `0600` and carries the value set through `k3s_environment_vars`.
+  `restart k3s`, which no longer exists. The task carries `no_log: true`,
+  because the template also renders `K3S_TOKEN` and the join credential must
+  not reach the task output. `verify.yml` asserts the file is rendered `0600`
+  and carries the value set through `k3s_environment_vars`, matching it with
+  `grep` instead of reading the file into a variable.
 - **k3s secrets encryption was silently off**: `server-config.yaml.j2`
   referenced `k3s_secrets_encryption`, `k3s_protect_kernel_defaults` and
   `k3s_audit_log_enabled`, but none of them were defined in `defaults/main.yml`

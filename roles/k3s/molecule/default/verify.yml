@@ -189,21 +189,23 @@
                 world-readable — k3s_environment_vars was never rendered.
             success_msg: "K3s environment file is rendered and 0600"
 
-      - name: Read the K3s environment file
-        ansible.builtin.slurp:
-            src: /etc/systemd/system/k3s.service.env
-        register: k3s_env_content
+      # Matched with grep rather than slurp: the file also carries K3S_TOKEN,
+      # and reading it into a variable would print the join credential.
+      - name: Search the environment file for the configured entry
+        ansible.builtin.command:
+            cmd: grep -qF 'NO_PROXY=localhost,127.0.0.1,10.0.0.0/8' /etc/systemd/system/k3s.service.env
+        register: k3s_env_match
+        changed_when: false
+        failed_when: false
 
       - name: Verify custom environment variables reach the file
         ansible.builtin.assert:
             that:
-                - "'NO_PROXY=localhost,127.0.0.1,10.0.0.0/8' in k3s_env_decoded"
+                - k3s_env_match.rc == 0
             fail_msg: >-
                 The environment file does not contain the value set through
                 k3s_environment_vars.
             success_msg: "k3s_environment_vars entries are present"
-        vars:
-            k3s_env_decoded: "{{ k3s_env_content.content | b64decode }}"
 
       - name: Check K3s server credential directory permissions
         ansible.builtin.stat:
