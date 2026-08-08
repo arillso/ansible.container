@@ -128,10 +128,18 @@
       # the wait rides out its timeout. Granting it cluster-admin is
       # acceptable in this throwaway single-node cluster and keeps the
       # role's Ready wait meaningful instead of papering over it.
+      #
+      # Applied through kubectl rather than kubernetes.core.k8s on
+      # purpose: the lint job installs only ansible-lint and
+      # ansible-core, so syntax-check cannot resolve kubernetes.core and
+      # would report unknown-module here. The verify playbooks are
+      # excluded in .ansible-lint for that reason; prepare.yml stays
+      # lintable instead.
       - name: Grant the Fleet agent ServiceAccount permission to deploy
-        kubernetes.core.k8s:
-            kubeconfig: "{{ fleet_prepare_kubeconfig }}"
-            definition:
+        ansible.builtin.copy:
+            dest: /tmp/molecule-fleet-agent-admin.yml
+            mode: "0644"
+            content: |
                 apiVersion: rbac.authorization.k8s.io/v1
                 kind: ClusterRoleBinding
                 metadata:
@@ -144,3 +152,9 @@
                     - kind: ServiceAccount
                       name: default
                       namespace: cattle-fleet-system
+
+      - name: Apply the Fleet agent ClusterRoleBinding
+        ansible.builtin.command: kubectl apply -f /tmp/molecule-fleet-agent-admin.yml
+        changed_when: true
+        environment:
+            KUBECONFIG: "{{ fleet_prepare_kubeconfig }}"

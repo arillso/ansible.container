@@ -66,6 +66,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **fleet GitRepo and Bundle sent empty values for unset options**: both tasks
+  sent every optional field with an empty default (`''`, `[]`, `false`) instead
+  of omitting it, and patched instead of applying. The API drops empty values
+  and writes its own defaults (such as `spec.targetCustomizationMode`), so the
+  applied object never matched the stored one. Optional fields are now omitted
+  when unset and both tasks use `apply: true`, which compares against the
+  fields the role owns. This narrows the diff but does not make the applies
+  idempotent yet — a second run still bumps the resource's `generation`, so the
+  fleet molecule scenario runs without the `idempotence` step for now.
+- **fleet Bundle sent fields the API rejects**: `spec.helm.timeout`,
+  `spec.helm.timeoutForceDelete` and `spec.yodaMode` are not part of the Fleet
+  Bundle schema and were discarded with an `unknown field` warning on every
+  apply. All three are removed from the task and from `argument_specs.yml`.
 - **k3s secrets encryption was silently off**: `server-config.yaml.j2`
   referenced `k3s_secrets_encryption`, `k3s_protect_kernel_defaults` and
   `k3s_audit_log_enabled`, but none of them were defined in `defaults/main.yml`
