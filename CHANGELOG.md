@@ -104,6 +104,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   no-op. Polling a job is not itself a change, so both wait tasks now derive
   `changed_when` from the finished job's own result — a genuine apply still
   reports `changed`, a repeat run does not.
+- **fleet Bundle targets ignored the documented spelling**: `bundles.yml`
+  passed `targets` to the API verbatim while the argument spec documents (and
+  validates) snake_case keys, so a spec-conformant `cluster_selector` reached
+  the API unconverted and a working `clusterSelector` failed validation.
+  Bundles now run targets through `fleet_transform_targets`, the same filter
+  `gitrepos.yml` already used.
+- **helm role failed on a host with an empty apt cache**: the `packages` entry
+  point of `arillso.system.packages` never refreshes the package cache and its
+  install task pins `update_cache: false`, so `python3-kubernetes` was reported
+  as unavailable on a freshly provisioned host. The role now refreshes the apt
+  cache before installing its Python dependency.
 - **k3s config drift on re-runs**: a server rewrote `config.yaml` and restarted
   k3s on every run after the first. On the initial run the cluster database does
   not exist yet, so the role initialises the cluster and `k3s_token` stays empty
