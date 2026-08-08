@@ -75,7 +75,7 @@
               correctDrift:
                   enabled: "{{ item.correct_drift.enabled | default(false) | bool }}"
                   force: "{{ item.correct_drift.force | default(false) | bool }}"
-                  keepFailHistory: "{{ item.correct_drift.keep_fail_history | default(1) | int }}"
+                  keepFailHistory: "{{ item.correct_drift.keep_fail_history | default(false) | bool }}"
               keepResources: "{{ item.keep_resources | default(false) | bool }}"
               diff:
                   comparePatches: "{{ item.diff.compare_patches | default([]) }}"

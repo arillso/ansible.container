@@ -106,6 +106,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   outright. Both resources now apply synchronously; the `fleet_async_enabled`,
   `fleet_async_timeout`, `fleet_async_retries` and `fleet_async_delay`
   variables are gone with the path they configured.
+- **fleet sent `keepFailHistory` as an integer**: the Bundle spec rendered
+  `spec.correctDrift.keepFailHistory` through `| int` and the argument spec
+  declared it `int` ("Number of failed attempts to keep"), but the Fleet CRD
+  types it as a boolean, so the API rejected every Bundle carrying a
+  `correct_drift` block with a 422. Both now use `bool`.
 - **fleet applied Bundles and one namespace without a kubeconfig**: the Bundle
   apply and the ClusterRegistrationToken namespace task omitted the
   `kubeconfig` parameter every other task in the role passes, so they fell back
