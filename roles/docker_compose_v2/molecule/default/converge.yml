@@ -23,27 +23,45 @@
         ansible.builtin.include_role:
             name: arillso.container.docker_compose_v2
 
-      # Diagnostic: the launch task reports `changed` on the idempotence
-      # run while the container keeps running and nothing is recreated.
-      # The module derives `changed` from the compose events on stderr, so
-      # print the raw state and events here to identify which event the
-      # module counts. Remove once the cause is known.
-      - name: Read the state of the compose containers
+      # Diagnostic: compose emits `Recreate` on the idempotence run even
+      # though the container is running, which is what makes the module
+      # report `changed`. Compose recreates when the container's stored
+      # config hash differs from the one derived from the compose file, so
+      # read that hash plus the compose version here. Read-only on purpose:
+      # running `up` in this playbook would consume the recreate and mask
+      # the failure. Remove once the cause is known.
+      - name: Read the compose and docker versions
         ansible.builtin.command:
-            cmd: docker compose ps --all --format '{{ "{{" }}.Name{{ "}}" }} {{ "{{" }}.State{{ "}}" }} {{ "{{" }}.Image{{ "}}" }}'
-            chdir: "/etc/docker/compose/molecule"
-        register: docker_compose_v2_state_out
+            cmd: docker compose version --short
+        register: docker_compose_v2_version_probe
         changed_when: false
 
-      - name: Re-run the compose up the module performs
+      - name: Read the stored config hash of the compose container
         ansible.builtin.command:
-            cmd: docker compose up --detach --no-color --quiet-pull
-            chdir: "/etc/docker/compose/molecule"
-        register: docker_compose_v2_up_out
+            cmd: >-
+                docker inspect molecule-web-1
+                --format '{{ "{{" }}index .Config.Labels "com.docker.compose.config-hash"{{ "}}" }}'
+        register: docker_compose_v2_hash_stored
         changed_when: false
+        failed_when: false
 
-      - name: Show the container state and the compose events
+      - name: Read the config hash compose derives from the file
+        ansible.builtin.command:
+            cmd: docker compose config --hash=web
+            chdir: "/etc/docker/compose/molecule"
+        register: docker_compose_v2_hash_expected
+        changed_when: false
+        failed_when: false
+
+      - name: Read the rendered compose file
+        ansible.builtin.slurp:
+            src: /etc/docker/compose/molecule/docker-compose.yml
+        register: docker_compose_v2_file_probe
+
+      - name: Show the hashes and the rendered file
         ansible.builtin.debug:
             msg:
-                - "state: {{ docker_compose_v2_state_out.stdout_lines }}"
-                - "up stderr: {{ docker_compose_v2_up_out.stderr_lines }}"
+                - "compose version: {{ docker_compose_v2_version_probe.stdout }}"
+                - "stored hash: {{ docker_compose_v2_hash_stored.stdout | default('n/a') }}"
+                - "expected hash: {{ docker_compose_v2_hash_expected.stdout | default('n/a') }}"
+                - "file: {{ docker_compose_v2_file_probe.content | b64decode }}"
