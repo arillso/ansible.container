@@ -40,7 +40,7 @@ git checkout -b fix/issue-description
 - Use 4 spaces for indentation (no tabs)
 - Use lowercase with underscores for variable names
 - Prefix role variables with the role name
-- Keep lines under 160 characters
+- Keep lines under 500 characters
 - Require `---` document start
 
 ### Python
@@ -61,7 +61,7 @@ git checkout -b fix/issue-description
 
 ### Role Structure
 
-```
+```text
 roles/ROLE_NAME/
 ├── defaults/
 │   └── main.yml              # User-configurable variables
@@ -116,7 +116,7 @@ make build
 
 Write clear, descriptive commit messages:
 
-```
+```text
 Brief summary (50 chars or less)
 
 - Detailed description with bullet points
