@@ -31,6 +31,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **k3s `cluster-init` drift on re-runs**: the first server rewrote
+  `config.yaml` and restarted k3s on every run after the first. `cluster-init`
+  was derived from `k3s_server_init`, which follows `should_init` and requires
+  the datastore to be absent — so the flag was written on the initial run and
+  dropped on every later one. `cluster-init` is a bootstrap flag that k3s only
+  evaluates while creating the datastore, so it is now kept for as long as this
+  node runs the cluster. Secondary servers and agents keep writing `server:` as
+  before.
 - **k3s config drift on re-runs**: a server rewrote `config.yaml` and restarted
   k3s on every run after the first. On the initial run the cluster database does
   not exist yet, so the role initialises the cluster and `k3s_token` stays empty
