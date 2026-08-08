@@ -27,12 +27,11 @@
             # deploy — with no targets it has nothing to become ready
             # for, and the wait would ride out its timeout.
             #
-            # camelCase on purpose: unlike gitrepos.yml, bundles.yml
-            # passes targets to the API unfiltered, so the keys have to
-            # be in the API's own spelling here.
+            # snake_case as the argument spec documents it; the role
+            # converts the keys to the API's camelCase spelling.
             targets:
                 - name: local
-                  clusterSelector: {}
+                  cluster_selector: {}
             resources:
                 - content: |
                       apiVersion: v1

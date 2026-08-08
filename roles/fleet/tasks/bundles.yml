@@ -44,7 +44,11 @@
                   maxUnavailablePartitions: "{{ item.rollout_strategy.max_unavailable_partitions | default(0) }}"
                   autoPartitionSize: "{{ item.rollout_strategy.auto_partition_size | default(0) }}"
                   partitions: "{{ item.rollout_strategy.partitions | default([]) }}"
-              targets: "{{ item.targets | default([]) }}"
+              # Same snake_case -> camelCase transform as gitrepos.yml: the
+              # argument spec documents snake_case keys (cluster_selector,
+              # match_labels) for targets, so they have to be converted to the
+              # API's spelling here rather than passed through verbatim.
+              targets: "{{ item.targets | default([]) | arillso.container.fleet_transform_targets }}"
               targetRestrictions: "{{ item.target_restrictions | default([]) }}"
               dependsOn: "{{ item.depends_on | default([]) }}"
               resources: "{{ item.resources | default([]) }}"
