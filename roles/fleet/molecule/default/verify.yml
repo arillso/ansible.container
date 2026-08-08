@@ -1,12 +1,72 @@
 ---
-# Verify is not part of the test_sequence for this syntax-only
-# scenario (the role needs a live Kubernetes cluster to converge, so
-# there is nothing host-local to assert). Kept as a placeholder so the
-# provisioner playbook reference resolves.
+# Asserts that the role produced schema-valid CRs the Fleet API accepted,
+# and that they carry the metadata the role is responsible for. It does
+# not assert that the Fleet controller successfully deployed the bundle
+# contents — that is controller behaviour, not role behaviour.
 - name: Verify
   hosts: all
-  gather_facts: false
+  become: true
+  vars:
+      fleet_verify_kubeconfig: /etc/rancher/k3s/k3s.yaml
   tasks:
-      - name: No host-local verification for a cluster-bound role
-        ansible.builtin.debug:
-            msg: "fleet requires a live Kubernetes cluster; verify is deferred."
+      - name: Fetch the GitRepo resource
+        kubernetes.core.k8s_info:
+            api_version: fleet.cattle.io/v1alpha1
+            kind: GitRepo
+            name: molecule-gitrepo
+            namespace: fleet-local
+            kubeconfig: "{{ fleet_verify_kubeconfig }}"
+        register: fleet_verify_gitrepo
+
+      - name: Assert the GitRepo carries the role's spec and labels
+        ansible.builtin.assert:
+            that:
+                - fleet_verify_gitrepo.resources | length == 1
+                - >-
+                    fleet_verify_gitrepo.resources[0].spec.repo
+                    == "https://github.com/rancher/fleet-examples.git"
+                - fleet_verify_gitrepo.resources[0].spec.branch == "master"
+                - "'simple' in fleet_verify_gitrepo.resources[0].spec.paths"
+                - >-
+                    fleet_verify_gitrepo.resources[0].metadata.labels['app.kubernetes.io/managed-by']
+                    == "ansible"
+                - >-
+                    fleet_verify_gitrepo.resources[0].metadata.labels['app.kubernetes.io/component']
+                    == "fleet-gitrepo"
+                - >-
+                    fleet_verify_gitrepo.resources[0].metadata.labels['gitops.infrastructure/gitrepo']
+                    == "molecule-gitrepo"
+            fail_msg: "GitRepo 'molecule-gitrepo' is missing or does not match the converge spec"
+            success_msg: "GitRepo 'molecule-gitrepo' applied with the expected spec and labels"
+
+      - name: Fetch the Bundle resource
+        kubernetes.core.k8s_info:
+            api_version: fleet.cattle.io/v1alpha1
+            kind: Bundle
+            name: molecule-bundle
+            namespace: fleet-local
+            kubeconfig: "{{ fleet_verify_kubeconfig }}"
+        register: fleet_verify_bundle
+
+      - name: Assert the Bundle carries the role's resources and labels
+        ansible.builtin.assert:
+            that:
+                - fleet_verify_bundle.resources | length == 1
+                - fleet_verify_bundle.resources[0].spec.resources | length == 1
+                - >-
+                    fleet_verify_bundle.resources[0].spec.resources[0].name
+                    == "configmap.yaml"
+                - >-
+                    'molecule-bundle-config'
+                    in fleet_verify_bundle.resources[0].spec.resources[0].content
+                - >-
+                    fleet_verify_bundle.resources[0].metadata.labels['app.kubernetes.io/managed-by']
+                    == "ansible"
+                - >-
+                    fleet_verify_bundle.resources[0].metadata.labels['app.kubernetes.io/component']
+                    == "fleet-bundle"
+                - >-
+                    fleet_verify_bundle.resources[0].metadata.labels['molecule.test/scenario']
+                    == "default"
+            fail_msg: "Bundle 'molecule-bundle' is missing or does not match the converge spec"
+            success_msg: "Bundle 'molecule-bundle' applied with the expected resources and labels"

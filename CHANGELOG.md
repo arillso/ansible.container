@@ -42,13 +42,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   converge deploys a minimal `nginx` compose project, and verify asserts the
   compose plugin, the rendered project file, the systemd unit and a running
   container.
-- **helm**, **fleet**, **tailscale** molecule — syntax-only scenarios
-  (`test_sequence` stops after `syntax`). These roles drive a live Kubernetes
-  API (HelmChart CRDs, Rancher Fleet GitOps CRDs, the Tailscale operator CRDs)
-  and cannot converge without a running cluster; standing up k3s per role would
-  make CI slow and flaky, so the converge/verify against a real cluster is
-  deferred and documented at the top of each `molecule.yml`. Syntax checking
-  still validates playbook/role wiring cheaply.
+- **helm**, **fleet**, **tailscale** molecule — full converge against an
+  ephemeral k3s cluster. Each scenario gained a `prepare.yml` that installs
+  `arillso.container.k3s` in the same QEMU VM and adds whatever upstream
+  controller the role needs, so `converge`, `idempotence` and `verify` are now
+  part of the `test_sequence`. No external cluster and no repository secret is
+  involved, which keeps the jobs working on fork pull requests. These scenarios
+  assert that the roles emit schema-valid resources the API accepts; they do not
+  assert that the upstream controllers act on them.
+- **helm** molecule exercises the whole deployment chain: the role applies a
+  HelmChart CR, the k3s Helm controller turns it into an install Job, and verify
+  asserts the CR, the completed Job and the running Pod.
+- **fleet** molecule installs standalone Fleet (`fleet-crd`, then `fleet`) and
+  asserts that the GitRepo and Bundle CRs the role emits are accepted by the
+  `fleet.cattle.io` API with the expected spec and labels. Workspaces
+  (Rancher-only `management.cattle.io/v3`), registration tokens (the controller
+  rotates the secret) and clusters (need a second cluster's kubeconfig) stay out
+  of the fixture.
+- **tailscale** molecule installs the operator chart with dummy OAuth
+  credentials and without waiting for the Pod, which registers the
+  `tailscale.com` CRDs without a real tailnet, then asserts the ProxyGroup the
+  role creates.
 
 ### Fixed
 
@@ -84,6 +98,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   evaluates while creating the datastore, so it is now kept for as long as this
   node runs the cluster. Secondary servers and agents keep writing `server:` as
   before.
+- **fleet reported changed on every run**: the `async_status` tasks that wait
+  for the Bundle and Cluster apply jobs returned a fresh result each run and
+  therefore always reported `changed`, even when the underlying apply was a
+  no-op. Polling a job is not itself a change, so both wait tasks are now
+  `changed_when: false`; the real changed status is still carried by the
+  synchronous path, which is the one that runs in check mode.
 - **k3s config drift on re-runs**: a server rewrote `config.yaml` and restarted
   k3s on every run after the first. On the initial run the cluster database does
   not exist yet, so the role initialises the cluster and `k3s_token` stays empty
