@@ -152,6 +152,27 @@
             fail_msg: "Secrets encryption is not enabled on the running cluster"
             success_msg: "Secrets encryption is enabled"
 
+      - name: Check bash completion files
+        ansible.builtin.stat:
+            path: "/etc/bash_completion.d/{{ item }}"
+        loop:
+            - k3s
+            - kubectl
+        register: k3s_completion_files
+
+      - name: Verify bash completion was actually installed
+        ansible.builtin.assert:
+            that:
+                - item.stat.exists
+                - item.stat.size > 0
+            fail_msg: >-
+                {{ item.item }} bash completion is missing or empty — the
+                completion tasks were skipped.
+            success_msg: "{{ item.item }} bash completion is installed"
+        loop: "{{ k3s_completion_files.results }}"
+        loop_control:
+            label: "{{ item.item }}"
+
       - name: Check K3s server credential directory permissions
         ansible.builtin.stat:
             path: /var/lib/rancher/k3s/server/cred
