@@ -42,7 +42,6 @@ platforms:
       # `admin`/`sudo` — neither group exists there, cloud-init aborts and
       # the SSH key is never installed. The root branch of the template
       # sets no groups and is unaffected.
-      bios_type: bios
       image_arch: x86_64
       network_mode: user
       network_ssh_port: 2223
