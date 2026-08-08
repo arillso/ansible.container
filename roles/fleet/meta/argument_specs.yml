@@ -187,9 +187,9 @@
                                 "type": "bool"
                                 "default": false
                             "keep_fail_history":
-                                "description": "Number of failed attempts to keep"
-                                "type": "int"
-                                "default": 1
+                                "description": "Keep track of failed rollbacks in the Helm history"
+                                "type": "bool"
+                                "default": false
                     "name":
                         "description": "Name of the Bundle resource"
                         "type": "str"
