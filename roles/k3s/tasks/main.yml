@@ -116,6 +116,14 @@
 - name: Set token from first server
   ansible.builtin.set_fact:
       k3s_token: "{{ cluster_token.content | b64decode | trim }}"
+      # Records that the token was read back from the cluster rather than
+      # supplied by the caller. A server keeps its token in
+      # `server/node-token` and does not need it in config.yaml, so writing
+      # a discovered token there would only rewrite the file once the
+      # cluster exists — changing the config and restarting k3s on every
+      # subsequent run. Agents still need it to join, so they write it
+      # regardless of origin.
+      k3s_token_discovered: true
   no_log: true
   when:
       - k3s_token == ""

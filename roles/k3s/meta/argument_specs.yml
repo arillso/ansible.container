@@ -51,6 +51,18 @@ argument_specs:
                 default: ""
                 description: "K3s cluster token for authentication"
 
+            k3s_token_discovered:
+                type: "bool"
+                required: false
+                default: false
+                description:
+                    - Set by the role when the token was read back from the cluster
+                      instead of being supplied by the caller. A server keeps its
+                      token in the node-token file and does not need it in
+                      config.yaml, so a discovered token is left out of the server
+                      config to keep the file stable across runs. Not intended to be
+                      set manually.
+
             k3s_bind_address:
                 type: "str"
                 required: false
