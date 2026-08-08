@@ -15,73 +15,17 @@
       docker_compose_v2_config:
           services:
               web:
-                  image: nginx:alpine
+                  # Pin the image by digest. `nginx:alpine` is an OCI image
+                  # index with 16 manifests, and compose stores the resolved
+                  # image ID in the `com.docker.compose.image` label. When the
+                  # tag resolves to a different ID than the stored one, compose
+                  # recreates the container even though the config hash still
+                  # matches, and the idempotence step fails on the launch task.
+                  # renovate: datasource=docker depName=nginx versioning=docker
+                  image: nginx:alpine@sha256:1d40e3eb3bf4f138de1d67193f2aa5309fcaf343eb5ffadbf5e9439de1eb1ebb
                   ports:
                       - "8080:80"
   tasks:
       - name: Include docker_compose_v2 role
         ansible.builtin.include_role:
             name: arillso.container.docker_compose_v2
-
-      # Diagnostic: compose emits `Recreate` on the idempotence run even
-      # though the container is running, which is what makes the module
-      # report `changed`. Compose recreates when the container's stored
-      # config hash differs from the one derived from the compose file, so
-      # read that hash plus the compose version here. Read-only on purpose:
-      # running `up` in this playbook would consume the recreate and mask
-      # the failure. Remove once the cause is known.
-      - name: Read the compose and docker versions
-        ansible.builtin.command:
-            cmd: docker compose version --short
-        register: docker_compose_v2_version_probe
-        changed_when: false
-
-      - name: Read the stored config hash of the compose container
-        ansible.builtin.command:
-            cmd: >-
-                docker inspect molecule-web-1
-                --format '{{ "{{" }}index .Config.Labels "com.docker.compose.config-hash"{{ "}}" }}'
-        register: docker_compose_v2_hash_stored
-        changed_when: false
-        failed_when: false
-
-      - name: Read the config hash compose derives from the file
-        ansible.builtin.command:
-            cmd: docker compose config --hash=web
-            chdir: "/etc/docker/compose/molecule"
-        register: docker_compose_v2_hash_expected
-        changed_when: false
-        failed_when: false
-
-      - name: Read the compose labels stored on the container
-        ansible.builtin.command:
-            cmd: >-
-                docker inspect molecule-web-1
-                --format '{{ "{{" }}json .Config.Labels{{ "}}" }}'
-        register: docker_compose_v2_labels_stored
-        changed_when: false
-        failed_when: false
-
-      - name: Ask compose whether it would recreate the container
-        ansible.builtin.command:
-            cmd: docker compose --dry-run up --detach --no-color --quiet-pull
-            chdir: "/etc/docker/compose/molecule"
-        register: docker_compose_v2_dry_run
-        changed_when: false
-        failed_when: false
-
-      - name: Read the rendered compose file
-        ansible.builtin.slurp:
-            src: /etc/docker/compose/molecule/docker-compose.yml
-        register: docker_compose_v2_file_probe
-
-      - name: Show the hashes and the rendered file
-        ansible.builtin.debug:
-            msg:
-                - "compose version: {{ docker_compose_v2_version_probe.stdout }}"
-                - "labels: {{ docker_compose_v2_labels_stored.stdout | default('n/a') }}"
-                - "dry-run stdout: {{ docker_compose_v2_dry_run.stdout_lines | default([]) }}"
-                - "dry-run stderr: {{ docker_compose_v2_dry_run.stderr_lines | default([]) }}"
-                - "stored hash: {{ docker_compose_v2_hash_stored.stdout | default('n/a') }}"
-                - "expected hash: {{ docker_compose_v2_hash_expected.stdout | default('n/a') }}"
-                - "file: {{ docker_compose_v2_file_probe.content | b64decode }}"
