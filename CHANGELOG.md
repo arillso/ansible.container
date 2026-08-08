@@ -36,10 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   not exist yet, so the role initialises the cluster and `k3s_token` stays empty
   — the rendered config carries no `token`. From the second run on, the token
   file exists, the role reads it back and writes it into the config, which
-  changes the file and notifies `Restart k3s`. A server keeps its token in
-  `server/node-token` and does not need it in `config.yaml`, so a token
-  discovered from the cluster is now left out of the server config. Agents still
-  receive the token, since they need it to join.
+  changes the file and notifies `Restart k3s`. A token read from the node's own
+  `server/node-token` is redundant in `config.yaml` and is now left out of the
+  server config. A token fetched from another host stays in place, so secondary
+  servers and agents can still join.
 - **docker_compose_v2 molecule idempotence**: the `default` scenario failed on
   the launch task with `Idempotence test failed`. `nginx:alpine` is an OCI image
   index with 16 manifests, and compose stores the resolved image ID in the

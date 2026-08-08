@@ -5,10 +5,11 @@
 {%- set k3s_config = {} -%}
 
 {#- === SECURITY CONFIGURATION (Highest Priority) === -#}
-{#- Only a caller-supplied token belongs here. A token read back from the
-    cluster's own `server/node-token` is absent on the first run and present
-    on every later one, which would rewrite config.yaml and restart k3s on
-    each subsequent run. -#}
+{#- A token read from this node's own node-token file is redundant here: it
+    is absent on the first run and present on every later one, which would
+    rewrite config.yaml and restart k3s each time. A token fetched from
+    another host is a join credential and must be kept, otherwise a
+    secondary server cannot authenticate against the existing cluster. -#}
 {%- if k3s_token is defined and k3s_token and not k3s_token_discovered | default(false) | bool -%}
 {%-   set _ = k3s_config.update({'token': k3s_token}) -%}
 {%- endif -%}
