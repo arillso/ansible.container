@@ -23,7 +23,17 @@
 {%- endif -%}
 
 {#- === CLUSTER INITIALIZATION === -#}
-{%- if k3s_server_init is defined and k3s_server_init -%}
+{#- `cluster-init` is a bootstrap flag: k3s only evaluates it while creating
+    the datastore, and it stays valid for the node that owns it afterwards.
+    Deriving it from `k3s_server_init` made it disappear once the datastore
+    existed — the flag was written on the first run and dropped on every
+    later one, rewriting config.yaml and restarting k3s each time. Keep it
+    tied to the node's role in the cluster instead, which does not change
+    when the datastore appears. -#}
+{%- if k3s_server_init is defined and k3s_server_init
+       or (k3s_role == 'server'
+           and ansible_local.k3s.cluster.first_server | default(false) | bool
+           and not (k3s_server_url is defined and k3s_server_url)) -%}
 {%-   set _ = k3s_config.update({'cluster-init': true}) -%}
 {%- elif k3s_server_url is defined and k3s_server_url -%}
 {%-   set _ = k3s_config.update({'server': k3s_server_url}) -%}
