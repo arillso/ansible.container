@@ -109,8 +109,8 @@
 
 - name: Check k3s facts
   ansible.builtin.debug:
-      var: ansible_local.k3s
-  when: ansible_local.k3s is defined
+      var: ansible_facts['ansible_local']['k3s']
+  when: ansible_facts['ansible_local']['k3s'] is defined
 
 - name: Verify k3s configuration directory exists
   ansible.builtin.stat:

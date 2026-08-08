@@ -169,7 +169,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (core 2.24) and `apt_repository` (core 2.25) deprecation warnings. The
   docker role now installs `python3-debian` (required by
   `deb822_repository`) and removes any legacy `docker.list` left by earlier
-  role versions to avoid a duplicate apt source.
+  role versions to avoid a duplicate apt source. A follow-up pass covers the
+  references the first migration missed: the `hostvars[...]['ansible_*']`
+  lookups in `install_docker_redhat.yml` and the k3s server-URL fallbacks,
+  `ansible_local.k3s` → `ansible_facts['ansible_local']['k3s']` on the k3s
+  cluster-init path and in the agent config template, plus
+  `ansible_swaptotal_mb` and the molecule/integration references. Custom facts
+  keep their `ansible_local` key inside `ansible_facts`, unlike the built-in
+  facts that drop the `ansible_` prefix there.
 - **Renovate**: track the `python_version` CI input via Renovate. Each
   `python_version:` in `pull-request.yml`/`merge.yml` carries a
   `# renovate: datasource=github-releases depName=python/cpython` marker, and

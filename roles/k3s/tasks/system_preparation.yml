@@ -61,7 +61,7 @@
 - name: Disable swap if enabled (Kubernetes requirement)
   ansible.builtin.command: swapoff -a
   become: true
-  when: ansible_swaptotal_mb > 0
+  when: ansible_facts['swaptotal_mb'] > 0
   changed_when: true
 
 - name: Comment out swap entries in /etc/fstab
@@ -70,4 +70,4 @@
       regexp: '^([^#].*\sswap\s.*)$'
       replace: '# \1'
   become: true
-  when: ansible_swaptotal_mb > 0
+  when: ansible_facts['swaptotal_mb'] > 0

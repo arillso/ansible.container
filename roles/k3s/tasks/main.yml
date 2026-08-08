@@ -30,7 +30,7 @@
 # Simplified server initialization logic using facts
 - name: Determine server initialization from facts
   ansible.builtin.set_fact:
-      k3s_server_init: "{{ ansible_local.k3s.cluster_info.should_init | bool }}"
+      k3s_server_init: "{{ ansible_facts['ansible_local']['k3s'].cluster_info.should_init | bool }}"
   when:
       - k3s_role == 'server'
       - not k3s_server_init | default(false) | bool # Only auto-determine if not explicitly set
@@ -42,15 +42,15 @@
           - Role: {{ k3s_role }}
           - Server Init: {{ k3s_server_init | default(false) }}
           - Node: {{ inventory_hostname }}
-          - Node Type: {{ ansible_local.k3s.node.type }}
-          - Cluster Initialized: {{ ansible_local.k3s.cluster.initialized }}
-          - Server Responsive: {{ ansible_local.k3s.cluster.server_responsive }}
-          - First Server: {{ ansible_local.k3s.cluster.first_server }}
-          - Binary Installed: {{ ansible_local.k3s.service.binary_installed }}
-          - Service Active: {{ ansible_local.k3s.service.service_active }}
-          - Token Exists: {{ ansible_local.k3s.cluster.token_exists }}
-          - Cluster Server URL: {{ ansible_local.k3s.cluster_info.server_url }}
-          {% if ansible_local.k3s._fallback_mode | default(false) %}
+          - Node Type: {{ ansible_facts['ansible_local']['k3s'].node.type }}
+          - Cluster Initialized: {{ ansible_facts['ansible_local']['k3s'].cluster.initialized }}
+          - Server Responsive: {{ ansible_facts['ansible_local']['k3s'].cluster.server_responsive }}
+          - First Server: {{ ansible_facts['ansible_local']['k3s'].cluster.first_server }}
+          - Binary Installed: {{ ansible_facts['ansible_local']['k3s'].service.binary_installed }}
+          - Service Active: {{ ansible_facts['ansible_local']['k3s'].service.service_active }}
+          - Token Exists: {{ ansible_facts['ansible_local']['k3s'].cluster.token_exists }}
+          - Cluster Server URL: {{ ansible_facts['ansible_local']['k3s'].cluster_info.server_url }}
+          {% if ansible_facts['ansible_local']['k3s']._fallback_mode | default(false) %}
           - [FALLBACK MODE] Facts collected via fallback mechanism
           {% endif %}
 
@@ -61,7 +61,7 @@
           K3s Agent Auto-Discovery Results:
           - Server URL: {{ k3s_server_url | default('NOT SET') }}
           - Token Status: {{ 'AVAILABLE' if k3s_token | default('') != '' else 'NOT AVAILABLE' }}
-          - Source: {{ 'Facts' if ansible_local.k3s.cluster_info.server_url is defined and k3s_server_url == ansible_local.k3s.cluster_info.server_url else 'Inventory Fallback' }}
+          - Source: {{ 'Facts' if ansible_facts['ansible_local']['k3s'].cluster_info.server_url is defined and k3s_server_url == ansible_facts['ansible_local']['k3s'].cluster_info.server_url else 'Inventory Fallback' }}
   when: k3s_role == "agent"
 
 # Architecture detection for K3s binary download
@@ -104,7 +104,14 @@
 # Token management - simple approach: first server generates, others retrieve
 - name: Determine the host that holds the cluster token
   ansible.builtin.set_fact:
-      k3s_token_source: "{{ ansible_local.k3s.inventory.controllers[0] if ansible_local.k3s.inventory.controllers | length > 0 else ansible_local.k3s.inventory.servers[0] if ansible_local.k3s.inventory.servers | length > 0 else inventory_hostname }}"
+      k3s_token_source: >-
+          {{
+          ansible_facts['ansible_local']['k3s'].inventory.controllers[0]
+          if ansible_facts['ansible_local']['k3s'].inventory.controllers | length > 0
+          else ansible_facts['ansible_local']['k3s'].inventory.servers[0]
+          if ansible_facts['ansible_local']['k3s'].inventory.servers | length > 0
+          else inventory_hostname
+          }}
 
 - name: Retrieve token from first server (if not cluster init)
   ansible.builtin.slurp:
@@ -137,18 +144,24 @@
 # Server URL determination using facts with fallback logic
 - name: Set server URL from facts
   ansible.builtin.set_fact:
-      k3s_server_url: "{{ ansible_local.k3s.cluster_info.server_url }}"
+      k3s_server_url: "{{ ansible_facts['ansible_local']['k3s'].cluster_info.server_url }}"
   when:
       - k3s_server_url == ""
-      - ansible_local.k3s.cluster_info.server_url is defined
-      - ansible_local.k3s.cluster_info.server_url != ""
+      - ansible_facts['ansible_local']['k3s'].cluster_info.server_url is defined
+      - ansible_facts['ansible_local']['k3s'].cluster_info.server_url != ""
       - k3s_role == "agent" or (k3s_role == "server" and not k3s_server_init | bool)
-      - ansible_local.k3s.cluster_info.server_url not in ['https://' + ansible_facts['default_ipv4']['address'] + ':' + k3s_https_listen_port | string, 'https://' + inventory_hostname + ':' + k3s_https_listen_port | string]
+      - >-
+          ansible_facts['ansible_local']['k3s'].cluster_info.server_url not in [
+          'https://' + ansible_facts['default_ipv4']['address'] + ':' + k3s_https_listen_port | string,
+          'https://' + inventory_hostname + ':' + k3s_https_listen_port | string
+          ]
 
 # Fallback server URL determination from inventory when facts are not available
 - name: Set server URL from inventory (fallback)
   ansible.builtin.set_fact:
-      k3s_server_url: "https://{{ hostvars[groups['k3s_controllers'][0]]['ansible_default_ipv4']['address'] | default(groups['k3s_controllers'][0]) }}:{{ k3s_https_listen_port }}"
+      k3s_server_url: >-
+          https://{{ hostvars[groups['k3s_controllers'][0]]['ansible_facts']['default_ipv4']['address']
+          | default(groups['k3s_controllers'][0]) }}:{{ k3s_https_listen_port }}
   when:
       - k3s_server_url == ""
       - k3s_role == "agent"
@@ -157,7 +170,9 @@
 
 - name: Set server URL from k3s_servers inventory (fallback)
   ansible.builtin.set_fact:
-      k3s_server_url: "https://{{ hostvars[groups['k3s_servers'][0]]['ansible_default_ipv4']['address'] | default(groups['k3s_servers'][0]) }}:{{ k3s_https_listen_port }}"
+      k3s_server_url: >-
+          https://{{ hostvars[groups['k3s_servers'][0]]['ansible_facts']['default_ipv4']['address']
+          | default(groups['k3s_servers'][0]) }}:{{ k3s_https_listen_port }}
   when:
       - k3s_server_url == ""
       - k3s_role == "agent"
@@ -167,7 +182,7 @@
 # K3s upgrade path validation - only one minor version step allowed
 - name: Validate k3s upgrade path
   vars:
-      current_minor: "{{ ansible_local.k3s.service.version | regex_replace('^v\\d+\\.(\\d+)\\..*', '\\1') | int }}"
+      current_minor: "{{ ansible_facts['ansible_local']['k3s'].service.version | regex_replace('^v\\d+\\.(\\d+)\\..*', '\\1') | int }}"
       target_minor: "{{ k3s_version | regex_replace('^v\\d+\\.(\\d+)\\..*', '\\1') | int }}"
   ansible.builtin.assert:
       that:
@@ -175,12 +190,12 @@
           - (target_minor | int) - (current_minor | int) <= 1
       fail_msg: >-
           K3s version change not allowed from
-          {{ ansible_local.k3s.service.version }} to {{ k3s_version }}.
+          {{ ansible_facts['ansible_local']['k3s'].service.version }} to {{ k3s_version }}.
           Downgrades are not supported. Upgrades must be one minor version at a time.
   when:
-      - ansible_local.k3s.service.binary_installed | bool
-      - ansible_local.k3s.service.version | default('unknown') != 'unknown'
-      - ansible_local.k3s.service.version != k3s_version
+      - ansible_facts['ansible_local']['k3s'].service.binary_installed | bool
+      - ansible_facts['ansible_local']['k3s'].service.version | default('unknown') != 'unknown'
+      - ansible_facts['ansible_local']['k3s'].service.version != k3s_version
 
 # K3s binary installation - checksum-verified download
 - name: Download k3s SHA256 checksum file
@@ -191,8 +206,8 @@
       force: true
   become: true
   when: >-
-      (not ansible_local.k3s.service.binary_installed | bool
-      or ansible_local.k3s.service.version != k3s_version)
+      (not ansible_facts['ansible_local']['k3s'].service.binary_installed | bool
+      or ansible_facts['ansible_local']['k3s'].service.version != k3s_version)
       and not k3s_binary_checksum
 
 - name: Extract k3s binary checksum from release file
@@ -203,8 +218,8 @@
   changed_when: false
   become: true
   when: >-
-      (not ansible_local.k3s.service.binary_installed | bool
-      or ansible_local.k3s.service.version != k3s_version)
+      (not ansible_facts['ansible_local']['k3s'].service.binary_installed | bool
+      or ansible_facts['ansible_local']['k3s'].service.version != k3s_version)
       and not k3s_binary_checksum
 
 - name: Download k3s binary
@@ -217,8 +232,8 @@
       checksum: "sha256:{{ k3s_binary_checksum if k3s_binary_checksum else k3s_release_checksum.stdout }}"
   become: true
   when: >-
-      not ansible_local.k3s.service.binary_installed | bool
-      or ansible_local.k3s.service.version != k3s_version
+      not ansible_facts['ansible_local']['k3s'].service.binary_installed | bool
+      or ansible_facts['ansible_local']['k3s'].service.version != k3s_version
   notify: Restart k3s
 
 - name: Create k3s configuration directory
