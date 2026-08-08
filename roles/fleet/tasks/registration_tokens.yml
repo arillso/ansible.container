@@ -51,6 +51,7 @@
       - fleet_registration_tokens | length > 0
       - fleet_state == "present"
       - not ansible_check_mode
+  no_log: true
   register: fleet_registration_token_secrets
   tags:
       - fleet

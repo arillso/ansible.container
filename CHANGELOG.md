@@ -31,6 +31,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Secret masking**: tasks that read, render or transport credentials ran
+  without `no_log: true`, so the values were printed with `-v` or in the task
+  result. The k3s cluster join token (`slurp` + `set_fact` in
+  `roles/k3s/tasks/main.yml`), the k3s config and registries templates, the
+  Fleet GitRepo auth secret and the Fleet `ClusterRegistrationToken` lookup,
+  and the `docker_login` registry login are now all masked. The `k3s_token`
+  and `docker_login_password` options in `argument_specs.yml` carry `no_log`
+  as well, matching the already-masked `k3s_etcd_s3_*` keys.
 - **fleet argument_specs**: the main entry point used six separate `<<:` merge
   keys in one mapping, which `ruamel.yaml` (used by ansible-lint) rejects as
   duplicate keys. Consolidated into a single YAML 1.1 list-form merge

@@ -107,6 +107,7 @@
       src: "{{ k3s_token_file }}"
   register: cluster_token
   failed_when: false
+  no_log: true
   when:
       - k3s_token == ""
       - not (k3s_role == "server" and k3s_server_init | bool)
@@ -115,6 +116,7 @@
 - name: Set token from first server
   ansible.builtin.set_fact:
       k3s_token: "{{ cluster_token.content | b64decode | trim }}"
+  no_log: true
   when:
       - k3s_token == ""
       - cluster_token is defined
@@ -239,6 +241,7 @@
       owner: root
       group: root
   become: true
+  no_log: true
   notify: Restart k3s
 
 - name: Create k3s registries config
@@ -249,6 +252,7 @@
       owner: root
       group: root
   become: true
+  no_log: true
   when: k3s_private_registries | length > 0
   notify: Restart k3s
 

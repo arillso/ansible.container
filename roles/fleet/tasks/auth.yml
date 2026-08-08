@@ -18,6 +18,7 @@
           stringData: "{{ {'username': item.git_username, 'password': item.git_token} if item.git_token is defined and item.git_username is defined else {'ssh-privatekey': item.git_ssh_private_key, 'known_hosts': item.git_known_hosts} if item.git_ssh_private_key is defined and item.git_known_hosts is defined else {'ssh-privatekey': item.git_ssh_private_key} if item.git_ssh_private_key is defined else {} }}"
           type: "{{ 'kubernetes.io/basic-auth' if item.git_token is defined and item.git_username is defined else 'kubernetes.io/ssh-auth' if item.git_ssh_private_key is defined else '' }}"
       state: present
+  no_log: true
   loop: "{{ fleet_gitrepos | default([]) }}"
   when:
       - fleet_gitrepos | length > 0
