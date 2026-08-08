@@ -13,6 +13,10 @@
       # adds itself; verify.yml asserts both are present.
       k3s_kube_apiserver_args:
           - "request-timeout=2m0s"
+      # The environment file is only rendered when this dict is non-empty;
+      # verify.yml asserts the entry reaches the unit's EnvironmentFile.
+      k3s_environment_vars:
+          NO_PROXY: "localhost,127.0.0.1,10.0.0.0/8"
   pre_tasks:
       # The k3s install script needs curl, which the base test images
       # do not ship. Install it before the role runs.

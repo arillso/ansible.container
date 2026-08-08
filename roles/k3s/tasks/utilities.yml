@@ -25,16 +25,16 @@
   when:
       - k3s_create_symlinks | bool
 
-# - name: Create K3s environment configuration file
-#   ansible.builtin.template:
-#       src: etc/systemd/system/k3s.service.env.j2
-#       dest: /etc/systemd/system/k3s.service.env
-#       mode: "0600"
-#       owner: root
-#       group: root
-#   become: true
-#   notify: restart k3s
-#   when: k3s_environment_vars | length > 0
+- name: Create K3s environment configuration file
+  ansible.builtin.template:
+      src: etc/systemd/system/k3s.service.env.j2
+      dest: /etc/systemd/system/k3s.service.env
+      mode: "0600"
+      owner: root
+      group: root
+  become: true
+  notify: Restart k3s
+  when: k3s_environment_vars | length > 0
 
 - name: Create bash completion directory
   ansible.builtin.file:

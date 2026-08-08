@@ -52,6 +52,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **k3s environment variables were never rendered**: `k3s_environment_vars` was
+  fully wired — documented in `defaults/main.yml`, declared as a `dict` in
+  `meta/argument_specs.yml`, consumed by
+  `templates/etc/systemd/system/k3s.service.env.j2` and loaded by the unit via
+  `EnvironmentFile=` — but the task that renders the file was commented out in
+  `roles/k3s/tasks/utilities.yml`. Setting `HTTP_PROXY`/`HTTPS_PROXY`, the
+  documented use case, produced no error and no file: the leading `-` in
+  `EnvironmentFile=-` makes systemd treat the missing file as fine, so k3s ran
+  without proxy settings and failed image pulls silently. The task is active
+  again and notifies `Restart k3s` instead of the stale lowercase handler name
+  `restart k3s`, which no longer exists. `verify.yml` asserts the file is
+  rendered `0600` and carries the value set through `k3s_environment_vars`.
 - **k3s secrets encryption was silently off**: `server-config.yaml.j2`
   referenced `k3s_secrets_encryption`, `k3s_protect_kernel_defaults` and
   `k3s_audit_log_enabled`, but none of them were defined in `defaults/main.yml`

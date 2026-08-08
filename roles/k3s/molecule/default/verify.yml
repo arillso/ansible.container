@@ -173,6 +173,38 @@
         loop_control:
             label: "{{ item.item }}"
 
+      - name: Check the K3s environment file
+        ansible.builtin.stat:
+            path: /etc/systemd/system/k3s.service.env
+        register: k3s_env_file
+
+      - name: Verify the environment file was rendered
+        ansible.builtin.assert:
+            that:
+                - k3s_env_file.stat.exists
+                - k3s_env_file.stat.size > 0
+                - k3s_env_file.stat.mode == '0600'
+            fail_msg: >-
+                /etc/systemd/system/k3s.service.env is missing, empty or
+                world-readable — k3s_environment_vars was never rendered.
+            success_msg: "K3s environment file is rendered and 0600"
+
+      - name: Read the K3s environment file
+        ansible.builtin.slurp:
+            src: /etc/systemd/system/k3s.service.env
+        register: k3s_env_content
+
+      - name: Verify custom environment variables reach the file
+        ansible.builtin.assert:
+            that:
+                - "'NO_PROXY=localhost,127.0.0.1,10.0.0.0/8' in k3s_env_decoded"
+            fail_msg: >-
+                The environment file does not contain the value set through
+                k3s_environment_vars.
+            success_msg: "k3s_environment_vars entries are present"
+        vars:
+            k3s_env_decoded: "{{ k3s_env_content.content | b64decode }}"
+
       - name: Check K3s server credential directory permissions
         ansible.builtin.stat:
             path: /var/lib/rancher/k3s/server/cred
