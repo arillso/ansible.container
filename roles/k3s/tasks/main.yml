@@ -102,6 +102,10 @@
       - always
 
 # Token management - simple approach: first server generates, others retrieve
+- name: Determine the host that holds the cluster token
+  ansible.builtin.set_fact:
+      k3s_token_source: "{{ ansible_local.k3s.inventory.controllers[0] if ansible_local.k3s.inventory.controllers | length > 0 else ansible_local.k3s.inventory.servers[0] if ansible_local.k3s.inventory.servers | length > 0 else inventory_hostname }}"
+
 - name: Retrieve token from first server (if not cluster init)
   ansible.builtin.slurp:
       src: "{{ k3s_token_file }}"
@@ -111,11 +115,18 @@
   when:
       - k3s_token == ""
       - not (k3s_role == "server" and k3s_server_init | bool)
-  delegate_to: "{{ ansible_local.k3s.inventory.controllers[0] if ansible_local.k3s.inventory.controllers | length > 0 else ansible_local.k3s.inventory.servers[0] if ansible_local.k3s.inventory.servers | length > 0 else inventory_hostname }}"
+  delegate_to: "{{ k3s_token_source }}"
 
 - name: Set token from first server
   ansible.builtin.set_fact:
       k3s_token: "{{ cluster_token.content | b64decode | trim }}"
+      # True only when the token came from this node's own node-token file.
+      # Such a token is redundant in config.yaml — it is absent on the first
+      # run and present on every later one, which would rewrite the file and
+      # restart k3s each time. A token fetched from another host is a join
+      # credential and must be written, otherwise a secondary server or an
+      # agent can never authenticate against the cluster.
+      k3s_token_discovered: "{{ k3s_token_source == inventory_hostname }}"
   no_log: true
   when:
       - k3s_token == ""

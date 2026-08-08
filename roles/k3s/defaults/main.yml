@@ -45,6 +45,7 @@ k3s_config_dir: "/etc/rancher/k3s"
 # K3s token management
 k3s_token: ""
 k3s_token_file: "{{ k3s_data_dir }}/server/node-token"
+k3s_token_discovered: false
 
 # K3s server URL
 k3s_server_url: ""

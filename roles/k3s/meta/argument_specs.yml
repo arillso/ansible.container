@@ -51,6 +51,18 @@ argument_specs:
                 default: ""
                 description: "K3s cluster token for authentication"
 
+            k3s_token_discovered:
+                type: "bool"
+                required: false
+                default: false
+                description:
+                    - Set by the role when the token was read from this node's own
+                      node-token file. Such a token is redundant in config.yaml and
+                      is left out of the server config, which keeps the file stable
+                      across runs. A token fetched from another host is a join
+                      credential and is always written. Not intended to be set
+                      manually.
+
             k3s_bind_address:
                 type: "str"
                 required: false
