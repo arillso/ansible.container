@@ -27,10 +27,17 @@ platforms:
       # used here. Pin a literal sha256:<hash> against a versioned
       # image URL if verification is needed.
       image_checksum: ""
+      # Log in as root. molecule-qemu renders the cloud-init user groups
+      # from the *runner's* `ansible_os_family`, which is Debian on the
+      # GitHub runner, so a non-root user on Rocky is created with
+      # `admin`/`sudo` — neither group exists there, cloud-init aborts and
+      # the SSH key is never installed. The root branch of the template
+      # sets no groups and is unaffected.
+      bios_type: bios
       image_arch: x86_64
       network_mode: user
       network_ssh_port: 2223
-      network_ssh_user: rocky
+      network_ssh_user: root
       vm_cpus: 2
       vm_memory: 2048
 
