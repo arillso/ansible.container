@@ -152,9 +152,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **fleet reported changed on every run**: the `async_status` tasks that wait
   for the Bundle and Cluster apply jobs returned a fresh result each run and
   therefore always reported `changed`, even when the underlying apply was a
-  no-op. Polling a job is not itself a change, so both wait tasks are now
-  `changed_when: false`; the real changed status is still carried by the
-  synchronous path, which is the one that runs in check mode.
+  no-op. Polling a job is not itself a change, so both wait tasks now derive
+  `changed_when` from the finished job's own result — a genuine apply still
+  reports `changed`, a repeat run does not.
 - **k3s config drift on re-runs**: a server rewrote `config.yaml` and restarted
   k3s on every run after the first. On the initial run the cluster database does
   not exist yet, so the role initialises the cluster and `k3s_token` stays empty

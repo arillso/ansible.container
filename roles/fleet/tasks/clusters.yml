@@ -46,8 +46,9 @@
       - not ansible_check_mode
   async: "{{ fleet_async_timeout }}"
   poll: 0
-  # Fire-and-forget always reports changed (no module result yet); the real
-  # changed/failed status is surfaced by the async_status wait task below.
+  # Fire-and-forget only hands back a job id, so there is no module result to
+  # judge yet; the wait task below reports the apply's real changed/failed
+  # status once the job has finished.
   changed_when: false
   register: fleet_cluster_async
   tags:
@@ -69,9 +70,8 @@
   until: fleet_cluster_async_wait.finished
   retries: "{{ fleet_async_retries }}"
   delay: "{{ fleet_async_delay }}"
-  # See bundles.yml: polling is not a change. Without this the task
-  # reports changed on every run and idempotence fails.
-  changed_when: false
+  # See bundles.yml: polling is not a change, the finished job's own result is.
+  changed_when: fleet_cluster_async_wait.finished | default(false) and fleet_cluster_async_wait.changed | default(false)
   tags:
       - fleet
       - fleet-clusters

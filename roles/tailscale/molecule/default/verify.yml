@@ -3,7 +3,10 @@
 # tailscale.com API accepted, with the spec fields the role is
 # responsible for. Deliberately no status assertion: without a real
 # tailnet the operator never reconciles the resource, so any status
-# check would test the operator rather than the role.
+# check would test the operator rather than the role. The `tailscale`
+# namespace is not asserted either: prepare.yml installs the operator
+# chart with --create-namespace, so it exists before converge and the
+# role's namespace apply is a guaranteed no-op.
 - name: Verify
   hosts: all
   become: true
@@ -33,18 +36,3 @@
                     == "molecule-ingress"
             fail_msg: "ProxyGroup 'molecule-ingress' is missing or does not match the converge spec"
             success_msg: "ProxyGroup 'molecule-ingress' applied with the expected spec"
-
-      - name: Fetch the namespace the role created
-        kubernetes.core.k8s_info:
-            api_version: v1
-            kind: Namespace
-            name: tailscale
-            kubeconfig: "{{ tailscale_verify_kubeconfig }}"
-        register: tailscale_verify_namespace
-
-      - name: Assert the target namespace exists
-        ansible.builtin.assert:
-            that:
-                - tailscale_verify_namespace.resources | length == 1
-            fail_msg: "Namespace 'tailscale' does not exist"
-            success_msg: "Namespace 'tailscale' exists"
