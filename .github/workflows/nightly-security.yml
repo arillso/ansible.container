@@ -14,9 +14,15 @@ concurrency:
 
 permissions:
     contents: read
+    security-events: write
     actions: read
     pull-requests: read
 
 jobs:
+    codeql:
+        uses: arillso/.github/.github/workflows/security-codeql.yml@2026-06-18
+        with:
+            language: python
+
     security-secrets:
         uses: arillso/.github/.github/workflows/security-secrets.yml@2026-06-18
