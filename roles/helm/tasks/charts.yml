@@ -83,7 +83,10 @@
   loop: "{{ helm_charts }}"
   when:
       - helm_deployment_wait | bool
-      - charts_deployment_result is changed
+      # `default` guards the idempotence run: the deploy task above is tagged
+      # molecule-idempotence-notest, so it is skipped there and never
+      # registers its result.
+      - charts_deployment_result | default({}) is changed
   run_once: true
   retries: "{{ helm_validation_retries }}"
   delay: "{{ helm_validation_delay }}"

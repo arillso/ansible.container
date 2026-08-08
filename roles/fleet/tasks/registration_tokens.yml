@@ -7,6 +7,7 @@
       api_version: v1
       kind: Namespace
       state: "{{ fleet_state }}"
+      kubeconfig: "{{ fleet_kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
   loop: "{{ fleet_registration_tokens }}"
   when:
       - fleet_registration_tokens | length > 0

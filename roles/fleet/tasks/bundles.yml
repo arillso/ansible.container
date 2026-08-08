@@ -25,6 +25,7 @@
 # run — only check_mode ever reached the synchronous fallback.
 - name: "Manage Fleet Bundles"
   kubernetes.core.k8s:
+      kubeconfig: "{{ fleet_kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
       definition:
           apiVersion: "{{ fleet_api_version }}"
           kind: Bundle
