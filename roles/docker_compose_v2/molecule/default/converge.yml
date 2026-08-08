@@ -53,6 +53,23 @@
         changed_when: false
         failed_when: false
 
+      - name: Read the compose labels stored on the container
+        ansible.builtin.command:
+            cmd: >-
+                docker inspect molecule-web-1
+                --format '{{ "{{" }}json .Config.Labels{{ "}}" }}'
+        register: docker_compose_v2_labels_stored
+        changed_when: false
+        failed_when: false
+
+      - name: Ask compose whether it would recreate the container
+        ansible.builtin.command:
+            cmd: docker compose --dry-run up --detach --no-color --quiet-pull
+            chdir: "/etc/docker/compose/molecule"
+        register: docker_compose_v2_dry_run
+        changed_when: false
+        failed_when: false
+
       - name: Read the rendered compose file
         ansible.builtin.slurp:
             src: /etc/docker/compose/molecule/docker-compose.yml
@@ -62,6 +79,9 @@
         ansible.builtin.debug:
             msg:
                 - "compose version: {{ docker_compose_v2_version_probe.stdout }}"
+                - "labels: {{ docker_compose_v2_labels_stored.stdout | default('n/a') }}"
+                - "dry-run stdout: {{ docker_compose_v2_dry_run.stdout_lines | default([]) }}"
+                - "dry-run stderr: {{ docker_compose_v2_dry_run.stderr_lines | default([]) }}"
                 - "stored hash: {{ docker_compose_v2_hash_stored.stdout | default('n/a') }}"
                 - "expected hash: {{ docker_compose_v2_hash_expected.stdout | default('n/a') }}"
                 - "file: {{ docker_compose_v2_file_probe.content | b64decode }}"
