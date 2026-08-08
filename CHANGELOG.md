@@ -31,6 +31,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **docker_compose_v2 molecule idempotence**: the `default` scenario failed on
+  the launch task with `Idempotence test failed`. `nginx:alpine` is an OCI image
+  index with 16 manifests, and compose stores the resolved image ID in the
+  container's `com.docker.compose.image` label. Once the tag resolved to a
+  different ID than the stored one, compose recreated the container on every
+  run — the config hash still matched on both sides, so only the image label
+  differed. The converge image is now pinned by digest.
 - **Secret masking**: tasks that read, render or transport credentials ran
   without `no_log: true`, so the values were printed with `-v` or in the task
   result. The k3s cluster join token (`slurp` + `set_fact` in

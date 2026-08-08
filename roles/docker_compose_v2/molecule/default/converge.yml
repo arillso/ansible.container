@@ -15,7 +15,14 @@
       docker_compose_v2_config:
           services:
               web:
-                  image: nginx:alpine
+                  # Pin the image by digest. `nginx:alpine` is an OCI image
+                  # index with 16 manifests, and compose stores the resolved
+                  # image ID in the `com.docker.compose.image` label. When the
+                  # tag resolves to a different ID than the stored one, compose
+                  # recreates the container even though the config hash still
+                  # matches, and the idempotence step fails on the launch task.
+                  # renovate: datasource=docker depName=nginx versioning=docker
+                  image: nginx:alpine@sha256:1d40e3eb3bf4f138de1d67193f2aa5309fcaf343eb5ffadbf5e9439de1eb1ebb
                   ports:
                       - "8080:80"
   tasks:
