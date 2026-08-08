@@ -149,18 +149,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   evaluates while creating the datastore, so it is now kept for as long as this
   node runs the cluster. Secondary servers and agents keep writing `server:` as
   before.
-- **fleet reported changed on every run**: the `async_status` tasks that wait
-  for the Bundle and Cluster apply jobs returned a fresh result each run and
-  therefore always reported `changed`, even when the underlying apply was a
-  no-op. Polling a job is not itself a change, so both wait tasks now derive
-  `changed_when` from the finished job's own result — a genuine apply still
-  reports `changed`, a repeat run does not.
+- **fleet async applies could never run**: `bundles.yml` and `clusters.yml`
+  fired the Bundle and Cluster applies with `async`/`poll: 0`, but
+  `kubernetes.core.k8s` is an action plugin and Ansible rejects async on it
+  ("This action (kubernetes.core.k8s) does not support async"). Only
+  `check_mode` ever reached the synchronous fallback, so a real run failed
+  outright. Both resources now apply synchronously; the `fleet_async_enabled`,
+  `fleet_async_timeout`, `fleet_async_retries` and `fleet_async_delay`
+  variables are gone with the path they configured.
 - **fleet Bundle targets ignored the documented spelling**: `bundles.yml`
   passed `targets` to the API verbatim while the argument spec documents (and
   validates) snake_case keys, so a spec-conformant `cluster_selector` reached
   the API unconverted and a working `clusterSelector` failed validation.
   Bundles now run targets through `fleet_transform_targets`, the same filter
   `gitrepos.yml` already used.
+- **helm chart deploys are excluded from the idempotence check**: the k3s Helm
+  controller owns the HelmChart it reconciles and writes back to the spec, so
+  the applied resource never matches and the task reports `changed` on every
+  run. The molecule scenario skips it via `molecule-idempotence-notest` rather
+  than masking the result with `changed_when: false`.
 - **helm role failed on a host with an empty apt cache**: the `packages` entry
   point of `arillso.system.packages` never refreshes the package cache and its
   install task pins `update_cache: false`, so `python3-kubernetes` was reported
@@ -248,6 +255,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   documented tightening, even though Galaxy has been enforcing it all along.
   `2.9` was unsupportable regardless, since the `community.docker` dependency
   declared in `galaxy.yml` requires `>=3.4.11`, which does not run on it.
+- **BREAKING — the fleet async variables are gone**: `fleet_async_enabled`,
+  `fleet_async_timeout`, `fleet_async_retries` and `fleet_async_delay` are
+  removed. They configured an async apply path that Ansible refuses to run for
+  `kubernetes.core.k8s`, so setting them never had the documented effect.
+  Playbooks passing them need to drop the variables; Bundle and Cluster applies
+  now always run synchronously.
 - **BREAKING — k3s hardening now applies by default**: `k3s_secrets_encryption`,
   `k3s_anonymous_auth`, `k3s_node_restriction` and
   `k3s_kubelet_read_only_port_disabled` take effect on existing clusters running
