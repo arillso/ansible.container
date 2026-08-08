@@ -90,3 +90,77 @@
                 - kubeconfig_file.stat.mode == '0644'
             fail_msg: "Kubeconfig file not found or not readable"
             success_msg: "Kubeconfig file exists and is readable"
+
+      - name: Read rendered k3s config
+        ansible.builtin.slurp:
+            src: /etc/rancher/k3s/config.yaml
+        register: k3s_rendered_config
+
+      - name: Parse rendered k3s config
+        ansible.builtin.set_fact:
+            k3s_config_parsed: "{{ k3s_rendered_config.content | b64decode | from_yaml }}"
+
+      - name: Verify hardening flags are present by default
+        ansible.builtin.assert:
+            that:
+                - k3s_config_parsed['secrets-encryption'] | default(false) | bool
+                - "'anonymous-auth=false' in k3s_config_parsed['kube-apiserver-arg']"
+                - "'enable-admission-plugins=NodeRestriction' in k3s_config_parsed['kube-apiserver-arg']"
+                - "'audit-log-maxage=30' in k3s_config_parsed['kube-apiserver-arg']"
+                - "'read-only-port=0' in k3s_config_parsed['kubelet-arg']"
+            fail_msg: "Hardening flags missing from rendered config"
+            success_msg: "All hardening flags present in rendered config"
+
+      - name: Verify protect-kernel-defaults stays off by default
+        ansible.builtin.assert:
+            that:
+                - "'protect-kernel-defaults' not in k3s_config_parsed"
+            fail_msg: "protect-kernel-defaults must not be enabled by default"
+            success_msg: "protect-kernel-defaults is off as expected"
+
+      - name: Verify user apiserver args coexist with hardening args
+        ansible.builtin.assert:
+            that:
+                - "'request-timeout=2m0s' in k3s_config_parsed['kube-apiserver-arg']"
+            fail_msg: "User-supplied apiserver arg was dropped by the hardening merge"
+            success_msg: "User apiserver arg survived the hardening merge"
+
+      - name: Check the audit log actually received events
+        ansible.builtin.stat:
+            path: /etc/rancher/k3s/audit.log
+        register: k3s_audit_log
+
+      - name: Verify audit logging is not a no-op
+        ansible.builtin.assert:
+            that:
+                - k3s_audit_log.stat.exists
+                - k3s_audit_log.stat.size > 0
+            fail_msg: >-
+                Audit log is missing or empty — the audit policy is not
+                matching any events.
+            success_msg: "Audit log contains events"
+
+      - name: Check secrets encryption status
+        ansible.builtin.command: k3s secrets-encrypt status
+        register: k3s_secrets_encrypt
+        changed_when: false
+
+      - name: Verify secrets encryption is active
+        ansible.builtin.assert:
+            that:
+                - "'Enabled' in k3s_secrets_encrypt.stdout"
+            fail_msg: "Secrets encryption is not enabled on the running cluster"
+            success_msg: "Secrets encryption is enabled"
+
+      - name: Check K3s server credential directory permissions
+        ansible.builtin.stat:
+            path: /var/lib/rancher/k3s/server/cred
+        register: k3s_cred_dir
+
+      - name: Verify credential directory is not world-readable
+        ansible.builtin.assert:
+            that:
+                - k3s_cred_dir.stat.exists
+                - k3s_cred_dir.stat.mode == '0700'
+            fail_msg: "K3s credential directory has unexpected permissions"
+            success_msg: "K3s credential directory is 0700"

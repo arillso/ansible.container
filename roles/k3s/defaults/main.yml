@@ -119,6 +119,19 @@ k3s_apparmor_profile: false
 k3s_cri_apparmor_profile_enabled: true
 k3s_debug_security: false
 
+# K3s hardening controls (all gated by k3s_security_hardening)
+k3s_secrets_encryption: true
+k3s_protect_kernel_defaults: false
+k3s_audit_log_enabled: true
+k3s_audit_log_maxage: 30
+k3s_audit_log_level: "Metadata"
+k3s_anonymous_auth: false
+k3s_node_restriction: true
+k3s_kubelet_read_only_port_disabled: true
+# Pod Security Admission default profile: privileged, baseline or restricted.
+# Empty string disables the admission configuration entirely.
+k3s_pod_security_admission_profile: ""
+
 # K3s private registry configuration
 k3s_private_registries: []
 # Example configuration:

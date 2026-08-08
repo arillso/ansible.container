@@ -244,6 +244,34 @@
       success_msg: "K3s agent configuration validated successfully"
   when: k3s_role == "agent"
 
+- name: Create k3s audit policy
+  ansible.builtin.template:
+      src: etc/rancher/k3s/audit-policy.yaml.j2
+      dest: "{{ k3s_config_dir }}/audit-policy.yaml"
+      mode: "0600"
+      owner: root
+      group: root
+  become: true
+  when:
+      - k3s_role == "server"
+      - k3s_security_hardening | default(true) | bool
+      - k3s_audit_log_enabled | default(false) | bool
+  notify: Restart k3s
+
+- name: Create k3s Pod Security Admission config
+  ansible.builtin.template:
+      src: etc/rancher/k3s/psa-config.yaml.j2
+      dest: "{{ k3s_config_dir }}/psa-config.yaml"
+      mode: "0600"
+      owner: root
+      group: root
+  become: true
+  when:
+      - k3s_role == "server"
+      - k3s_security_hardening | default(true) | bool
+      - k3s_pod_security_admission_profile | default("") | length > 0
+  notify: Restart k3s
+
 - name: Create k3s config file
   ansible.builtin.template:
       src: "etc/rancher/k3s/{{ k3s_role }}-config.yaml.j2"
@@ -314,14 +342,21 @@
       sleep: "{{ k3s_health_check_sleep }}"
   when: k3s_role == "server"
 
-# - name: Set kubeconfig permissions
-#   ansible.builtin.file:
-#       path: "{{ k3s_data_dir }}/server/cred/admin.kubeconfig"
-#       mode: "{{ k3s_kubeconfig_mode }}"
-#       owner: "{{ k3s_kubeconfig_owner }}"
-#       group: "{{ k3s_kubeconfig_group }}"
-#   become: true
-#   when: k3s_role == "server"
+- name: Check if kubeconfig exists
+  ansible.builtin.stat:
+      path: "{{ k3s_data_dir }}/server/cred/admin.kubeconfig"
+  become: true
+  register: k3s_kubeconfig_check
+  when: k3s_role == "server"
+
+- name: Set kubeconfig permissions
+  ansible.builtin.file:
+      path: "{{ k3s_data_dir }}/server/cred/admin.kubeconfig"
+      mode: "{{ k3s_kubeconfig_mode }}"
+      owner: "{{ k3s_kubeconfig_owner }}"
+      group: "{{ k3s_kubeconfig_group }}"
+  become: true
+  when: k3s_kubeconfig_check.stat.exists | default(false)
 
 - name: Create k3s uninstall script
   ansible.builtin.template:

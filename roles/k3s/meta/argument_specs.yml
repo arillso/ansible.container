@@ -387,6 +387,73 @@ argument_specs:
                 default: true
                 description: "Enable K3s security hardening"
 
+            k3s_secrets_encryption:
+                type: "bool"
+                default: true
+                description: >-
+                    Enable at-rest encryption of Kubernetes secrets on servers.
+                    Requires k3s_security_hardening to take effect.
+
+            k3s_protect_kernel_defaults:
+                type: "bool"
+                default: false
+                description: >-
+                    Fail K3s startup when kernel sysctls differ from the
+                    kubelet defaults. Off by default because the role does not
+                    set those sysctls. Requires k3s_security_hardening.
+
+            k3s_audit_log_enabled:
+                type: "bool"
+                default: true
+                description: >-
+                    Enable kube-apiserver audit logging on servers.
+                    Requires k3s_security_hardening to take effect.
+
+            k3s_audit_log_maxage:
+                type: "int"
+                default: 30
+                description: "Retention in days for rotated audit log files"
+
+            k3s_audit_log_level:
+                type: "str"
+                default: "Metadata"
+                choices: ["None", "Metadata", "Request", "RequestResponse"]
+                description: >-
+                    Audit level for the catch-all rule in the generated audit
+                    policy. Secrets and configmaps are always capped at
+                    Metadata regardless of this setting.
+
+            k3s_anonymous_auth:
+                type: "bool"
+                default: false
+                description: >-
+                    Allow anonymous requests to the kube-apiserver. When false
+                    and k3s_security_hardening is enabled, anonymous-auth=false
+                    is passed to the apiserver.
+
+            k3s_node_restriction:
+                type: "bool"
+                default: true
+                description: >-
+                    Enable the NodeRestriction admission plugin.
+                    Requires k3s_security_hardening to take effect.
+
+            k3s_kubelet_read_only_port_disabled:
+                type: "bool"
+                default: true
+                description: >-
+                    Disable the unauthenticated kubelet read-only port 10255.
+                    Requires k3s_security_hardening to take effect.
+
+            k3s_pod_security_admission_profile:
+                type: "str"
+                default: ""
+                choices: ["", "privileged", "baseline", "restricted"]
+                description: >-
+                    Cluster-wide default Pod Security Admission profile.
+                    Empty disables the admission configuration.
+                    Requires k3s_security_hardening to take effect.
+
             k3s_selinux_custom_policy:
                 type: "bool"
                 default: false
