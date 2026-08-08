@@ -1,10 +1,21 @@
 ---
-# Exercised by the `syntax` step only (see molecule.yml). Converge
-# against a live cluster is deferred; the role needs a running
-# Kubernetes API with the Tailscale operator to apply its CRDs.
 - name: Converge
   hosts: all
   become: true
+  vars:
+      # tailscale_kubeconfig_path stays at its default
+      # (/etc/rancher/k3s/k3s.yaml), which is where prepare.yml puts it.
+      tailscale_proxygroups:
+          - name: molecule-ingress
+            namespace: tailscale
+            type: ingress
+            replicas: 1
+            tags:
+                - "tag:k8s-ingress"
+            hostname_prefix: molecule-ingress
+      # Ingress and egress services are left out: both reference a
+      # ProxyGroup the operator would have to have provisioned, and
+      # without a real tailnet the operator never gets that far.
   tasks:
       - name: Include tailscale role
         ansible.builtin.include_role:

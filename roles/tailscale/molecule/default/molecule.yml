@@ -1,14 +1,15 @@
 ---
-# SYNTAX-ONLY scenario.
+# Full converge against an ephemeral k3s cluster with the Tailscale
+# operator's CRDs registered.
 #
 # The tailscale role manages Tailscale Kubernetes operator resources
 # (ProxyGroup, Ingress and egress Service CRDs) through a live
-# Kubernetes API via kubernetes.core. It cannot converge without a
-# running cluster with the Tailscale operator installed, and standing
-# one up here would make this leg slow and flaky. We stop the
-# test_sequence after `syntax`, which still catches playbook/role
-# wiring and template errors cheaply. A full converge against a real
-# cluster is deferred.
+# Kubernetes API via kubernetes.core. `prepare.yml` installs k3s and the
+# operator chart with dummy OAuth credentials inside this VM. No real
+# tailnet is involved and no repo secret is needed, so the job also runs
+# on fork PRs. What this proves is that the role emits schema-valid CRs
+# the API accepts — the operator never reconciles them without a tailnet,
+# so verify makes no status assertions.
 dependency:
     name: galaxy
     options:
@@ -26,7 +27,7 @@ platforms:
       network_ssh_port: 2222
       network_ssh_user: ubuntu
       vm_cpus: 2
-      vm_memory: 2048
+      vm_memory: 3072
 
     - name: tailscale-rocky-9
       image_url: https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2
@@ -64,6 +65,7 @@ provisioner:
             tailscale-rocky-9:
                 ansible_become: true
     playbooks:
+        prepare: prepare.yml
         converge: converge.yml
         verify: verify.yml
 
@@ -77,5 +79,10 @@ scenario:
         - cleanup
         - destroy
         - syntax
+        - create
+        - prepare
+        - converge
+        - idempotence
+        - verify
         - cleanup
         - destroy

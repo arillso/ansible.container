@@ -110,6 +110,12 @@
   until: fleet_bundle_async_wait.finished
   retries: "{{ fleet_async_retries }}"
   delay: "{{ fleet_async_delay }}"
+  # Polling a job is not itself a change: async_status returns a fresh
+  # result on every run and would report changed even when the underlying
+  # apply was a no-op, which breaks idempotence. The real changed status
+  # of the apply is carried by the sync path, which is the one that runs
+  # in check_mode.
+  changed_when: false
   tags:
       - fleet
       - fleet-bundles

@@ -1,12 +1,50 @@
 ---
-# Verify is not part of the test_sequence for this syntax-only
-# scenario (the role needs a live Kubernetes cluster to converge, so
-# there is nothing host-local to assert). Kept as a placeholder so the
-# provisioner playbook reference resolves.
+# Asserts that the role produced a schema-valid ProxyGroup the
+# tailscale.com API accepted, with the spec fields the role is
+# responsible for. Deliberately no status assertion: without a real
+# tailnet the operator never reconciles the resource, so any status
+# check would test the operator rather than the role.
 - name: Verify
   hosts: all
-  gather_facts: false
+  become: true
+  vars:
+      tailscale_verify_kubeconfig: /etc/rancher/k3s/k3s.yaml
   tasks:
-      - name: No host-local verification for a cluster-bound role
-        ansible.builtin.debug:
-            msg: "tailscale requires a live Kubernetes cluster; verify is deferred."
+      - name: Fetch the ProxyGroup resource
+        kubernetes.core.k8s_info:
+            api_version: tailscale.com/v1alpha1
+            kind: ProxyGroup
+            name: molecule-ingress
+            namespace: tailscale
+            kubeconfig: "{{ tailscale_verify_kubeconfig }}"
+        register: tailscale_verify_proxygroup
+
+      - name: Assert the ProxyGroup carries the role's spec
+        ansible.builtin.assert:
+            that:
+                - tailscale_verify_proxygroup.resources | length == 1
+                - tailscale_verify_proxygroup.resources[0].spec.type == "ingress"
+                - tailscale_verify_proxygroup.resources[0].spec.replicas | int == 1
+                - >-
+                    'tag:k8s-ingress'
+                    in tailscale_verify_proxygroup.resources[0].spec.tags
+                - >-
+                    tailscale_verify_proxygroup.resources[0].spec.hostnamePrefix
+                    == "molecule-ingress"
+            fail_msg: "ProxyGroup 'molecule-ingress' is missing or does not match the converge spec"
+            success_msg: "ProxyGroup 'molecule-ingress' applied with the expected spec"
+
+      - name: Fetch the namespace the role created
+        kubernetes.core.k8s_info:
+            api_version: v1
+            kind: Namespace
+            name: tailscale
+            kubeconfig: "{{ tailscale_verify_kubeconfig }}"
+        register: tailscale_verify_namespace
+
+      - name: Assert the target namespace exists
+        ansible.builtin.assert:
+            that:
+                - tailscale_verify_namespace.resources | length == 1
+            fail_msg: "Namespace 'tailscale' does not exist"
+            success_msg: "Namespace 'tailscale' exists"

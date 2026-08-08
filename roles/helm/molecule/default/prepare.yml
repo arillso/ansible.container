@@ -1,0 +1,47 @@
+---
+# Stand up an ephemeral single-node k3s cluster for the helm role to
+# converge against. No external cluster and no credentials are needed:
+# k3s ships the Helm controller (helm.cattle.io/v1) that the role drives,
+# so nothing beyond k3s itself has to be installed here.
+- name: Prepare
+  hosts: all
+  become: true
+  vars:
+      # Traefik and servicelb are k3s addons deployed through that very
+      # Helm controller. Leaving them on would race the role's own
+      # HelmChart resources for the controller and add minutes of boot
+      # time for capacity this test never uses.
+      k3s_disable_traefik: true
+      k3s_disable_servicelb: true
+      # The role's prerequisites.yml auto-detects /etc/rancher/k3s/k3s.yaml
+      # as the kubeconfig; kubernetes.core reads it as the connecting user.
+      k3s_write_kubeconfig_mode: "0644"
+  tasks:
+      - name: Include k3s role
+        ansible.builtin.include_role:
+            name: arillso.container.k3s
+
+      - name: Wait for the k3s kubeconfig to appear
+        ansible.builtin.wait_for:
+            path: /etc/rancher/k3s/k3s.yaml
+            state: present
+            timeout: 300
+
+      - name: Wait for the node to register as Ready
+        ansible.builtin.command: kubectl wait --for=condition=Ready node --all --timeout=300s
+        register: helm_prepare_node_ready
+        changed_when: false
+        environment:
+            KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+
+      # charts.yml fails hard when this CRD is missing, so wait for the
+      # embedded Helm controller to register it rather than letting the
+      # converge race the controller's first reconcile.
+      - name: Wait for the Helm controller CRD to be established
+        ansible.builtin.command: >-
+            kubectl wait --for=condition=Established
+            crd/helmcharts.helm.cattle.io --timeout=300s
+        register: helm_prepare_crd_ready
+        changed_when: false
+        environment:
+            KUBECONFIG: /etc/rancher/k3s/k3s.yaml

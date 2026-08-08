@@ -1,10 +1,35 @@
 ---
-# Exercised by the `syntax` step only (see molecule.yml). Converge
-# against a live cluster is deferred; the role needs a running
-# Kubernetes API to apply HelmChart resources.
 - name: Converge
   hosts: all
   become: true
+  vars:
+      helm_enable_charts: true
+      # podinfo is deliberate: a few MB, no persistent volume and a
+      # ClusterIP service by default, so it needs neither storage nor the
+      # servicelb that prepare.yml disables. That keeps the assertion on
+      # "the role drove a chart through the k3s Helm controller" instead
+      # of on cluster capacity.
+      helm_charts:
+          - name: podinfo
+            chart: podinfo
+            repository: podinfo
+            # Pin exactly. A floating version resolves to a different
+            # chart between the converge and the idempotence run, which
+            # rewrites the HelmChart spec and fails idempotence — the
+            # same class of failure the docker_compose_v2 scenario hit
+            # with a floating image tag.
+            # renovate: datasource=helm depName=podinfo registryUrl=https://stefanprodan.github.io/podinfo
+            version: "6.14.1"
+            namespace: podinfo
+            create_namespace: true
+            values:
+                replicaCount: 1
+                # The chart's default probes need the service reachable;
+                # a single replica with the default ClusterIP is enough.
+                service:
+                    type: ClusterIP
+      helm_repositories:
+          podinfo: "https://stefanprodan.github.io/podinfo"
   tasks:
       - name: Include helm role
         ansible.builtin.include_role:
