@@ -60,6 +60,13 @@
       - helm_charts | length > 0
   run_once: true
   register: charts_deployment_result
+  # The k3s Helm controller owns the HelmChart it reconciles and writes back
+  # to the spec, so the resource never matches what the role applied and this
+  # task reports changed on every run. Excluded from the molecule idempotence
+  # check rather than papered over with changed_when: false, which would also
+  # hide a genuine change.
+  tags:
+      - molecule-idempotence-notest
 
 - name: "Wait for Helm charts to be ready"
   kubernetes.core.k8s_info:
