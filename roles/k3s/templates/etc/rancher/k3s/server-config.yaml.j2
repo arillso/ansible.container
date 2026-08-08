@@ -25,14 +25,19 @@
 {#- === CLUSTER INITIALIZATION === -#}
 {#- `cluster-init` is a bootstrap flag: k3s only evaluates it while creating
     the datastore, and it stays valid for the node that owns it afterwards.
-    Deriving it from `k3s_server_init` made it disappear once the datastore
-    existed — the flag was written on the first run and dropped on every
-    later one, rewriting config.yaml and restarting k3s each time. Keep it
-    tied to the node's role in the cluster instead, which does not change
-    when the datastore appears. -#}
-{%- if k3s_server_init is defined and k3s_server_init
+    Deriving it from `k3s_server_init` alone made it disappear once the
+    datastore existed — `should_init` requires the datastore to be absent, so
+    the flag was written on the first run and dropped on every later one,
+    rewriting config.yaml and restarting k3s each time.
+
+    Keep it once this node runs the cluster. `k3s_server_init` covers the run
+    that bootstraps it, `cluster.server_responsive` covers every run after,
+    and a server that joins another cluster carries `k3s_server_url` instead.
+    `cluster.initialized` is not usable here: it tests for the kine
+    `state.db`, which an etcd-backed server never creates. -#}
+{%- if (k3s_server_init is defined and k3s_server_init)
        or (k3s_role == 'server'
-           and ansible_local.k3s.cluster.first_server | default(false) | bool
+           and ansible_local.k3s.cluster.server_responsive | default(false) | bool
            and not (k3s_server_url is defined and k3s_server_url)) -%}
 {%-   set _ = k3s_config.update({'cluster-init': true}) -%}
 {%- elif k3s_server_url is defined and k3s_server_url -%}
