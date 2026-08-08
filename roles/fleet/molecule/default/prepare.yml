@@ -118,3 +118,29 @@
         changed_when: false
         environment:
             KUBECONFIG: "{{ fleet_prepare_kubeconfig }}"
+
+      # The Bundle apply waits on the Ready condition, which the Fleet
+      # agent only reaches once it has actually deployed the bundle's
+      # resources. It does that as the ServiceAccount named in
+      # spec.serviceAccount (the role's default: "default"), impersonated
+      # in cattle-fleet-system — an account with no permissions of its
+      # own, so the deploy fails with "configmaps ... is forbidden" and
+      # the wait rides out its timeout. Granting it cluster-admin is
+      # acceptable in this throwaway single-node cluster and keeps the
+      # role's Ready wait meaningful instead of papering over it.
+      - name: Grant the Fleet agent ServiceAccount permission to deploy
+        kubernetes.core.k8s:
+            kubeconfig: "{{ fleet_prepare_kubeconfig }}"
+            definition:
+                apiVersion: rbac.authorization.k8s.io/v1
+                kind: ClusterRoleBinding
+                metadata:
+                    name: molecule-fleet-agent-admin
+                roleRef:
+                    apiGroup: rbac.authorization.k8s.io
+                    kind: ClusterRole
+                    name: cluster-admin
+                subjects:
+                    - kind: ServiceAccount
+                      name: default
+                      namespace: cattle-fleet-system
