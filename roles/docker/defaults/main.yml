@@ -2,9 +2,16 @@
 # renovate: datasource=github-releases depName=moby/moby
 docker_version: "28.5.2"
 
-docker_daemon:
+# Role-provided daemon defaults. Merged with `docker_daemon` (recursively) to
+# build /etc/docker/daemon.json, so setting `docker_daemon` extends these
+# instead of replacing them. Override a key by naming it in `docker_daemon`.
+docker_daemon_base:
     log-driver: journald
     live-restore: true
+    no-new-privileges: true
+
+# User-provided daemon configuration, merged on top of `docker_daemon_base`.
+docker_daemon: {}
 
 # Consumed by the arillso.system.systemd role (systemd_units interface):
 # each entry is {name: <full unit filename>, unit: {Section: {Key: Value}}}.

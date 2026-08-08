@@ -118,6 +118,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   argument spec. `log-opts` is a valid `daemon.json` key but was absent from
   the spec, so passing it (e.g. log rotation `max-size`/`max-file`) failed
   argument validation.
+- **docker role — hardening and merge documentation**: new `## Hardening`
+  section in the role README covering the `no-new-privileges` opt-out and the
+  `userns-remap` opt-in with its costs, plus a Quick Start that explains the
+  merge semantics. The log-rotation troubleshooting entry now states that
+  `max-size`/`max-file` are `json-file` options and are ignored under the
+  default `journald` driver, which limits size via `SystemMaxUse` instead.
+- **docker role — merge coverage in tests**: the molecule `verify.yml` asserts
+  that role defaults survive a user-provided `docker_daemon` and that nested
+  `log-opts` merge per sub-key; the integration target asserts the pure
+  default path, which no test previously covered.
 
 ### Changed
 
@@ -134,6 +144,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   argument list wholesale, leaving no room for role-managed hardening flags.
   They are now appended after the hardening args, so a user-supplied duplicate
   still wins (K3s keeps the last occurrence of a repeated flag).
+- **docker role — daemon config is now merged, not replaced** (BREAKING).
+  `/etc/docker/daemon.json` is rendered from the new `docker_daemon_base`
+  (role defaults) recursively merged with `docker_daemon` (user config,
+  now defaulting to `{}`). Previously the template rendered `docker_daemon`
+  alone, so any playbook setting it silently dropped the role defaults
+  `log-driver: journald` and `live-restore: true`. Existing playbooks keep
+  working and additionally inherit the defaults; to drop a base key instead
+  of overriding it, replace `docker_daemon_base`. The per-key `default:`
+  entries for `log-driver` and `live-restore` were removed from the
+  `docker_daemon` argument spec, since argument validation would otherwise
+  inject them into the user dict and defeat the merge.
+- **docker role — `no-new-privileges: true` is now a default** (BREAKING).
+  Set in `docker_daemon_base`, so new containers can no longer gain
+  privileges via setuid/setgid binaries. Images relying on them (e.g. `sudo`,
+  some `ping` builds) will break. Opt out with
+  `docker_daemon: {no-new-privileges: false}`. `userns-remap` deliberately
+  stays opt-in; see the role README for its costs.
 - **Deprecated syntax**: replace top-level `ansible_*` fact references with
   `ansible_facts['...']` across the docker, k3s and helm roles (and their
   `defaults`/`argument_specs`), and migrate the docker Debian/Ubuntu
