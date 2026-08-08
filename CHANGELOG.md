@@ -62,11 +62,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `EnvironmentFile=-` makes systemd treat the missing file as fine, so k3s ran
   without proxy settings and failed image pulls silently. The task is active
   again and notifies `Restart k3s` instead of the stale lowercase handler name
-  `restart k3s`, which no longer exists. The task carries `no_log: true`,
-  because the template also renders `K3S_TOKEN` and the join credential must
-  not reach the task output. `verify.yml` asserts the file is rendered `0600`
-  and carries the value set through `k3s_environment_vars`, matching it with
-  `grep` instead of reading the file into a variable.
+  `restart k3s`, which no longer exists. Because `utilities.yml` is included
+  after the role has already flushed its handlers and waited for the API server,
+  the task flushes handlers itself and waits for the server to come back, so a
+  following play never meets a restarting cluster. `verify.yml` asserts the file
+  is rendered `0600` and carries the value set through `k3s_environment_vars`,
+  matching it with `grep` instead of reading the file into a variable.
+- **k3s environment file broke idempotence**: the environment template rendered
+  `K3S_TOKEN` whenever `k3s_token` was set. On a fresh node the variable is
+  empty during the first run and only read back once the datastore exists, so
+  the line appeared on the second run and rewrote the file every time. The
+  template no longer renders the token; `server-config.yaml.j2` already writes
+  it into `config.yaml`, which the unit loads through `K3S_CONFIG_FILE`, so the
+  join credential now lives in one file instead of two. `verify.yml` asserts the
+  environment file carries no `K3S_TOKEN=` line.
 - **k3s secrets encryption was silently off**: `server-config.yaml.j2`
   referenced `k3s_secrets_encryption`, `k3s_protect_kernel_defaults` and
   `k3s_audit_log_enabled`, but none of them were defined in `defaults/main.yml`
