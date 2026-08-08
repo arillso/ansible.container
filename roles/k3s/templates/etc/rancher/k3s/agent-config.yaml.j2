@@ -8,15 +8,15 @@
 {#- Auto-discovery logic for server URL when not explicitly configured -#}
 {%- if k3s_server_url is defined and k3s_server_url -%}
 {%-   set _ = k3s_agent_config.update({'server': k3s_server_url}) -%}
-{%- elif ansible_local.k3s.cluster_info.server_url is defined and ansible_local.k3s.cluster_info.server_url -%}
-{%-   set _ = k3s_agent_config.update({'server': ansible_local.k3s.cluster_info.server_url}) -%}
+{%- elif ansible_facts['ansible_local']['k3s'].cluster_info.server_url is defined and ansible_facts['ansible_local']['k3s'].cluster_info.server_url -%}
+{%-   set _ = k3s_agent_config.update({'server': ansible_facts['ansible_local']['k3s'].cluster_info.server_url}) -%}
 {%- elif groups['k3s_controllers'] is defined and groups['k3s_controllers'] | length > 0 -%}
 {%-   set server_host = groups['k3s_controllers'][0] -%}
-{%-   set server_ip = hostvars[server_host]['ansible_default_ipv4']['address'] | default(server_host) -%}
+{%-   set server_ip = hostvars[server_host]['ansible_facts']['default_ipv4']['address'] | default(server_host) -%}
 {%-   set _ = k3s_agent_config.update({'server': 'https://' + server_ip + ':' + (k3s_https_listen_port | default(6443) | string)}) -%}
 {%- elif groups['k3s_servers'] is defined and groups['k3s_servers'] | length > 0 -%}
 {%-   set server_host = groups['k3s_servers'][0] -%}
-{%-   set server_ip = hostvars[server_host]['ansible_default_ipv4']['address'] | default(server_host) -%}
+{%-   set server_ip = hostvars[server_host]['ansible_facts']['default_ipv4']['address'] | default(server_host) -%}
 {%-   set _ = k3s_agent_config.update({'server': 'https://' + server_ip + ':' + (k3s_https_listen_port | default(6443) | string)}) -%}
 {%- else -%}
 {#- Fallback: If no inventory groups are available, this will be handled by facts collection -#}
@@ -26,7 +26,7 @@
 {#- Auto-discovery logic for token when not explicitly configured -#}
 {%- if k3s_token is defined and k3s_token -%}
 {%-   set _ = k3s_agent_config.update({'token': k3s_token}) -%}
-{%- elif ansible_local.k3s.cluster.token_exists | default(false) -%}
+{%- elif ansible_facts['ansible_local']['k3s'].cluster.token_exists | default(false) -%}
 {#- Token will be retrieved automatically by the main tasks during execution -#}
 {%- endif -%}
 
