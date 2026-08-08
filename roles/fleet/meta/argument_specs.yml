@@ -288,14 +288,6 @@
                                 "description": "Maximum number of release history entries"
                                 "type": "int"
                                 "default": 5
-                            "timeout":
-                                "description": "Helm operation timeout"
-                                "type": "str"
-                                "default": "5m"
-                            "timeout_force_delete":
-                                "description": "Force delete on timeout"
-                                "type": "bool"
-                                "default": false
                             "atomic":
                                 "description": "Atomic Helm operations"
                                 "type": "bool"
@@ -382,14 +374,6 @@
                                 "type": "list"
                                 "elements": "dict"
                                 "default": []
-                    "yoda_mode":
-                        "description": "Yoda mode configuration"
-                        "type": "dict"
-                        "options":
-                            "enabled":
-                                "description": "Enable yoda mode"
-                                "type": "bool"
-                                "default": false
                     "diff":
                         "description": "Diff configuration"
                         "type": "dict"

@@ -41,7 +41,10 @@
               repo: "{{ item.repository }}"
               branch: "{{ item.branch | default('main') }}"
               revision: "{{ item.revision | default(omit) }}"
-              paths: "{{ item.paths | default([]) }}"
+              # Omitted when unset for the same reason as in bundles.yml:
+              # the API drops an empty list, so sending one made every
+              # apply differ from the stored object.
+              paths: "{{ item.paths | default(omit) }}"
               pollingInterval: "{{ item.polling_interval | default(fleet_defaults.polling_interval) }}"
               serviceAccount: "{{ item.service_account | default(fleet_defaults.service_account) }}"
               clientSecretName: "{{ item.client_secret_name | default(item.name + '-git-auth') }}"
@@ -60,6 +63,11 @@
               bundles: "{{ item.bundles | default(omit) }}"
               targets: "{{ item.targets | default([]) | arillso.container.fleet_transform_targets if item.targets is defined else omit }}"
       state: "{{ fleet_state }}"
+      # Server-side apply, for the same reason as in bundles.yml: the
+      # controller writes defaults into the live object that the role
+      # never sends, and a plain patch reports changed on every run
+      # because of them.
+      apply: true
   loop: "{{ fleet_gitrepos }}"
   when: fleet_gitrepos | length > 0
   register: fleet_gitrepo_results
