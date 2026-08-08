@@ -42,16 +42,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   converge deploys a minimal `nginx` compose project, and verify asserts the
   compose plugin, the rendered project file, the systemd unit and a running
   container.
-- **helm**, **fleet**, **tailscale** molecule — syntax-only scenarios
-  (`test_sequence` stops after `syntax`). These roles drive a live Kubernetes
-  API (HelmChart CRDs, Rancher Fleet GitOps CRDs, the Tailscale operator CRDs)
-  and cannot converge without a running cluster; standing up k3s per role would
-  make CI slow and flaky, so the converge/verify against a real cluster is
-  deferred and documented at the top of each `molecule.yml`. Syntax checking
-  still validates playbook/role wiring cheaply.
+- **helm**, **fleet**, **tailscale** molecule — full converge against an
+  ephemeral k3s cluster. Each scenario gained a `prepare.yml` that installs
+  `arillso.container.k3s` in the same QEMU VM and adds whatever upstream
+  controller the role needs, so `converge`, `idempotence` and `verify` are now
+  part of the `test_sequence`. No external cluster and no repository secret is
+  involved, which keeps the jobs working on fork pull requests. These scenarios
+  assert that the roles emit schema-valid resources the API accepts; they do not
+  assert that the upstream controllers act on them.
+- **helm** molecule exercises the whole deployment chain: the role applies a
+  HelmChart CR, the k3s Helm controller turns it into an install Job, and verify
+  asserts the CR, the completed Job and the running Pod.
+- **fleet** molecule installs standalone Fleet (`fleet-crd`, then `fleet`) and
+  asserts that the GitRepo and Bundle CRs the role emits are accepted by the
+  `fleet.cattle.io` API with the expected spec and labels. Workspaces
+  (Rancher-only `management.cattle.io/v3`), registration tokens (the controller
+  rotates the secret) and clusters (need a second cluster's kubeconfig) stay out
+  of the fixture.
+- **tailscale** molecule installs the operator chart with dummy OAuth
+  credentials and without waiting for the Pod, which registers the
+  `tailscale.com` CRDs without a real tailnet, then asserts the ProxyGroup the
+  role creates.
 
 ### Fixed
 
+- **fleet GitRepo and Bundle sent empty values for unset options**: both tasks
+  sent every optional field with an empty default (`''`, `[]`, `false`) instead
+  of omitting it, and patched instead of applying. The API drops empty values
+  and writes its own defaults (such as `spec.targetCustomizationMode`), so the
+  applied object never matched the stored one. Optional fields are now omitted
+  when unset and both tasks use `apply: true`, which compares against the
+  fields the role owns. This narrows the diff but does not make the applies
+  idempotent yet — a second run still bumps the resource's `generation`, so the
+  fleet molecule scenario runs without the `idempotence` step for now.
+- **fleet Bundle sent fields the API rejects**: `spec.helm.timeout`,
+  `spec.helm.timeoutForceDelete` and `spec.yodaMode` are not part of the Fleet
+  Bundle schema and were discarded with an `unknown field` warning on every
+  apply. All three are removed from the task and from `argument_specs.yml`.
 - **k3s secrets encryption was silently off**: `server-config.yaml.j2`
   referenced `k3s_secrets_encryption`, `k3s_protect_kernel_defaults` and
   `k3s_audit_log_enabled`, but none of them were defined in `defaults/main.yml`
@@ -84,6 +111,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   evaluates while creating the datastore, so it is now kept for as long as this
   node runs the cluster. Secondary servers and agents keep writing `server:` as
   before.
+- **fleet async applies could never run**: `bundles.yml` and `clusters.yml`
+  fired the Bundle and Cluster applies with `async`/`poll: 0`, but
+  `kubernetes.core.k8s` is an action plugin and Ansible rejects async on it
+  ("This action (kubernetes.core.k8s) does not support async"). Only
+  `check_mode` ever reached the synchronous fallback, so a real run failed
+  outright. Both resources now apply synchronously; the `fleet_async_enabled`,
+  `fleet_async_timeout`, `fleet_async_retries` and `fleet_async_delay`
+  variables are gone with the path they configured.
+- **fleet sent `keepFailHistory` as an integer**: the Bundle spec rendered
+  `spec.correctDrift.keepFailHistory` through `| int` and the argument spec
+  declared it `int` ("Number of failed attempts to keep"), but the Fleet CRD
+  types it as a boolean, so the API rejected every Bundle carrying a
+  `correct_drift` block with a 422. Both now use `bool`.
+- **fleet applied Bundles and one namespace without a kubeconfig**: the Bundle
+  apply and the ClusterRegistrationToken namespace task omitted the
+  `kubeconfig` parameter every other task in the role passes, so they fell back
+  to the module default and failed with "Could not create API client: Invalid
+  kube-config file" wherever the k3s kubeconfig is not the ambient default.
+- **fleet Bundle targets ignored the documented spelling**: `bundles.yml`
+  passed `targets` to the API verbatim while the argument spec documents (and
+  validates) snake_case keys, so a spec-conformant `cluster_selector` reached
+  the API unconverted and a working `clusterSelector` failed validation.
+  Bundles now run targets through `fleet_transform_targets`, the same filter
+  `gitrepos.yml` already used.
+- **helm chart deploys are excluded from the idempotence check**: the k3s Helm
+  controller owns the HelmChart it reconciles and writes back to the spec, so
+  the applied resource never matches and the task reports `changed` on every
+  run. The molecule scenario skips it via `molecule-idempotence-notest` rather
+  than masking the result with `changed_when: false`.
+- **helm role failed on a host with an empty apt cache**: the `packages` entry
+  point of `arillso.system.packages` never refreshes the package cache and its
+  install task pins `update_cache: false`, so `python3-kubernetes` was reported
+  as unavailable on a freshly provisioned host. The role now refreshes the apt
+  cache before installing its Python dependency.
 - **k3s config drift on re-runs**: a server rewrote `config.yaml` and restarted
   k3s on every run after the first. On the initial run the cluster database does
   not exist yet, so the role initialises the cluster and `k3s_token` stays empty
@@ -140,6 +201,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **BREAKING — the fleet async variables are gone**: `fleet_async_enabled`,
+  `fleet_async_timeout`, `fleet_async_retries` and `fleet_async_delay` are
+  removed. They configured an async apply path that Ansible refuses to run for
+  `kubernetes.core.k8s`, so setting them never had the documented effect.
+  Playbooks passing them need to drop the variables; Bundle and Cluster applies
+  now always run synchronously.
 - **BREAKING — k3s hardening now applies by default**: `k3s_secrets_encryption`,
   `k3s_anonymous_auth`, `k3s_node_restriction` and
   `k3s_kubelet_read_only_port_disabled` take effect on existing clusters running

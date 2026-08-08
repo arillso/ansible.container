@@ -1,0 +1,160 @@
+---
+# Stand up an ephemeral k3s cluster with Rancher Fleet installed, so the
+# fleet role can converge against the real fleet.cattle.io API. Fleet is
+# installed standalone (fleet-crd, then fleet) — no Rancher, no external
+# cluster, no credentials.
+- name: Prepare
+  hosts: all
+  become: true
+  vars:
+      k3s_disable_traefik: true
+      k3s_disable_servicelb: true
+      k3s_write_kubeconfig_mode: "0644"
+      # Both charts must carry the same version; fleet-crd installs the
+      # CRDs that the fleet controller then serves.
+      # renovate: datasource=helm depName=fleet registryUrl=https://rancher.github.io/fleet-helm-charts/
+      fleet_prepare_chart_version: "0.16.0"
+      fleet_prepare_chart_repo: "https://rancher.github.io/fleet-helm-charts/"
+      fleet_prepare_kubeconfig: /etc/rancher/k3s/k3s.yaml
+  tasks:
+      - name: Include k3s role
+        ansible.builtin.include_role:
+            name: arillso.container.k3s
+
+      - name: Wait for the k3s kubeconfig to appear
+        ansible.builtin.wait_for:
+            path: "{{ fleet_prepare_kubeconfig }}"
+            state: present
+            timeout: 300
+
+      - name: Wait for the node to register as Ready
+        ansible.builtin.command: kubectl wait --for=condition=Ready node --all --timeout=300s
+        changed_when: false
+        environment:
+            KUBECONFIG: "{{ fleet_prepare_kubeconfig }}"
+
+      # The fleet role talks to the API through kubernetes.core, which
+      # needs the Python client on the target. Unlike the helm role
+      # (roles/helm/tasks/main.yml), the fleet role does not install it.
+      - name: Install the Kubernetes Python client
+        ansible.builtin.apt:
+            name: python3-kubernetes
+            state: present
+            update_cache: true
+
+      # kubernetes.core.helm needs a helm binary on the target host, and
+      # the collection ships none. Install the official binary, then
+      # drive it directly: command-instead-of-module is in the
+      # .ansible-lint skip_list, so a plain command is acceptable here
+      # and keeps the dependency surface to the binary alone.
+      - name: Install the helm binary
+        ansible.builtin.unarchive:
+            src: "https://get.helm.sh/helm-v{{ fleet_prepare_helm_version }}-linux-amd64.tar.gz"
+            dest: /usr/local/bin
+            remote_src: true
+            extra_opts:
+                - --strip-components=1
+                - linux-amd64/helm
+            creates: /usr/local/bin/helm
+            mode: "0755"
+        vars:
+            # renovate: datasource=github-releases depName=helm/helm extractVersion=^v(?<version>.*)$
+            fleet_prepare_helm_version: "3.21.3"
+
+      - name: Install the Fleet CRDs
+        ansible.builtin.command:
+            argv:
+                - helm
+                - upgrade
+                - --install
+                - fleet-crd
+                - fleet-crd
+                - --repo
+                - "{{ fleet_prepare_chart_repo }}"
+                - --version
+                - "{{ fleet_prepare_chart_version }}"
+                - --namespace
+                - cattle-fleet-system
+                - --create-namespace
+                - --wait
+                - --timeout
+                - 10m
+        changed_when: true
+        environment:
+            KUBECONFIG: "{{ fleet_prepare_kubeconfig }}"
+
+      - name: Install the Fleet controller
+        ansible.builtin.command:
+            argv:
+                - helm
+                - upgrade
+                - --install
+                - fleet
+                - fleet
+                - --repo
+                - "{{ fleet_prepare_chart_repo }}"
+                - --version
+                - "{{ fleet_prepare_chart_version }}"
+                - --namespace
+                - cattle-fleet-system
+                - --create-namespace
+                - --wait
+                - --timeout
+                - 10m
+        changed_when: true
+        environment:
+            KUBECONFIG: "{{ fleet_prepare_kubeconfig }}"
+
+      # The converge applies GitRepo and Bundle CRs; without an
+      # established CRD the API rejects them and the failure would look
+      # like a role bug rather than a prepare race.
+      - name: Wait for the Fleet CRDs to be established
+        ansible.builtin.command: >-
+            kubectl wait --for=condition=Established
+            crd/{{ item }}.fleet.cattle.io --timeout=300s
+        loop:
+            - gitrepos
+            - bundles
+        changed_when: false
+        environment:
+            KUBECONFIG: "{{ fleet_prepare_kubeconfig }}"
+
+      # The Bundle apply waits on the Ready condition, which the Fleet
+      # agent only reaches once it has actually deployed the bundle's
+      # resources. It does that as the ServiceAccount named in
+      # spec.serviceAccount (the role's default: "default"), impersonated
+      # in cattle-fleet-system — an account with no permissions of its
+      # own, so the deploy fails with "configmaps ... is forbidden" and
+      # the wait rides out its timeout. Granting it cluster-admin is
+      # acceptable in this throwaway single-node cluster and keeps the
+      # role's Ready wait meaningful instead of papering over it.
+      #
+      # Applied through kubectl rather than kubernetes.core.k8s on
+      # purpose: the lint job installs only ansible-lint and
+      # ansible-core, so syntax-check cannot resolve kubernetes.core and
+      # would report unknown-module here. The verify playbooks are
+      # excluded in .ansible-lint for that reason; prepare.yml stays
+      # lintable instead.
+      - name: Grant the Fleet agent ServiceAccount permission to deploy
+        ansible.builtin.copy:
+            dest: /tmp/molecule-fleet-agent-admin.yml
+            mode: "0644"
+            content: |
+                apiVersion: rbac.authorization.k8s.io/v1
+                kind: ClusterRoleBinding
+                metadata:
+                    name: molecule-fleet-agent-admin
+                roleRef:
+                    apiGroup: rbac.authorization.k8s.io
+                    kind: ClusterRole
+                    name: cluster-admin
+                subjects:
+                    - kind: ServiceAccount
+                      name: default
+                      namespace: cattle-fleet-system
+
+      - name: Apply the Fleet agent ClusterRoleBinding
+        ansible.builtin.command: kubectl apply -f /tmp/molecule-fleet-agent-admin.yml
+        changed_when: true
+        environment:
+            KUBECONFIG: "{{ fleet_prepare_kubeconfig }}"

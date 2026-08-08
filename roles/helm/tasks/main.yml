@@ -1,5 +1,22 @@
 ---
-# Install required Python dependencies for Kubernetes operations
+# Install required Python dependencies for Kubernetes operations.
+# The packages role's `packages` entry point runs unhold/remove/install/hold
+# only — it never includes cache.yml, and install.yml pins
+# `update_cache: false`. On a host whose apt cache is empty (a fresh VM, as in
+# the molecule scenarios) the package is then unfindable, so refresh the cache
+# here first.
+- name: Update the package cache for the Kubernetes Python client
+  ansible.builtin.apt:
+      update_cache: true
+      cache_valid_time: 3600
+  become: true
+  when: ansible_facts['pkg_mgr'] in ['apt', 'apt-get']
+  changed_when: false
+  tags:
+      - helm
+      - helm-dependencies
+      - system-packages
+
 - name: Install Python packages for Kubernetes
   ansible.builtin.include_role:
       name: arillso.system.packages
