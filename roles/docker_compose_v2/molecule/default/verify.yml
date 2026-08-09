@@ -59,6 +59,11 @@
         ansible.builtin.include_role:
             name: arillso.container.docker_compose_v2
         vars:
+            # Must match converge.yml: the role's install task runs on every
+            # include, and apt has no candidate for an exact
+            # docker-compose-plugin=<version> on the CI image, so a pinned
+            # version would fail here before reaching state=absent.
+            docker_compose_v2_version: ""
             docker_compose_v2_project: "molecule"
             docker_compose_v2_use_file: true
             docker_compose_v2_state: absent
