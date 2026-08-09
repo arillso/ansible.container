@@ -173,6 +173,59 @@
         loop_control:
             label: "{{ item.item }}"
 
+      - name: Check the K3s environment file
+        ansible.builtin.stat:
+            path: /etc/systemd/system/k3s.service.env
+        register: k3s_env_file
+
+      - name: Verify the environment file was rendered
+        ansible.builtin.assert:
+            that:
+                - k3s_env_file.stat.exists
+                - k3s_env_file.stat.size > 0
+                - k3s_env_file.stat.mode == '0600'
+            fail_msg: >-
+                /etc/systemd/system/k3s.service.env is missing, empty or
+                world-readable — k3s_environment_vars was never rendered.
+            success_msg: "K3s environment file is rendered and 0600"
+
+      # Matched with grep rather than slurp so the file contents never reach the
+      # task output.
+      - name: Search the environment file for the configured entry
+        ansible.builtin.command:
+            cmd: grep -qF 'NO_PROXY=localhost,127.0.0.1,10.0.0.0/8' /etc/systemd/system/k3s.service.env
+        register: k3s_env_match
+        changed_when: false
+        failed_when: false
+
+      - name: Verify custom environment variables reach the file
+        ansible.builtin.assert:
+            that:
+                - k3s_env_match.rc == 0
+            fail_msg: >-
+                The environment file does not contain the value set through
+                k3s_environment_vars.
+            success_msg: "k3s_environment_vars entries are present"
+
+      # The token used to be rendered here as well, which made the file change
+      # between the first and second run and broke idempotence. Assert it stays
+      # out, so a reintroduction fails by name instead of only as a diff.
+      - name: Search the environment file for a join credential
+        ansible.builtin.command:
+            cmd: grep -q '^K3S_TOKEN=' /etc/systemd/system/k3s.service.env
+        register: k3s_env_token_match
+        changed_when: false
+        failed_when: false
+
+      - name: Verify the join credential stays out of the environment file
+        ansible.builtin.assert:
+            that:
+                - k3s_env_token_match.rc != 0
+            fail_msg: >-
+                The environment file carries K3S_TOKEN again. config.yaml is the
+                single source for the token; a copy here breaks idempotence.
+            success_msg: "Environment file carries no join credential"
+
       - name: Check K3s server credential directory permissions
         ansible.builtin.stat:
             path: /var/lib/rancher/k3s/server/cred

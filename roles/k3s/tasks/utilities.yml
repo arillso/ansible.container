@@ -25,16 +25,34 @@
   when:
       - k3s_create_symlinks | bool
 
-# - name: Create K3s environment configuration file
-#   ansible.builtin.template:
-#       src: etc/systemd/system/k3s.service.env.j2
-#       dest: /etc/systemd/system/k3s.service.env
-#       mode: "0600"
-#       owner: root
-#       group: root
-#   become: true
-#   notify: restart k3s
-#   when: k3s_environment_vars | length > 0
+- name: Create K3s environment configuration file
+  ansible.builtin.template:
+      src: etc/systemd/system/k3s.service.env.j2
+      dest: /etc/systemd/system/k3s.service.env
+      mode: "0600"
+      owner: root
+      group: root
+  become: true
+  register: k3s_env_file_result
+  notify: Restart k3s
+  when: k3s_environment_vars | length > 0
+
+# This file is included after main.yml has already flushed its handlers and
+# waited for the API server, so a restart notified here would otherwise fire at
+# the end of the play, leaving following plays to hit a server still coming up.
+- name: Flush handlers to apply the environment file restart
+  ansible.builtin.meta: flush_handlers
+
+- name: Wait for k3s to be ready after the environment file restart
+  ansible.builtin.wait_for:
+      port: "{{ k3s_https_listen_port }}"
+      host: "{{ k3s_health_check_host }}"
+      delay: "{{ k3s_health_check_delay }}"
+      timeout: "{{ k3s_health_check_timeout }}"
+      sleep: "{{ k3s_health_check_sleep }}"
+  when:
+      - k3s_role == "server"
+      - k3s_env_file_result.changed | default(false)
 
 - name: Create bash completion directory
   ansible.builtin.file:
