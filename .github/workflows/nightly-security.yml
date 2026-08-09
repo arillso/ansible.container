@@ -13,7 +13,9 @@ concurrency:
     cancel-in-progress: false
 
 permissions:
-    contents: read
+    # security-sbom.yml declares `contents: write`; a called workflow never
+    # gets more than its caller grants, so the SBOM upload needs it here.
+    contents: write
     security-events: write
     actions: read
     pull-requests: read
@@ -26,3 +28,15 @@ jobs:
 
     security-secrets:
         uses: arillso/.github/.github/workflows/security-secrets.yml@2026-08-09
+
+    security-config:
+        uses: arillso/.github/.github/workflows/security-config.yml@2026-08-09
+        with:
+            scan-ansible: true
+            ansible-path: roles
+
+    security-sbom:
+        uses: arillso/.github/.github/workflows/security-sbom.yml@2026-08-09
+        with:
+            artifact-type: filesystem
+            artifact-ref: "."
