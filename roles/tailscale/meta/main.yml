@@ -4,7 +4,7 @@ galaxy_info:
     author: Arillso Team
     description: "Manages Tailscale Kubernetes resources including ProxyGroups, Ingress, and Egress services."
     license: MIT
-    min_ansible_version: "2.15"
+    min_ansible_version: "2.18"
     platforms:
         - name: Ubuntu
           versions:

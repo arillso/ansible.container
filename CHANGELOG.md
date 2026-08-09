@@ -208,6 +208,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `profile: production` and `strict: true`, and drops
   `var-naming[no-role-prefix]` from `skip_list`, which turns the prefix
   convention into an enforced rule. `package-latest` stays skipped.
+- **Unified the declared Ansible floor at `2.18`**: the collection declared its
+  minimum Ansible version in nine places with three different values. Galaxy
+  already enforces `requires_ansible: ">=2.18.0"` from `meta/runtime.yml` at
+  install time, while `README.md` promised `>= 2.15` and the `helm`/`fleet`
+  roles claimed `2.9`. `README.md` now states `>= 2.18` and all seven role
+  `min_ansible_version` values are `"2.18"`. For README readers this is a
+  documented tightening, even though Galaxy has been enforcing it all along.
+  `2.9` was unsupportable regardless, since the `community.docker` dependency
+  declared in `galaxy.yml` requires `>=3.4.11`, which does not run on it.
 - **BREAKING — k3s hardening now applies by default**: `k3s_secrets_encryption`,
   `k3s_anonymous_auth`, `k3s_node_restriction` and
   `k3s_kubelet_read_only_port_disabled` take effect on existing clusters running
