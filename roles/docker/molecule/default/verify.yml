@@ -45,29 +45,29 @@
       - name: Check if daemon.json exists
         ansible.builtin.stat:
             path: /etc/docker/daemon.json
-        register: daemon_config
+        register: docker_daemon_config
 
       - name: Verify daemon configuration exists
         ansible.builtin.assert:
             that:
-                - daemon_config.stat.exists
+                - docker_daemon_config.stat.exists
             fail_msg: "Docker daemon configuration not found"
             success_msg: "Docker daemon configuration exists"
 
       - name: Read daemon configuration
         ansible.builtin.slurp:
             path: /etc/docker/daemon.json
-        register: daemon_content
+        register: docker_daemon_content
 
       - name: Parse daemon configuration
         ansible.builtin.set_fact:
-            daemon_json: "{{ daemon_content.content | b64decode | from_json }}"
+            docker_daemon_json: "{{ docker_daemon_content.content | b64decode | from_json }}"
 
       - name: Verify daemon configuration values
         ansible.builtin.assert:
             that:
-                - daemon_json['log-driver'] == 'json-file'
-                - daemon_json['storage-driver'] == 'overlay2'
+                - docker_daemon_json['log-driver'] == 'json-file'
+                - docker_daemon_json['storage-driver'] == 'overlay2'
             fail_msg: "Docker daemon configuration is incorrect"
             success_msg: "Docker daemon configuration is correct"
 
@@ -76,8 +76,8 @@
       - name: Verify role defaults survive a user-provided docker_daemon
         ansible.builtin.assert:
             that:
-                - daemon_json['live-restore']
-                - daemon_json['no-new-privileges']
+                - docker_daemon_json['live-restore']
+                - docker_daemon_json['no-new-privileges']
             fail_msg: "Role defaults were replaced instead of merged"
             success_msg: "Role defaults merged with the user configuration"
 
@@ -86,8 +86,8 @@
       - name: Verify nested user log-opts survive the merge
         ansible.builtin.assert:
             that:
-                - daemon_json['log-opts']['max-size'] == '10m'
-                - daemon_json['log-opts']['max-file'] == '3'
+                - docker_daemon_json['log-opts']['max-size'] == '10m'
+                - docker_daemon_json['log-opts']['max-file'] == '3'
             fail_msg: "Nested log-opts were lost in the merge"
             success_msg: "Nested log-opts survived the merge"
 
@@ -100,8 +100,8 @@
       - name: Verify log-opts merges per sub-key when present on both sides
         ansible.builtin.assert:
             that:
-                - daemon_json['log-opts']['labels'] == 'from-base'
-                - daemon_json['log-opts']['max-size'] == '10m'
-                - daemon_json['log-opts']['max-file'] == '3'
+                - docker_daemon_json['log-opts']['labels'] == 'from-base'
+                - docker_daemon_json['log-opts']['max-size'] == '10m'
+                - docker_daemon_json['log-opts']['max-file'] == '3'
             fail_msg: "Nested merge replaced log-opts instead of merging sub-keys"
             success_msg: "Nested dicts merge per sub-key"
