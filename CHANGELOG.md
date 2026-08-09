@@ -52,6 +52,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **k3s server config template used the pre-migration fact spelling**: the
+  `ansible_facts` migration left
+  `templates/etc/rancher/k3s/server-config.yaml.j2` on `ansible_local.k3s`,
+  while the sister template `agent-config.yaml.j2` in the same role had already
+  moved to `ansible_facts['ansible_local']['k3s']`. Both templates read the same
+  fact in two different spellings. No behaviour change: `ansible_local` is
+  exempt from the `INJECT_FACTS_AS_VARS` deprecation and is always promoted to
+  the top level, so the old spelling still resolved. A sweep for
+  `ansible_local.` across `roles/` confirms this was the last remaining
+  occurrence.
 - **k3s environment variables were never rendered**: `k3s_environment_vars` was
   fully wired — documented in `defaults/main.yml`, declared as a `dict` in
   `meta/argument_specs.yml`, consumed by
