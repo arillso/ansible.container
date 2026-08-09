@@ -332,6 +332,11 @@ argument_specs:
                 default: {}
                 description: "Environment variables for K3s service"
 
+            k3s_write_kubeconfig_mode:
+                type: "str"
+                required: false
+                description: "File mode k3s writes the kubeconfig with"
+
             k3s_kubeconfig_mode:
                 type: "str"
                 default: "0644"
