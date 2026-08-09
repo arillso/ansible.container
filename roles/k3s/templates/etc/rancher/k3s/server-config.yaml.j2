@@ -248,6 +248,15 @@
 {%-   set _ = kubelet_args_list.append('log-level=' + k3s_log_level) -%}
 {%- endif -%}
 
+{#- Container log management -#}
+{%- if k3s_container_log_max_size is defined and k3s_container_log_max_size -%}
+{%-   set _ = kubelet_args_list.append('container-log-max-size=' + k3s_container_log_max_size) -%}
+{%- endif -%}
+
+{%- if k3s_container_log_max_files is defined and k3s_container_log_max_files -%}
+{%-   set _ = kubelet_args_list.append('container-log-max-files=' + k3s_container_log_max_files | string) -%}
+{%- endif -%}
+
 {%- if kubelet_args_list | length > 0 -%}
 {%-   set _ = k3s_config.update({'kubelet-arg': kubelet_args_list}) -%}
 {%- endif -%}
