@@ -1,3 +1,5 @@
+<!-- markdownlint-disable-file MD041 -->
+
 ## Description
 
 <!-- Provide a clear and concise description of your changes -->
