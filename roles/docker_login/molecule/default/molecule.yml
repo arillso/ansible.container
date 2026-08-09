@@ -33,6 +33,10 @@ platforms:
       network_mode: user
       network_ssh_port: 2223
       network_ssh_user: root
+      # The GenericCloud image is a 10 GiB qcow2 and the driver's 8G
+      # default truncates the overlay, so the root partition never
+      # shows up and dracut drops to the emergency shell.
+      vm_disk: 16G
       vm_cpus: 2
       vm_memory: 2048
 
