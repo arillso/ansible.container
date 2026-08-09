@@ -25,6 +25,10 @@
         ansible.builtin.apt:
             update_cache: true
         when: ansible_facts['os_family'] == "Debian"
+        # Refreshing the cache always reports changed, so the idempotence
+        # run has to skip it.
+        tags:
+            - molecule-idempotence-notest
 
       # The k3s install script needs curl, which the base test images
       # do not ship. Install it before the role runs. Uses `package` so
