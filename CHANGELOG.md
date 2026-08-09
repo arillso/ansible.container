@@ -15,7 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   previously only read by an `is defined` guard in the agent config template,
   so out of the box kubelet never received `container-log-max-size` /
   `container-log-max-files` and container logs grew unbounded. The guards stay
-  in place, so setting either variable to an empty value still omits the flag.
+  in place, so setting `k3s_container_log_max_size` to `""` or
+  `k3s_container_log_max_files` to `0` still omits the respective flag.
 
 - **k3s hardening variables**: eight new variables defined in both
   `defaults/main.yml` and `meta/argument_specs.yml` —

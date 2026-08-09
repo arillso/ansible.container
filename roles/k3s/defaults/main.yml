@@ -135,7 +135,7 @@ k3s_kubelet_read_only_port_disabled: true
 # Empty string disables the admission configuration entirely.
 k3s_pod_security_admission_profile: ""
 
-# K3s container log rotation (empty value omits the kubelet flag)
+# K3s container log rotation ("" resp. 0 omits the kubelet flag)
 k3s_container_log_max_size: "10Mi"
 k3s_container_log_max_files: 5
 

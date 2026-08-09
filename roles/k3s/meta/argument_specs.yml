@@ -444,8 +444,8 @@ argument_specs:
                 default: 5
                 description: >-
                     Maximum number of container log files kept per container,
-                    passed to kubelet as container-log-max-files. An empty value
-                    omits the flag and leaves the kubelet default in place.
+                    passed to kubelet as container-log-max-files. Set to 0 to
+                    omit the flag and leave the kubelet default in place.
 
             k3s_anonymous_auth:
                 type: "bool"
