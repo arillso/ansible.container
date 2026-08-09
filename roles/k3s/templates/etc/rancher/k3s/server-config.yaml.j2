@@ -41,7 +41,7 @@
     `state.db`, which an etcd-backed server never creates. -#}
 {%- if (k3s_server_init is defined and k3s_server_init)
        or (k3s_role == 'server'
-           and ansible_local.k3s.cluster.server_responsive | default(false) | bool
+           and ansible_facts['ansible_local']['k3s'].cluster.server_responsive | default(false) | bool
            and not (k3s_server_url is defined and k3s_server_url)) -%}
 {%-   set _ = k3s_config.update({'cluster-init': true}) -%}
 {%- elif k3s_server_url is defined and k3s_server_url -%}
