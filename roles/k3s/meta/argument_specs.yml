@@ -431,6 +431,22 @@ argument_specs:
                     policy. Secrets and configmaps are always capped at
                     Metadata regardless of this setting.
 
+            k3s_container_log_max_size:
+                type: "str"
+                default: "10Mi"
+                description: >-
+                    Maximum size of a container log file before it is rotated,
+                    passed to kubelet as container-log-max-size. An empty string
+                    omits the flag and leaves the kubelet default in place.
+
+            k3s_container_log_max_files:
+                type: "int"
+                default: 5
+                description: >-
+                    Maximum number of container log files kept per container,
+                    passed to kubelet as container-log-max-files. Set to 0 to
+                    omit the flag and leave the kubelet default in place.
+
             k3s_anonymous_auth:
                 type: "bool"
                 default: false

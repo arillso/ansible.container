@@ -111,6 +111,14 @@
             fail_msg: "Hardening flags missing from rendered config"
             success_msg: "All hardening flags present in rendered config"
 
+      - name: Verify container log rotation flags are present by default
+        ansible.builtin.assert:
+            that:
+                - "'container-log-max-size=10Mi' in k3s_config_parsed['kubelet-arg']"
+                - "'container-log-max-files=5' in k3s_config_parsed['kubelet-arg']"
+            fail_msg: "Container log rotation flags missing from rendered config"
+            success_msg: "Container log rotation flags present in rendered config"
+
       - name: Verify protect-kernel-defaults stays off by default
         ansible.builtin.assert:
             that:

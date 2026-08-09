@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **k3s container log rotation defaults**: `k3s_container_log_max_size`
+  (`10Mi`) and `k3s_container_log_max_files` (`5`) now have defaults in
+  `defaults/main.yml` and entries in `meta/argument_specs.yml`. Both were
+  previously only read by an `is defined` guard in the agent config template,
+  so out of the box kubelet never received `container-log-max-size` /
+  `container-log-max-files` and container logs grew unbounded. The guards stay
+  in place, so setting `k3s_container_log_max_size` to `""` or
+  `k3s_container_log_max_files` to `0` still omits the respective flag.
+
 - **k3s hardening variables**: eight new variables defined in both
   `defaults/main.yml` and `meta/argument_specs.yml` —
   `k3s_secrets_encryption`, `k3s_protect_kernel_defaults`,
@@ -52,6 +61,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **k3s server nodes ignored container log rotation**: the
+  `container-log-max-size` and `container-log-max-files` kubelet args were only
+  built by `agent-config.yaml.j2`, so a server node never rotated container
+  logs even with the variables set. `server-config.yaml.j2` now builds the same
+  two args, and `molecule/default/verify.yml` asserts both reach the rendered
+  config.
+
 - **k3s server config template used the pre-migration fact spelling**: the
   `ansible_facts` migration left
   `templates/etc/rancher/k3s/server-config.yaml.j2` on `ansible_local.k3s`,
@@ -62,6 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the top level, so the old spelling still resolved. A sweep for
   `ansible_local.` across `roles/` confirms this was the last remaining
   occurrence.
+
 - **k3s environment variables were never rendered**: `k3s_environment_vars` was
   fully wired — documented in `defaults/main.yml`, declared as a `dict` in
   `meta/argument_specs.yml`, consumed by
