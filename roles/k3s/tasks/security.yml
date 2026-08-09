@@ -62,11 +62,9 @@
             state: present
         become: true
 
-      - name: Apply SELinux context to K3s binary
-        ansible.builtin.command: restorecon -v /usr/local/bin/k3s
-        become: true
-        register: selinux_restorecon
-        changed_when: "'restorecon reset' in selinux_restorecon.stdout"
+      # Relabelling happens right after the binary is downloaded in
+      # main.yml: this file runs before the install, so on a first run
+      # there is nothing to restorecon yet.
 
       - name: Check available SELinux booleans
         ansible.builtin.shell:

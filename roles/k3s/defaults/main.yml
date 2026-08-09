@@ -92,10 +92,13 @@ k3s_kubeconfig_owner: "root"
 
 # System requirements
 k3s_install_dependencies: true
+# The NFS client package is named nfs-common on Debian and nfs-utils on
+# RedHat, so the default follows the target OS. Override to pin an
+# explicit list.
 k3s_required_packages:
     - curl
     - iptables
-    - nfs-common
+    - "{{ 'nfs-utils' if ansible_facts['os_family'] == 'RedHat' else 'nfs-common' }}"
 
 # K3s service configuration
 k3s_service_enabled: true

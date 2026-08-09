@@ -1,0 +1,13 @@
+---
+# Covers the whole RedHat family (Rocky, AlmaLinux, RHEL, CentOS) via the
+# os_family fallback in tasks/main.yml. RPM version strings carry an epoch
+# and a release part (e.g. 3:<version>-1.el9), which a bare
+# "docker-ce-<version>" never matches, so the pin uses a wildcard suffix.
+#
+# Unlike Debian.yml/Ubuntu.yml this list carries no Docker SDK package: the
+# EL repositories ship no python3-docker equivalent, and pulling in pip here
+# would install a build tool on every EL host without providing the SDK.
+# Scenarios and roles that need the SDK install it explicitly
+# (see roles/docker_login/molecule/default/prepare.yml).
+docker_package:
+    - "{{ 'docker-ce-' + docker_version + '*' if docker_version != '' else 'docker-ce' }}"

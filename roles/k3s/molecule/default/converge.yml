@@ -18,14 +18,26 @@
       k3s_environment_vars:
           NO_PROXY: "localhost,127.0.0.1,10.0.0.0/8"
   pre_tasks:
-      # The k3s install script needs curl, which the base test images
-      # do not ship. Install it before the role runs.
-      - name: Ensure curl is present
+      # `package` cannot refresh apt metadata, so the Debian family needs
+      # an explicit cache update first; a cloud image ships stale lists and
+      # the install below would fail with "Unable to locate package".
+      - name: Refresh apt cache on the Debian family
         ansible.builtin.apt:
-            name: curl
-            state: present
             update_cache: true
         when: ansible_facts['os_family'] == "Debian"
+        # Refreshing the cache always reports changed, so the idempotence
+        # run has to skip it.
+        tags:
+            - molecule-idempotence-notest
+
+      # The k3s install script needs curl, which the base test images
+      # do not ship. Install it before the role runs. Uses `package` so
+      # the task also runs on the RedHat family; the previous `apt` task
+      # was guarded to Debian and left curl missing everywhere else.
+      - name: Ensure curl is present
+        ansible.builtin.package:
+            name: curl
+            state: present
 
   tasks:
       - name: Include k3s role

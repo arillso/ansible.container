@@ -28,6 +28,28 @@ platforms:
       vm_cpus: 2
       vm_memory: 3072
 
+    - name: k3s-rocky-9
+      image_url: https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2
+      # The CHECKSUM index is BSD-style (`SHA256 (file) = hash`) and does
+      # carry the `.latest.` name, so get_url resolves it directly.
+      image_checksum: sha256:https://dl.rockylinux.org/pub/rocky/9/images/x86_64/CHECKSUM
+      # Log in as root. molecule-qemu renders the cloud-init user groups
+      # from the *runner's* `ansible_os_family`, which is Debian on the
+      # GitHub runner, so a non-root user on Rocky is created with
+      # `admin`/`sudo` — neither group exists there, cloud-init aborts and
+      # the SSH key is never installed. The root branch of the template
+      # sets no groups and is unaffected.
+      image_arch: x86_64
+      network_mode: user
+      network_ssh_port: 2224
+      network_ssh_user: root
+      # The GenericCloud image is a 10 GiB qcow2 and the driver's 8G
+      # default truncates the overlay, so the root partition never
+      # shows up and dracut drops to the emergency shell.
+      vm_disk: 16G
+      vm_cpus: 2
+      vm_memory: 3072
+
 provisioner:
     name: ansible
     config_options:
@@ -40,6 +62,8 @@ provisioner:
             k3s-ubuntu-22.04:
                 ansible_become: true
             k3s-debian-12:
+                ansible_become: true
+            k3s-rocky-9:
                 ansible_become: true
     playbooks:
         converge: converge.yml

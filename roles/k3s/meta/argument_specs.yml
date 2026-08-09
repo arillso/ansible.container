@@ -359,7 +359,10 @@ argument_specs:
                     - curl
                     - iptables
                     - nfs-common
-                description: "Required system packages for K3s"
+                description: >-
+                    Required system packages for K3s. The NFS client entry
+                    defaults to nfs-utils on RedHat and nfs-common
+                    elsewhere.
 
             k3s_service_enabled:
                 type: "bool"
