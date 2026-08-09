@@ -8,6 +8,19 @@
       # `docker-ce=28.5.2` never matches apt's full version string
       # (e.g. 5:28.5.2-1~debian.12~bookworm), so CI must not pin.
       docker_version: ""
+      # Recursion is only observable when the same nested key exists on BOTH
+      # sides of the merge. The shipped docker_daemon_base has no log-opts, so
+      # putting log-opts only in docker_daemon renders identically with
+      # recursive=True and recursive=False -- an assertion on that can never
+      # fail. The base is therefore overridden here (a documented hook, see
+      # roles/docker/README.md) to carry its own log-opts sub-key, rather than
+      # adding a default that would only exist for the test.
+      docker_daemon_base:
+          log-driver: journald
+          live-restore: true
+          no-new-privileges: true
+          log-opts:
+              labels: "from-base"
       docker_daemon:
           log-driver: json-file
           log-opts:

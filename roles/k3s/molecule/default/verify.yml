@@ -238,3 +238,51 @@
                 - k3s_cred_dir.stat.mode == '0700'
             fail_msg: "K3s credential directory has unexpected permissions"
             success_msg: "K3s credential directory is 0700"
+
+      # Everything above inspects configuration and service state. This
+      # schedules a real workload, which is the only check that proves the
+      # cluster actually runs pods rather than merely reporting Ready.
+      # Driven through kubectl rather than kubernetes.core, like every other
+      # check in this file: the modules need the `kubernetes` Python library on
+      # the target VM, which the bare cloud image does not ship and no prepare
+      # step installs. (requirements.yml pulls the Ansible collection onto the
+      # controller, which is a different thing.)
+      - name: Deploy a smoke-test pod
+        ansible.builtin.command:
+            cmd: >-
+                kubectl run molecule-smoketest
+                --namespace default
+                --image=nginx:alpine@sha256:1d40e3eb3bf4f138de1d67193f2aa5309fcaf343eb5ffadbf5e9439de1eb1ebb
+                --port=80
+        environment:
+            KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+        changed_when: true
+
+      - name: Wait for the smoke-test pod to reach Running
+        ansible.builtin.command:
+            cmd: >-
+                kubectl get pod molecule-smoketest --namespace default
+                -o jsonpath={.status.phase}
+        environment:
+            KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+        register: k3s_smoketest_phase
+        until: k3s_smoketest_phase.stdout == "Running"
+        retries: 30
+        delay: 10
+        changed_when: false
+
+      - name: Verify the smoke-test pod is running
+        ansible.builtin.assert:
+            that:
+                - k3s_smoketest_phase.stdout == "Running"
+            fail_msg: >-
+                Smoke-test pod did not reach Running state (last phase:
+                {{ k3s_smoketest_phase.stdout | default('none') }})
+            success_msg: "Cluster schedules and runs pods"
+
+      - name: Remove the smoke-test pod
+        ansible.builtin.command:
+            cmd: kubectl delete pod molecule-smoketest --namespace default
+        environment:
+            KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+        changed_when: true

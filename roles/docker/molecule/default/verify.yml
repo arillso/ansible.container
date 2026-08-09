@@ -82,8 +82,7 @@
             success_msg: "Role defaults merged with the user configuration"
 
       # docker_daemon_base ships no log-opts, so this only proves the nested
-      # user dict survives the merge intact. Recursive merging of a key present
-      # on both sides is covered in tests/integration/targets/docker.
+      # user dict survives the merge intact.
       - name: Verify nested user log-opts survive the merge
         ansible.builtin.assert:
             that:
@@ -91,3 +90,18 @@
                 - daemon_json['log-opts']['max-file'] == '3'
             fail_msg: "Nested log-opts were lost in the merge"
             success_msg: "Nested log-opts survived the merge"
+
+      # converge.yml runs the role a second time with log-opts present in both
+      # docker_daemon_base (labels) and docker_daemon (max-size, max-file).
+      # Without recursive=True the whole log-opts dict from the base is
+      # replaced by the user one, so labels disappears. Asserting labels
+      # alongside the user keys is what makes this fail if the recursion is
+      # ever dropped -- on the real rendered daemon.json, not a probe dict.
+      - name: Verify log-opts merges per sub-key when present on both sides
+        ansible.builtin.assert:
+            that:
+                - daemon_json['log-opts']['labels'] == 'from-base'
+                - daemon_json['log-opts']['max-size'] == '10m'
+                - daemon_json['log-opts']['max-file'] == '3'
+            fail_msg: "Nested merge replaced log-opts instead of merging sub-keys"
+            success_msg: "Nested dicts merge per sub-key"
