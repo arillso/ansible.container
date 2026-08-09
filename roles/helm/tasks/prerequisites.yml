@@ -5,7 +5,7 @@
 - name: "Find first existing kubeconfig file"
   ansible.builtin.stat:
       path: "{{ item }}"
-  register: kubeconfig_check
+  register: _helm_kubeconfig_check
   loop:
       - "/etc/rancher/k3s/k3s.yaml"
       - "/var/lib/rancher/k3s/server/cred/admin.kubeconfig"
@@ -17,16 +17,16 @@
 - name: "Set detected kubeconfig path to first existing file"
   ansible.builtin.set_fact:
       helm_kubeconfig_path: "{{ item.item }}"
-  loop: "{{ kubeconfig_check.results | default([]) }}"
+  loop: "{{ _helm_kubeconfig_check.results | default([]) }}"
   when:
-      - kubeconfig_check is defined
+      - _helm_kubeconfig_check is defined
       - item.stat.exists | default(false)
   run_once: true
 
 - name: "Validate final kubeconfig file exists"
   ansible.builtin.stat:
       path: "{{ helm_kubeconfig_path }}"
-  register: kubeconfig_stat
+  register: _helm_kubeconfig_stat
   run_once: true
 
 - name: "Fail if kubeconfig file does not exist"
@@ -40,7 +40,7 @@
           - ~/.kube/config
           Please ensure K3s is installed and running, or set helm_kubeconfig_path manually.
   when:
-      - not kubeconfig_stat.stat.exists
+      - not _helm_kubeconfig_stat.stat.exists
   run_once: true
 
 - name: "Check if Kubernetes cluster is accessible"
@@ -48,14 +48,14 @@
       api_version: v1
       kind: Node
       kubeconfig: "{{ helm_kubeconfig_path }}"
-  register: cluster_check
+  register: _helm_cluster_check
   run_once: true
 
 - name: "Fail if Kubernetes cluster is not accessible"
   ansible.builtin.fail:
       msg: "Kubernetes cluster is not accessible. Please ensure kubeconfig is valid and cluster is running."
   when:
-      - cluster_check.resources | length == 0
+      - _helm_cluster_check.resources | length == 0
   run_once: true
 
 - name: "Check if Cattle Operator (Helm Controller) is running"

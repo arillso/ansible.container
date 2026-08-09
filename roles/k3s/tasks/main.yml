@@ -116,7 +116,7 @@
 - name: Retrieve token from first server (if not cluster init)
   ansible.builtin.slurp:
       src: "{{ k3s_token_file }}"
-  register: cluster_token
+  register: _k3s_cluster_token
   failed_when: false
   no_log: true
   when:
@@ -126,7 +126,7 @@
 
 - name: Set token from first server
   ansible.builtin.set_fact:
-      k3s_token: "{{ cluster_token.content | b64decode | trim }}"
+      k3s_token: "{{ _k3s_cluster_token.content | b64decode | trim }}"
       # True only when the token came from this node's own node-token file.
       # Such a token is redundant in config.yaml — it is absent on the first
       # run and present on every later one, which would rewrite the file and
@@ -137,9 +137,9 @@
   no_log: true
   when:
       - k3s_token == ""
-      - cluster_token is defined
-      - cluster_token.content is defined
-      - cluster_token.content | length > 0
+      - _k3s_cluster_token is defined
+      - _k3s_cluster_token.content is defined
+      - _k3s_cluster_token.content | length > 0
 
 # Server URL determination using facts with fallback logic
 - name: Set server URL from facts

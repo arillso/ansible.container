@@ -70,7 +70,7 @@
         ansible.builtin.shell:
             cmd: set -o pipefail && getsebool -a | grep -E "(container_use_cephfs|virt_use_nfs)"
             executable: /bin/bash
-        register: available_sebools
+        register: _k3s_available_sebools
         failed_when: false
         changed_when: false
         become: true
@@ -84,7 +84,7 @@
             - container_use_cephfs
             - virt_use_nfs
         become: true
-        when: item in available_sebools.stdout
+        when: item in _k3s_available_sebools.stdout
         failed_when: false
 
       - name: Create custom SELinux policy for K3s (if needed)
@@ -180,7 +180,7 @@
             dest: /etc/apparmor.d/cri-containerd.apparmor.d
             mode: "0644"
         become: true
-        register: cri_containerd_profile_updated
+        register: _k3s_cri_containerd_profile_updated
         when: k3s_cri_apparmor_profile_enabled | default(true) | bool
 
       - name: Reload cri-containerd AppArmor profile
@@ -190,7 +190,7 @@
         become: true
         when:
             - k3s_cri_apparmor_profile_enabled | default(true) | bool
-            - cri_containerd_profile_updated is changed
+            - _k3s_cri_containerd_profile_updated is changed
         changed_when: true
 
       # Disable path: remove any previously deployed cri-containerd profile.
@@ -200,7 +200,7 @@
       - name: Stat existing cri-containerd AppArmor profile
         ansible.builtin.stat:
             path: /etc/apparmor.d/cri-containerd.apparmor.d
-        register: cri_containerd_profile_file
+        register: _k3s_cri_containerd_profile_file
         when: not (k3s_cri_apparmor_profile_enabled | default(true) | bool)
 
       - name: Unload cri-containerd AppArmor profile from kernel
@@ -209,9 +209,9 @@
         become: true
         when:
             - not (k3s_cri_apparmor_profile_enabled | default(true) | bool)
-            - cri_containerd_profile_file.stat.exists | default(false)
-        register: cri_containerd_profile_unloaded
-        changed_when: cri_containerd_profile_unloaded.rc == 0
+            - _k3s_cri_containerd_profile_file.stat.exists | default(false)
+        register: _k3s_cri_containerd_profile_unloaded
+        changed_when: _k3s_cri_containerd_profile_unloaded.rc == 0
         failed_when: false
         notify: Restart k3s
 
@@ -222,7 +222,7 @@
         become: true
         when:
             - not (k3s_cri_apparmor_profile_enabled | default(true) | bool)
-            - cri_containerd_profile_file.stat.exists | default(false)
+            - _k3s_cri_containerd_profile_file.stat.exists | default(false)
         notify: Restart k3s
 
       - name: Create AppArmor profile for K3s
@@ -311,14 +311,14 @@
             mode: "0644"
         become: true
         when: k3s_apparmor_profile | default(false) | bool
-        register: apparmor_profile_created
+        register: _k3s_apparmor_profile_created
 
       - name: Load K3s AppArmor profile
         ansible.builtin.command: apparmor_parser -r /etc/apparmor.d/k3s
         become: true
         when:
             - k3s_apparmor_profile | default(true) | bool
-            - apparmor_profile_created is changed
+            - _k3s_apparmor_profile_created is changed
         changed_when: true
 
 # General Security Hardening

@@ -59,7 +59,7 @@
   when:
       - helm_charts | length > 0
   run_once: true
-  register: charts_deployment_result
+  register: _helm_charts_deployment_result
 
 - name: "Wait for Helm charts to be ready"
   kubernetes.core.k8s_info:
@@ -76,7 +76,7 @@
   loop: "{{ helm_charts }}"
   when:
       - helm_deployment_wait | bool
-      - charts_deployment_result is changed
+      - _helm_charts_deployment_result is changed
   run_once: true
   retries: "{{ helm_validation_retries }}"
   delay: "{{ helm_validation_delay }}"
