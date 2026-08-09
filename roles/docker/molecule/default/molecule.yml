@@ -49,11 +49,6 @@ platforms:
       vm_disk: 16G
       vm_cpus: 2
       vm_memory: 2048
-      # Diagnostic only: the VM boots but never opens SSH, and the driver
-      # runs qemu with `-display none` and no serial device, so the guest
-      # console is lost. Capture it to a file that `cleanup.yml` dumps
-      # into the molecule log. Remove once the boot failure is understood.
-      vm_extra_args: -serial file:/tmp/molecule-console-docker-rocky-9.log
 
 provisioner:
     name: ansible
@@ -71,7 +66,6 @@ provisioner:
             docker-rocky-9:
                 ansible_become: true
     playbooks:
-        cleanup: cleanup.yml
         converge: converge.yml
         verify: verify.yml
 
