@@ -164,7 +164,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   before.
 - **fleet async applies could never run**: `bundles.yml` and `clusters.yml`
   fired the Bundle and Cluster applies with `async`/`poll: 0`, but
-  `kubernetes.core.k8s` is an action plugin and Ansible rejects async on it
+  `kubernetes.core.k8s` ships an action plugin wrapper that never opts into
+  async, so `ActionBase.run()` rejects the task before the module executes
   ("This action (kubernetes.core.k8s) does not support async"). Only
   `check_mode` ever reached the synchronous fallback, so a real run failed
   outright. Both resources now apply synchronously; the `fleet_async_enabled`,

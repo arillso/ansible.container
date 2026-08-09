@@ -19,10 +19,11 @@
       - fleet-namespace
 
 # Each Bundle apply blocks up to wait_timeout (Ready condition). These used
-# to be fired in parallel via async/poll:0, but kubernetes.core.k8s is an
-# action plugin and Ansible rejects async on it outright ("This action
-# (kubernetes.core.k8s) does not support async"), so that path could never
-# run — only check_mode ever reached the synchronous fallback.
+# to be fired in parallel via async/poll:0, but kubernetes.core.k8s ships an
+# action plugin wrapper that never sets _supports_async, so ActionBase.run()
+# rejects the task before the module runs ("This action (kubernetes.core.k8s)
+# does not support async"). That path could never run — only check_mode ever
+# reached the synchronous fallback.
 - name: "Manage Fleet Bundles"
   kubernetes.core.k8s:
       kubeconfig: "{{ fleet_kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
