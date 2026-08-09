@@ -86,11 +86,16 @@ Three-level testing strategy:
 2. **Molecule Tests** - For individual roles
     - Location: `roles/*/molecule/default/`
     - Run: `molecule test -s default`
-    - CI: one `molecule-<role>` job per role in `pull-request.yml` (docker, k3s)
+    - CI: one `molecule-<role>` job per role in `pull-request.yml` (one per role)
 
 3. **Integration Tests** (ansible-test) - For role integration
     - Location: `tests/integration/targets/`
     - Run: `ansible-test integration`
+    - Not wired into CI: the reusable workflow calls `ansible-test integration`
+      without `--docker-privileged`, so every target marked `needs/privileged`
+      is skipped. The remaining targets (`fleet`, `tailscale`) are `disabled`.
+      Role coverage lives in the Molecule scenarios above, which use the
+      qemu/KVM driver and can run dockerd and k3s for real.
 
 Tests run via the reusable CI (`arillso/.github`) on pull requests and merges.
 

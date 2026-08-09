@@ -238,3 +238,55 @@
                 - k3s_cred_dir.stat.mode == '0700'
             fail_msg: "K3s credential directory has unexpected permissions"
             success_msg: "K3s credential directory is 0700"
+
+      # Everything above inspects configuration and service state. This
+      # schedules a real workload, which is the only check that proves the
+      # cluster actually runs pods rather than merely reporting Ready.
+      - name: Deploy a smoke-test pod
+        kubernetes.core.k8s:
+            kubeconfig: /etc/rancher/k3s/k3s.yaml
+            state: present
+            definition:
+                apiVersion: v1
+                kind: Pod
+                metadata:
+                    name: molecule-smoketest
+                    namespace: default
+                spec:
+                    containers:
+                        # Pinned by digest so a moving tag cannot turn this
+                        # smoke test red for reasons unrelated to the role.
+                        # renovate: datasource=docker depName=nginx versioning=docker
+                        - name: nginx
+                          image: nginx:alpine@sha256:1d40e3eb3bf4f138de1d67193f2aa5309fcaf343eb5ffadbf5e9439de1eb1ebb
+                          ports:
+                              - containerPort: 80
+
+      - name: Wait for the smoke-test pod to reach Running
+        kubernetes.core.k8s_info:
+            kubeconfig: /etc/rancher/k3s/k3s.yaml
+            kind: Pod
+            name: molecule-smoketest
+            namespace: default
+        register: k3s_smoketest_pod
+        until: >-
+            k3s_smoketest_pod.resources | length > 0
+            and k3s_smoketest_pod.resources[0].status.phase == "Running"
+        retries: 30
+        delay: 10
+
+      - name: Verify the smoke-test pod is running
+        ansible.builtin.assert:
+            that:
+                - k3s_smoketest_pod.resources | length > 0
+                - k3s_smoketest_pod.resources[0].status.phase == "Running"
+            fail_msg: "Smoke-test pod did not reach Running state"
+            success_msg: "Cluster schedules and runs pods"
+
+      - name: Remove the smoke-test pod
+        kubernetes.core.k8s:
+            kubeconfig: /etc/rancher/k3s/k3s.yaml
+            state: absent
+            kind: Pod
+            name: molecule-smoketest
+            namespace: default

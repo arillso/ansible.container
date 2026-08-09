@@ -51,3 +51,39 @@
                 - docker_compose_v2_ps.stdout | length > 0
             fail_msg: "compose project did not start any containers"
             success_msg: "compose project started containers"
+
+      # Teardown runs last: everything above asserts the created state, so
+      # removing the project earlier (e.g. in side_effect.yml, which runs
+      # before verify) would pull those assertions out from under themselves.
+      - name: Tear the compose project down again
+        ansible.builtin.include_role:
+            name: arillso.container.docker_compose_v2
+        vars:
+            docker_compose_v2_project: "molecule"
+            docker_compose_v2_use_file: true
+            docker_compose_v2_state: absent
+            docker_compose_v2_remove_volumes: true
+            docker_compose_v2_config:
+                services:
+                    web:
+                        # Must match converge.yml: the role renders this into
+                        # the project file, and compose resolves the project to
+                        # tear down from it.
+                        # renovate: datasource=docker depName=nginx versioning=docker
+                        image: nginx:alpine@sha256:1d40e3eb3bf4f138de1d67193f2aa5309fcaf343eb5ffadbf5e9439de1eb1ebb
+                        ports:
+                            - "8080:80"
+
+      - name: List compose containers after teardown
+        ansible.builtin.command: docker ps --filter "name=molecule" --format "{{ '{{' }}.Names{{ '}}' }}"
+        register: docker_compose_v2_ps_after
+        changed_when: false
+
+      - name: Verify the compose project was removed
+        ansible.builtin.assert:
+            that:
+                - docker_compose_v2_ps_after.stdout | length == 0
+            fail_msg: >-
+                compose project still has running containers after
+                state=absent: {{ docker_compose_v2_ps_after.stdout }}
+            success_msg: "compose project was torn down correctly"
