@@ -191,6 +191,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Role-internal registers now carry a role prefix**: every register in
+  `roles/helm` and `roles/k3s` was renamed to `_<role>_<name>`, so
+  role-internal state no longer leaks into the play namespace. This covers
+  both the 12 registers that carried no role prefix at all (`cluster_token`,
+  `kubeconfig_check`, `facts_check` → `_k3s_cluster_token`,
+  `_helm_kubeconfig_check`, `_k3s_facts_check`) and the 16 that already had
+  one but no leading underscore (`helm_repo_check`, `k3s_release_checksum`,
+  `k3s_selinux_restorecon` → `_helm_repo_check`, `_k3s_release_checksum`,
+  `_k3s_selinux_restorecon`). The second group was already lint-clean;
+  renaming it keeps a single style inside the two roles. The molecule verify
+  playbooks for `docker` and `k3s` use the plain `<role>_<name>` form, since
+  play-level variables are not role-internal. `k3s_token`, `k3s_token_file`
+  and `k3s_token_source` are the role interface and are unchanged.
+- **`ansible-lint` runs the production profile**: `.ansible-lint` gains
+  `profile: production` and `strict: true`, and drops
+  `var-naming[no-role-prefix]` from `skip_list`, which turns the prefix
+  convention into an enforced rule. `package-latest` stays skipped.
 - **BREAKING — k3s hardening now applies by default**: `k3s_secrets_encryption`,
   `k3s_anonymous_auth`, `k3s_node_restriction` and
   `k3s_kubelet_read_only_port_disabled` take effect on existing clusters running

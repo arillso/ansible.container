@@ -8,14 +8,14 @@
       kind: CustomResourceDefinition
       name: helmcharts.helm.cattle.io
       kubeconfig: "{{ helm_kubeconfig_path }}"
-  register: helm_crd_check
+  register: _helm_crd_check
   run_once: true
 
 - name: "Fail if Helm Controller CRD is not available"
   ansible.builtin.fail:
       msg: "Helm Controller CRD 'helmcharts.helm.cattle.io' is not available. Ensure K3s Helm Controller is running."
   when:
-      - helm_crd_check.resources | length == 0
+      - _helm_crd_check.resources | length == 0
   run_once: true
 
 - name: "Create namespaces for Helm charts"
@@ -59,7 +59,7 @@
   when:
       - helm_charts | length > 0
   run_once: true
-  register: charts_deployment_result
+  register: _helm_charts_deployment_result
 
 - name: "Wait for Helm charts to be ready"
   kubernetes.core.k8s_info:
@@ -76,7 +76,7 @@
   loop: "{{ helm_charts }}"
   when:
       - helm_deployment_wait | bool
-      - charts_deployment_result is changed
+      - _helm_charts_deployment_result is changed
   run_once: true
   retries: "{{ helm_validation_retries }}"
   delay: "{{ helm_validation_delay }}"
@@ -92,7 +92,7 @@
   when:
       - helm_charts | length > 0
   run_once: true
-  register: helm_charts_status
+  register: _helm_charts_status
 
 - name: "Summary of Helm chart deployments"
   ansible.builtin.debug:

@@ -5,7 +5,7 @@
 - name: Check if K3s facts are available
   ansible.builtin.debug:
       msg: "Checking K3s facts availability"
-  register: facts_check
+  register: _k3s_facts_check
   changed_when: false
 
 - name: Gather existing local facts
@@ -14,7 +14,7 @@
           - "!all"
           - "!any"
           - "local"
-  register: current_facts
+  register: _k3s_current_facts
 
 # Deploy K3s facts script to collect and provide cluster information
 - name: Create facts.d directory
@@ -32,7 +32,7 @@
       mode: "0755"
   when:
       - k3s_auto_facts | default(true) | bool
-  register: k3s_facts_script_deployed
+  register: _k3s_facts_script_deployed
 
 # Refresh facts after deploying facts script
 - name: Refresh local facts after facts deployment
@@ -41,4 +41,4 @@
           - "!all"
           - "!any"
           - "local"
-  when: k3s_facts_script_deployed is changed
+  when: _k3s_facts_script_deployed is changed

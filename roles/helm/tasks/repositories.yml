@@ -14,5 +14,5 @@
   when:
       - helm_repositories | length > 0
   run_once: true
-  register: helm_repo_check
+  register: _helm_repo_check
   failed_when: false # Don't fail on repository access issues

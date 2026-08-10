@@ -6,12 +6,12 @@
 - name: Verify K3s binary is installed
   ansible.builtin.stat:
       path: /usr/local/bin/k3s
-  register: k3s_binary_check
+  register: _k3s_binary_check
 
 - name: Fail if K3s binary is not found
   ansible.builtin.fail:
       msg: "K3s binary not found at /usr/local/bin/k3s. This task file should only run after K3s installation."
-  when: not k3s_binary_check.stat.exists
+  when: not _k3s_binary_check.stat.exists
 
 - name: Create K3s utility symlinks
   ansible.builtin.file:
@@ -33,7 +33,7 @@
       owner: root
       group: root
   become: true
-  register: k3s_env_file_result
+  register: _k3s_env_file_result
   notify: Restart k3s
   when: k3s_environment_vars | length > 0
 
@@ -52,7 +52,7 @@
       sleep: "{{ k3s_health_check_sleep }}"
   when:
       - k3s_role == "server"
-      - k3s_env_file_result.changed | default(false)
+      - _k3s_env_file_result.changed | default(false)
 
 - name: Create bash completion directory
   ansible.builtin.file:
@@ -70,7 +70,7 @@
   ansible.builtin.command:
       cmd: /usr/local/bin/k3s completion bash
   become: true
-  register: k3s_completion_test
+  register: _k3s_completion_test
   changed_when: false
   failed_when: false
   when:
@@ -79,7 +79,7 @@
 
 - name: Create K3s bash completion
   ansible.builtin.copy:
-      content: "{{ k3s_completion_test.stdout }}\n"
+      content: "{{ _k3s_completion_test.stdout }}\n"
       dest: /etc/bash_completion.d/k3s
       mode: "0644"
       owner: root
@@ -88,14 +88,14 @@
   when:
       - k3s_create_bash_completion | default(true) | bool
       - ansible_facts['os_family'] in ['Debian', 'RedHat']
-      - k3s_completion_test.rc is defined
-      - k3s_completion_test.rc == 0
+      - _k3s_completion_test.rc is defined
+      - _k3s_completion_test.rc == 0
 
 - name: Generate kubectl bash completion
   ansible.builtin.command:
       cmd: /usr/local/bin/kubectl completion bash
   become: true
-  register: k3s_kubectl_completion_test
+  register: _k3s_kubectl_completion_test
   changed_when: false
   failed_when: false
   when:
@@ -106,7 +106,7 @@
 
 - name: Create kubectl bash completion (if kubectl symlink exists)
   ansible.builtin.copy:
-      content: "{{ k3s_kubectl_completion_test.stdout }}\n"
+      content: "{{ _k3s_kubectl_completion_test.stdout }}\n"
       dest: /etc/bash_completion.d/kubectl
       mode: "0644"
       owner: root
@@ -117,5 +117,5 @@
       - k3s_create_symlinks | bool
       - "'kubectl' in k3s_symlink_commands"
       - ansible_facts['os_family'] in ['Debian', 'RedHat']
-      - k3s_kubectl_completion_test.rc is defined
-      - k3s_kubectl_completion_test.rc == 0
+      - _k3s_kubectl_completion_test.rc is defined
+      - _k3s_kubectl_completion_test.rc == 0
