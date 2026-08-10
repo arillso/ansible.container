@@ -1,0 +1,26 @@
+---
+# systemd unit management for k3s
+
+- name: Create k3s systemd service
+  ansible.builtin.template:
+      src: etc/systemd/system/k3s.service.j2
+      dest: "/etc/systemd/system/k3s.service"
+      mode: "0644"
+      owner: root
+      group: root
+  become: true
+  notify:
+      - Reload systemd
+      - Restart k3s
+
+- name: Enable and start k3s service
+  ansible.builtin.systemd:
+      name: k3s
+      enabled: "{{ k3s_service_enabled }}"
+      state: "{{ k3s_service_state }}"
+      daemon_reload: true
+  become: true
+
+# Flush handlers before health check so server restarts before agents try to connect
+- name: Flush handlers to apply service restarts
+  ansible.builtin.meta: flush_handlers

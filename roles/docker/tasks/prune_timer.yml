@@ -1,0 +1,21 @@
+---
+# Docker prune service and timer units
+
+- name: Create Docker Prune Service and Timer Files
+  ansible.builtin.include_role:
+      name: arillso.system.systemd
+  vars:
+      # Only the unit-file entry point; service/journald management stays
+      # off so this call just writes the prune unit files.
+      systemd_service_enabled: false
+      systemd_journald_enabled: false
+      systemd_units: "{{ docker_systemd_units }}"
+
+- name: Enable and start systemd timers for Docker
+  become: true
+  ansible.builtin.systemd:
+      name: "{{ item.name }}"
+      enabled: true
+      daemon_reload: true
+  loop: "{{ docker_systemd_units }}"
+  when: item.name is search('\.timer$')

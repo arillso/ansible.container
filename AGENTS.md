@@ -48,6 +48,24 @@ Each role follows standard Ansible role structure:
 - `meta/` - Role metadata with `argument_specs.yml` (required)
 - `molecule/` - Molecule tests (role-level testing)
 
+### tasks/main.yml as Dispatcher
+
+`tasks/main.yml` dispatches, it does not implement. It holds the role-level
+validation, the flow-control tasks (`include_vars`, `meta`) and one
+`include_tasks` per topic file; the implementation lives in the topic files.
+
+- Topic files carry no name prefix. Existing files are named after their topic
+  (`facts.yml`, `security.yml`, `install.yml`, `configure.yml`).
+- Include order equals the previous task order. `set_fact` values are
+  host-scoped and only propagate forward across `include_tasks`.
+- Never put a tag on an include. A tag on an include is inherited by every task
+  in that file and changes tag selection. Tags stay on the individual tasks.
+
+Exception: `docker_login` consists of a single task
+(`community.docker.docker_login`). There is no second phase to split off, so a
+`main.yml` including one file with one task would be indirection without
+structural gain. The role stays as it is.
+
 ### Roles
 
 #### Docker Ecosystem

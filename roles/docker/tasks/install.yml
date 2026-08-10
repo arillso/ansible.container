@@ -1,0 +1,13 @@
+---
+# Docker Engine package installation
+
+- name: Install docker
+  become: true
+  ansible.builtin.package:
+      name: "{{ item }}"
+      state: present
+  with_items:
+      - "{{ docker_package }}"
+  notify:
+      - Start docker
+      - Enable docker

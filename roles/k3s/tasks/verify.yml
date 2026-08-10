@@ -1,0 +1,62 @@
+---
+# Post-installation health check, kubeconfig and uninstall script
+
+- name: Determine k3s server host for health check
+  ansible.builtin.set_fact:
+      k3s_health_check_host: >-
+          {%- if k3s_bind_address != '0.0.0.0' -%}
+            {{ k3s_bind_address }}
+          {%- elif ansible_facts['default_ipv4']['address'] is defined -%}
+            {{ ansible_facts['default_ipv4']['address'] }}
+          {%- elif k3s_node_ip is defined and k3s_node_ip -%}
+            {{ k3s_node_ip }}
+          {%- else -%}
+            127.0.0.1
+          {%- endif -%}
+  when: k3s_role == "server"
+
+- name: Wait for k3s to be ready
+  ansible.builtin.wait_for:
+      port: "{{ k3s_https_listen_port }}"
+      host: "{{ k3s_health_check_host }}"
+      delay: "{{ k3s_health_check_delay }}"
+      timeout: "{{ k3s_health_check_timeout }}"
+      sleep: "{{ k3s_health_check_sleep }}"
+  when: k3s_role == "server"
+
+- name: Check if kubeconfig exists
+  ansible.builtin.stat:
+      path: "{{ k3s_data_dir }}/server/cred/admin.kubeconfig"
+  become: true
+  register: _k3s_kubeconfig_check
+  when: k3s_role == "server"
+
+- name: Set kubeconfig permissions
+  ansible.builtin.file:
+      path: "{{ k3s_data_dir }}/server/cred/admin.kubeconfig"
+      mode: "{{ k3s_kubeconfig_mode }}"
+      owner: "{{ k3s_kubeconfig_owner }}"
+      group: "{{ k3s_kubeconfig_group }}"
+  become: true
+  when: _k3s_kubeconfig_check.stat.exists | default(false)
+
+- name: Create k3s uninstall script
+  ansible.builtin.template:
+      src: usr/local/bin/k3s-uninstall.sh.j2
+      dest: "/usr/local/bin/k3s-uninstall.sh"
+      mode: "0755"
+      owner: root
+      group: root
+  become: true
+  when: k3s_create_uninstall_script | bool
+
+# Post-installation facts refresh to capture new state
+- name: Refresh K3s facts after installation
+  ansible.builtin.setup:
+      gather_subset:
+          - "!all"
+          - "!any"
+          - "local"
+  tags:
+      - facts
+      - k3s_facts
