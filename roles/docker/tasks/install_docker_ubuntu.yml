@@ -54,15 +54,31 @@
 
 # apt matches an "=" pin against the full version string (epoch + distro
 # suffix) and does not expand globs in it, so the exact candidate has to be
-# looked up on the host. The pattern anchors on ":<version>-" so that 29.7.1
-# cannot match 29.7.10 and a bare prefix like "29.7" resolves to nothing
-# instead of an arbitrary patch release; regex_escape keeps the dots literal,
-# without it "29.7.1" would also match a "29X7X1" build.
+# looked up on the host. madison prints "<pkg> | <version> | <repo>", so the
+# middle field is taken and matched on "(^|:)<version>-": the version either
+# opens the string or follows the epoch colon, and the trailing hyphen keeps
+# 29.7.1 from taking 29.7.10 and rejects a bare prefix like "29.7". docker-ce
+# currently always carries an epoch, but docker-compose-plugin in the same
+# repository does not, so the epoch is matched as optional rather than
+# assumed. regex_escape keeps the dots literal; without it "29.7.1" would
+# also match a "29X7X1" build.
 - name: "Ubuntu : resolve the apt version string for the pin"
   ansible.builtin.command:
       cmd: apt-cache madison docker-ce
   register: docker_madison
   changed_when: false
+  when: docker_version != ''
+
+# The match is resolved inside {{ }} rather than in a bare `when:`, because
+# `when` evaluates its argument as raw Jinja and consumes the backslashes of
+# the regex differently, which silently turns the guard below into a no-op.
+- name: "Ubuntu : collect the matching apt version strings"
+  ansible.builtin.set_fact:
+      docker_apt_candidates: >-
+          {{ docker_madison.stdout_lines
+             | map('regex_replace', '^[^|]*\|\s*([^|]+?)\s*\|.*$', '\1')
+             | select('search', '(^|:)' ~ (docker_version | regex_escape) ~ '-')
+             | list }}
   when: docker_version != ''
 
 - name: "Ubuntu : fail when the pinned docker version is not in the repository"
@@ -75,14 +91,9 @@
           the release is removed.
   when:
       - docker_version != ''
-      - docker_madison.stdout_lines
-        | select('search', ':' ~ (docker_version | regex_escape) ~ '-')
-        | list | length == 0
+      - docker_apt_candidates | length == 0
 
 - name: "Ubuntu : set the resolved apt version string"
   ansible.builtin.set_fact:
-      docker_apt_version: >-
-          {{ (docker_madison.stdout_lines
-              | select('search', ':' ~ (docker_version | regex_escape) ~ '-')
-              | first).split('|')[1] | trim }}
+      docker_apt_version: "{{ docker_apt_candidates | first }}"
   when: docker_version != ''

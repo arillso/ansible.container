@@ -223,7 +223,26 @@ def test_apt_tasks_resolve_the_pin_and_fail_loudly(tasks_file):
     assert "apt-cache madison docker-ce" in text, tasks_file
     assert "docker_apt_version:" in text, tasks_file
     assert "ansible.builtin.fail:" in text, tasks_file
-    # the match must anchor on ":<version>-" so 29.7.1 cannot take 29.7.10,
-    # and regex_escape must keep the dots from matching arbitrary characters
+    # the match must anchor on "(^|:)<version>-" so 29.7.1 cannot take
+    # 29.7.10 and a package without an epoch still resolves, and regex_escape
+    # must keep the dots from matching arbitrary characters
     assert "regex_escape" in text, tasks_file
-    assert "':' ~ (docker_version | regex_escape) ~ '-'" in text, tasks_file
+    assert "'(^|:)' ~ (docker_version | regex_escape) ~ '-'" in text, tasks_file
+
+    # The regex must be evaluated inside {{ }}, never in a bare `when:`: there
+    # Jinja consumes the backslashes differently, the select matches nothing
+    # and the guard degrades into a no-op that fails every pinned run.
+    in_when = False
+    when_indent = 0
+    for line in text.splitlines():
+        if not line.strip():
+            continue
+        indent = len(line) - len(line.lstrip())
+        if in_when and indent <= when_indent and not line.lstrip().startswith("-"):
+            in_when = False
+        if in_when:
+            assert "regex_replace" not in line, (
+                f"{tasks_file}: regex evaluated in a bare when: -- {line.strip()}"
+            )
+        if line.lstrip().startswith("when:"):
+            in_when, when_indent = True, indent
