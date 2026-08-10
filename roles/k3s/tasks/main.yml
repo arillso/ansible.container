@@ -51,6 +51,15 @@
 - name: Verify the k3s installation
   ansible.builtin.include_tasks: verify.yml
 
+# Tagged like the facts.yml include above: a dynamic include is skipped as a
+# whole when its own tags do not match, so the refresh needs the tags here to
+# stay reachable under --tags facts / --tags k3s_facts.
+- name: Refresh the K3s facts after installation
+  ansible.builtin.include_tasks: refresh_facts.yml
+  tags:
+      - facts
+      - k3s_facts
+
 # Include post-installation utilities and symlinks
 - name: Include post-installation utilities and symlinks
   ansible.builtin.include_tasks: utilities.yml

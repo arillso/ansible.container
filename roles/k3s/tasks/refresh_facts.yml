@@ -1,0 +1,12 @@
+---
+# Post-installation facts refresh to capture new state
+
+- name: Refresh K3s facts after installation
+  ansible.builtin.setup:
+      gather_subset:
+          - "!all"
+          - "!any"
+          - "local"
+  tags:
+      - facts
+      - k3s_facts

@@ -58,8 +58,13 @@ validation, the flow-control tasks (`include_vars`, `meta`) and one
   (`facts.yml`, `security.yml`, `install.yml`, `configure.yml`).
 - Include order equals the previous task order. `set_fact` values are
   host-scoped and only propagate forward across `include_tasks`.
-- Never put a tag on an include. A tag on an include is inherited by every task
-  in that file and changes tag selection. Tags stay on the individual tasks.
+- Do not tag an include merely to label its contents — descriptive tags belong
+  on the individual tasks, because a tag on the include applies to every task in
+  the file. Functional tags stay on the include: `always`, or a topic tag when
+  the whole file should be selectable. A dynamic `include_tasks` is evaluated by
+  its own tags, so an untagged include is skipped whole under `--tags` and the
+  inner tasks are never reached. Where only part of a file must stay selectable,
+  split that part into its own include and tag that (see `refresh_facts.yml`).
 
 Exception: `docker_login` consists of a single task
 (`community.docker.docker_login`). There is no second phase to split off, so a
