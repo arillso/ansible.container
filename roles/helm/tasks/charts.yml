@@ -9,14 +9,12 @@
       name: helmcharts.helm.cattle.io
       kubeconfig: "{{ helm_kubeconfig_path }}"
   register: _helm_crd_check
-  run_once: true
 
 - name: "Fail if Helm Controller CRD is not available"
   ansible.builtin.fail:
       msg: "Helm Controller CRD 'helmcharts.helm.cattle.io' is not available. Ensure K3s Helm Controller is running."
   when:
       - _helm_crd_check.resources | length == 0
-  run_once: true
 
 - name: "Create namespaces for Helm charts"
   kubernetes.core.k8s:
@@ -29,7 +27,6 @@
   when:
       - item.create_namespace | default(helm_chart_defaults.create_namespace) | bool
       - item.namespace is defined or helm_chart_defaults.namespace != 'default'
-  run_once: true
 
 # Deploy all Helm charts
 - name: "Deploy Helm charts"
@@ -58,7 +55,6 @@
   loop: "{{ helm_charts }}"
   when:
       - helm_charts | length > 0
-  run_once: true
   register: _helm_charts_deployment_result
   # The k3s Helm controller owns the HelmChart it reconciles and writes back
   # to the spec, so the resource never matches what the role applied and this
@@ -87,7 +83,6 @@
       # molecule-idempotence-notest, so it is skipped there and never
       # registers its result.
       - _helm_charts_deployment_result | default({}) is changed
-  run_once: true
   retries: "{{ helm_validation_retries }}"
   delay: "{{ helm_validation_delay }}"
 
@@ -101,7 +96,6 @@
   loop: "{{ helm_charts }}"
   when:
       - helm_charts | length > 0
-  run_once: true
   register: _helm_charts_status
 
 - name: "Summary of Helm chart deployments"
@@ -118,4 +112,3 @@
           {% endfor %}
   when:
       - helm_charts | length > 0
-  run_once: true

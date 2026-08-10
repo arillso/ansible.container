@@ -13,6 +13,5 @@
   loop: "{{ helm_repositories | dict2items }}"
   when:
       - helm_repositories | length > 0
-  run_once: true
   register: _helm_repo_check
   failed_when: false # Don't fail on repository access issues
