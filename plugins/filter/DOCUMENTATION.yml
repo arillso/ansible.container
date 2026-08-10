@@ -99,7 +99,7 @@ filters:
             - apt matches an "=" pin against the full version string, which carries an optional epoch and a distro release suffix, and does not expand globs in that pin
             - A bare pin such as docker-ce=29.7.2 therefore never resolves, and neither does docker-ce=*29.7.2-*; only the string madison prints does
             - Returns none when the version is not in the repository, so the calling task can fail with a readable message instead of a Python traceback
-        version_added: "1.0.0"
+        version_added: "1.5.0"
         options:
             _input:
                 description:

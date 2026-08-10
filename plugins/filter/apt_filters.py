@@ -6,12 +6,10 @@
 from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
-import re
-
 DOCUMENTATION = r'''
 ---
 name: apt_version_pin
-version_added: "1.0.0"
+version_added: "1.5.0"
 short_description: Resolve an apt version pin from apt-cache madison output
 description:
     - Picks the full apt version string for a marketing version out of C(apt-cache madison) output.
@@ -63,6 +61,8 @@ _value:
         - C(None) when no line matches the requested version.
     type: str
 '''
+
+import re
 
 # madison prints "<pkg> | <version> | <repo>"; take the middle field.
 _MADISON_LINE = re.compile(r'^[^|]*\|\s*([^|]+?)\s*\|')
