@@ -1,0 +1,12 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  # No `docker_version` override on purpose: the absence of it IS the test.
+  # Every other docker scenario blanks the variable and therefore only ever
+  # exercises the unpinned branch, so the shipped default pin was never run
+  # by CI. This scenario installs the role exactly as a consumer gets it.
+  tasks:
+      - name: Include docker role
+        ansible.builtin.include_role:
+            name: arillso.container.docker
