@@ -1,0 +1,70 @@
+---
+# Server initialization decision and architecture detection for the binary download
+
+# Simplified server initialization logic using facts
+- name: Determine server initialization from facts
+  ansible.builtin.set_fact:
+      k3s_server_init: "{{ ansible_facts['ansible_local']['k3s'].cluster_info.should_init | bool }}"
+  when:
+      - k3s_role == 'server'
+      - not k3s_server_init | default(false) | bool # Only auto-determine if not explicitly set
+
+- name: Display cluster configuration from facts
+  ansible.builtin.debug:
+      msg: |
+          K3s Configuration (from facts):
+          - Role: {{ k3s_role }}
+          - Server Init: {{ k3s_server_init | default(false) }}
+          - Node: {{ inventory_hostname }}
+          - Node Type: {{ ansible_facts['ansible_local']['k3s'].node.type }}
+          - Cluster Initialized: {{ ansible_facts['ansible_local']['k3s'].cluster.initialized }}
+          - Server Responsive: {{ ansible_facts['ansible_local']['k3s'].cluster.server_responsive }}
+          - First Server: {{ ansible_facts['ansible_local']['k3s'].cluster.first_server }}
+          - Binary Installed: {{ ansible_facts['ansible_local']['k3s'].service.binary_installed }}
+          - Service Active: {{ ansible_facts['ansible_local']['k3s'].service.service_active }}
+          - Token Exists: {{ ansible_facts['ansible_local']['k3s'].cluster.token_exists }}
+          - Cluster Server URL: {{ ansible_facts['ansible_local']['k3s'].cluster_info.server_url }}
+          {% if ansible_facts['ansible_local']['k3s']._fallback_mode | default(false) %}
+          - [FALLBACK MODE] Facts collected via fallback mechanism
+          {% endif %}
+
+# Display auto-discovered configuration for agents
+- name: Display auto-discovered agent configuration
+  ansible.builtin.debug:
+      msg: |
+          K3s Agent Auto-Discovery Results:
+          - Server URL: {{ k3s_server_url | default('NOT SET') }}
+          - Token Status: {{ 'AVAILABLE' if k3s_token | default('') != '' else 'NOT AVAILABLE' }}
+          - Source: {{ 'Facts' if ansible_facts['ansible_local']['k3s'].cluster_info.server_url is defined and k3s_server_url == ansible_facts['ansible_local']['k3s'].cluster_info.server_url else 'Inventory Fallback' }}
+  when: k3s_role == "agent"
+
+# Architecture detection for K3s binary download
+- name: Detect system architecture
+  ansible.builtin.set_fact:
+      k3s_arch: >-
+          {%- if ansible_facts['architecture'] == "x86_64" -%}
+            amd64
+          {%- elif ansible_facts['architecture'] == "aarch64" -%}
+            arm64
+          {%- elif ansible_facts['architecture'] == "armv7l" -%}
+            arm
+          {%- elif ansible_facts['architecture'] == "s390x" -%}
+            s390x
+          {%- else -%}
+            {{ ansible_facts['architecture'] }}
+          {%- endif -%}
+
+- name: Set K3s binary suffix based on architecture
+  ansible.builtin.set_fact:
+      k3s_suffix: >-
+          {%- if k3s_arch == "amd64" -%}
+
+          {%- elif k3s_arch == "arm64" -%}
+            -arm64
+          {%- elif k3s_arch == "arm" -%}
+            -armhf
+          {%- elif k3s_arch == "s390x" -%}
+            -s390x
+          {%- else -%}
+            -{{ k3s_arch }}
+          {%- endif -%}

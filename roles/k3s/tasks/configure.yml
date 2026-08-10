@@ -1,0 +1,76 @@
+---
+# Configuration directory, agent validation and config file templating
+
+- name: Create k3s configuration directory
+  ansible.builtin.file:
+      path: "{{ k3s_config_dir }}"
+      state: directory
+      mode: "0700"
+      owner: root
+      group: root
+  become: true
+
+# Final validation for agents to ensure server connectivity before config creation
+- name: Validate agent configuration requirements
+  ansible.builtin.assert:
+      that:
+          - k3s_server_url is defined and k3s_server_url != ""
+          - k3s_token is defined and k3s_token != ""
+      fail_msg: |
+          K3s agent configuration incomplete after auto-discovery:
+          - Server URL: {{ k3s_server_url | default('NOT SET') }}
+          - Token: {{ 'SET' if k3s_token | default('') != '' else 'NOT SET' }}
+          Ensure K3s servers are deployed first and accessible from agents.
+      success_msg: "K3s agent configuration validated successfully"
+  when: k3s_role == "agent"
+
+- name: Create k3s audit policy
+  ansible.builtin.template:
+      src: etc/rancher/k3s/audit-policy.yaml.j2
+      dest: "{{ k3s_config_dir }}/audit-policy.yaml"
+      mode: "0600"
+      owner: root
+      group: root
+  become: true
+  when:
+      - k3s_role == "server"
+      - k3s_security_hardening | default(true) | bool
+      - k3s_audit_log_enabled | default(false) | bool
+  notify: Restart k3s
+
+- name: Create k3s Pod Security Admission config
+  ansible.builtin.template:
+      src: etc/rancher/k3s/psa-config.yaml.j2
+      dest: "{{ k3s_config_dir }}/psa-config.yaml"
+      mode: "0600"
+      owner: root
+      group: root
+  become: true
+  when:
+      - k3s_role == "server"
+      - k3s_security_hardening | default(true) | bool
+      - k3s_pod_security_admission_profile | default("") | length > 0
+  notify: Restart k3s
+
+- name: Create k3s config file
+  ansible.builtin.template:
+      src: "etc/rancher/k3s/{{ k3s_role }}-config.yaml.j2"
+      dest: "{{ k3s_config_dir }}/config.yaml"
+      mode: "0600"
+      owner: root
+      group: root
+  become: true
+  no_log: true
+  notify: Restart k3s
+
+- name: Create k3s registries config
+  ansible.builtin.template:
+      src: etc/rancher/k3s/registries.yaml.j2
+      dest: "{{ k3s_config_dir }}/registries.yaml"
+      mode: "0600"
+      owner: root
+      group: root
+  become: true
+  no_log: true
+  when: k3s_private_registries | length > 0
+  notify: Restart k3s

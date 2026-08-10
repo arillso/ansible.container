@@ -31,58 +31,14 @@
               - "install_docker_{{ ansible_facts['system'] | lower }}.yml"
               - "defaults.yml"
 
-- name: Install docker
-  become: true
-  ansible.builtin.package:
-      name: "{{ item }}"
-      state: present
-  with_items:
-      - "{{ docker_package }}"
-  notify:
-      - Start docker
-      - Enable docker
+- name: Install the docker packages
+  ansible.builtin.include_tasks: install.yml
 
-- name: Create docker directory
-  become: true
-  ansible.builtin.file:
-      path: "{{ item }}"
-      state: directory
-      owner: root
-      group: root
-      mode: "0700"
-  with_items:
-      - "/etc/docker"
+- name: Configure the docker daemon
+  ansible.builtin.include_tasks: configure.yml
 
-- name: Configure docker daemon
-  become: true
-  ansible.builtin.template:
-      backup: true
-      src: etc/docker/daemon.json.j2
-      dest: /etc/docker/daemon.json
-      mode: "0600"
-      owner: root
-      group: root
-  notify:
-      - Restart docker
-
-- name: Create Docker Prune Service and Timer Files
-  ansible.builtin.include_role:
-      name: arillso.system.systemd
-  vars:
-      # Only the unit-file entry point; service/journald management stays
-      # off so this call just writes the prune unit files.
-      systemd_service_enabled: false
-      systemd_journald_enabled: false
-      systemd_units: "{{ docker_systemd_units }}"
-
-- name: Enable and start systemd timers for Docker
-  become: true
-  ansible.builtin.systemd:
-      name: "{{ item.name }}"
-      enabled: true
-      daemon_reload: true
-  loop: "{{ docker_systemd_units }}"
-  when: item.name is search('\.timer$')
+- name: Set up the docker prune timer
+  ansible.builtin.include_tasks: prune_timer.yml
 
 - name: Run handlers
   ansible.builtin.meta: flush_handlers

@@ -1,0 +1,16 @@
+---
+# Docker Compose package installation and target directory
+
+- name: Install Docker Compose packages
+  become: true
+  ansible.builtin.package:
+      name: "{{ item.name }}"
+      state: present
+  loop: "{{ docker_compose_v2_packages }}"
+
+- name: Ensure Docker Compose directory exists with correct permissions
+  become: true
+  ansible.builtin.file:
+      path: "{{ docker_compose_v2_directory }}"
+      state: directory
+      mode: "0755"

@@ -1,0 +1,25 @@
+---
+# Docker daemon configuration
+
+- name: Create docker directory
+  become: true
+  ansible.builtin.file:
+      path: "{{ item }}"
+      state: directory
+      owner: root
+      group: root
+      mode: "0700"
+  with_items:
+      - "/etc/docker"
+
+- name: Configure docker daemon
+  become: true
+  ansible.builtin.template:
+      backup: true
+      src: etc/docker/daemon.json.j2
+      dest: /etc/docker/daemon.json
+      mode: "0600"
+      owner: root
+      group: root
+  notify:
+      - Restart docker
