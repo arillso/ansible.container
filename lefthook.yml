@@ -29,7 +29,12 @@ pre-commit:
         ansible-lint:
             glob: "{roles,plugins,tests,meta}/**/*.{yml,yaml}"
             exclude: "(^\\.ansible/)"
-            run: ansible-lint --profile=production {staged_files}
+            # --offline keeps the hook from resolving the collections declared
+            # in roles/*/molecule/*/requirements.yml against galaxy.ansible.com.
+            # Without it a machine lacking Galaxy egress fails the hook and
+            # blocks the commit, which pushes people to --no-verify and drops
+            # the gitleaks hook below with it. CI lints online and is unchanged.
+            run: ansible-lint --offline --profile=production {staged_files}
         actionlint:
             glob: ".github/workflows/*.{yml,yaml}"
             run: actionlint {staged_files}
