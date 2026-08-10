@@ -61,6 +61,17 @@ argument_specs:
                         default: "5m"
                         description: "Default timeout for Helm operations"
 
+            helm_kubeconfig_path:
+                type: "str"
+                required: false
+                default: ""
+                description: |
+                    Path to the kubeconfig file used for all Kubernetes calls.
+                    Leave empty to autodetect the first existing file among
+                    /etc/rancher/k3s/k3s.yaml,
+                    /var/lib/rancher/k3s/server/cred/admin.kubeconfig,
+                    /root/.kube/config and ~/.kube/config.
+
             helm_validation_enabled:
                 type: "bool"
                 required: false

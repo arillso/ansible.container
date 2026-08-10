@@ -26,6 +26,10 @@ helm_chart_defaults:
     create_namespace: false
     timeout: "5m"
 
+# Empty so prerequisites.yml autodetects the path; a non-empty value here
+# would skip that detection.
+helm_kubeconfig_path: ""
+
 helm_validation_enabled: true
 helm_validation_retries: 10
 helm_validation_delay: 30
