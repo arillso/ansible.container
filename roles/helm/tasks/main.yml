@@ -17,17 +17,18 @@
       - helm-dependencies
       - system-packages
 
+# arillso.system.packages drives ansible.builtin.apt throughout and
+# advertises Debian and Ubuntu only, so it cannot serve the EL 9 platform
+# this role declares. A single package needs no package-manager wrapper.
 - name: Install Python packages for Kubernetes
-  ansible.builtin.include_role:
-      name: arillso.system.packages
-      tasks_from: packages
-  vars:
-      packages_list:
-          - name: "python3-kubernetes"
-            state: "present"
-      packages_retry_count: 3
-      packages_retry_delay: 10
-
+  ansible.builtin.package:
+      name: python3-kubernetes
+      state: present
+  become: true
+  register: _helm_python_client_install
+  retries: 3
+  delay: 10
+  until: _helm_python_client_install is succeeded
   tags:
       - helm
       - helm-dependencies
