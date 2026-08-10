@@ -19,10 +19,22 @@
 
 # arillso.system.packages drives ansible.builtin.apt throughout and
 # advertises Debian and Ubuntu only, so it cannot serve the EL 9 platform
-# this role declares. A single package needs no package-manager wrapper.
-- name: Install Python packages for Kubernetes
+# this role declares. The client comes from PyPI rather than the
+# distribution, because python3-kubernetes is a Debian name and the EL 9
+# equivalent lives in EPEL, which is not enabled by default.
+- name: Install pip for the Kubernetes Python client
   ansible.builtin.package:
-      name: python3-kubernetes
+      name: python3-pip
+      state: present
+  become: true
+  tags:
+      - helm
+      - helm-dependencies
+      - system-packages
+
+- name: Install Python packages for Kubernetes
+  ansible.builtin.pip:
+      name: kubernetes
       state: present
   become: true
   register: _helm_python_client_install

@@ -43,9 +43,17 @@
 
       # The tailscale role talks to the API through kubernetes.core and,
       # like the fleet role, does not install the Python client itself.
-      - name: Install the Kubernetes Python client
+      # Installed from PyPI rather than the distribution: python3-kubernetes
+      # is a Debian name, and the EL 9 equivalent lives in EPEL, which the
+      # Rocky cloud image does not enable.
+      - name: Install pip for the Kubernetes Python client
         ansible.builtin.package:
-            name: python3-kubernetes
+            name: python3-pip
+            state: present
+
+      - name: Install the Kubernetes Python client
+        ansible.builtin.pip:
+            name: kubernetes
             state: present
 
       - name: Install the helm binary
