@@ -1,12 +1,91 @@
 ---
-# Verify is not part of the test_sequence for this syntax-only
-# scenario (the role needs a live Kubernetes cluster to converge, so
-# there is nothing host-local to assert). Kept as a placeholder so the
-# provisioner playbook reference resolves.
+# Asserts the full chain the role is responsible for: the HelmChart CR it
+# applied, the install Job the k3s Helm controller derived from it, and
+# the workload that Job released. Anything short of the Pod would pass
+# even if the controller never acted on the CR.
+#
+# Scoped to a single host, mirroring the role: every task in charts.yml
+# carries run_once, so the CR is applied to exactly one of the two VMs.
+# Each VM is its own k3s cluster, so asserting on both would fail on
+# whichever host the role skipped. run_once picks the same host the role
+# did, which keeps the assertions valid on either platform.
 - name: Verify
   hosts: all
-  gather_facts: false
+  become: true
+  vars:
+      helm_verify_kubeconfig: /etc/rancher/k3s/k3s.yaml
   tasks:
-      - name: No host-local verification for a cluster-bound role
-        ansible.builtin.debug:
-            msg: "helm requires a live Kubernetes cluster; verify is deferred."
+      - name: Fetch the HelmChart resource
+        kubernetes.core.k8s_info:
+            api_version: helm.cattle.io/v1
+            kind: HelmChart
+            name: podinfo
+            # charts.yml pins the CR to kube-system regardless of the
+            # chart's target namespace.
+            namespace: kube-system
+            kubeconfig: "{{ helm_verify_kubeconfig }}"
+        register: helm_verify_chart
+        run_once: true
+
+      - name: Assert the HelmChart carries the role's spec and labels
+        ansible.builtin.assert:
+            that:
+                - helm_verify_chart.resources | length == 1
+                - helm_verify_chart.resources[0].spec.chart == "podinfo"
+                - helm_verify_chart.resources[0].spec.version == "6.14.1"
+                - helm_verify_chart.resources[0].spec.targetNamespace == "podinfo"
+                - >-
+                    helm_verify_chart.resources[0].metadata.labels['app.kubernetes.io/managed-by']
+                    == "ansible-helm-role"
+            fail_msg: "HelmChart 'podinfo' is missing or does not match the converge spec"
+            success_msg: "HelmChart 'podinfo' applied with the expected spec"
+        run_once: true
+
+      - name: Fetch the Helm install Job
+        kubernetes.core.k8s_info:
+            api_version: batch/v1
+            kind: Job
+            name: helm-install-podinfo
+            namespace: kube-system
+            kubeconfig: "{{ helm_verify_kubeconfig }}"
+        register: helm_verify_job
+        run_once: true
+
+      - name: Assert the install Job succeeded
+        ansible.builtin.assert:
+            that:
+                - helm_verify_job.resources | length == 1
+                - helm_verify_job.resources[0].status.succeeded | default(0) | int >= 1
+            fail_msg: "Helm install Job 'helm-install-podinfo' did not complete successfully"
+            success_msg: "Helm install Job 'helm-install-podinfo' completed"
+        run_once: true
+
+      - name: Fetch the released pods
+        kubernetes.core.k8s_info:
+            api_version: v1
+            kind: Pod
+            namespace: podinfo
+            label_selectors:
+                - app.kubernetes.io/name=podinfo
+            kubeconfig: "{{ helm_verify_kubeconfig }}"
+        register: helm_verify_pods
+        # The Job reports success once helm finished; the pod may need a
+        # moment more to pass its readiness probe.
+        until: >-
+            helm_verify_pods.resources
+            | selectattr('status.phase', 'equalto', 'Running')
+            | list | length >= 1
+        retries: 30
+        delay: 10
+        run_once: true
+
+      - name: Assert the chart released a running pod
+        ansible.builtin.assert:
+            that:
+                - >-
+                    helm_verify_pods.resources
+                    | selectattr('status.phase', 'equalto', 'Running')
+                    | list | length >= 1
+            fail_msg: "No running podinfo pod in namespace 'podinfo'"
+            success_msg: "Chart released a running pod in namespace 'podinfo'"
+        run_once: true

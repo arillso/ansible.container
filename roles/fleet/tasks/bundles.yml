@@ -18,13 +18,15 @@
       - fleet-bundles
       - fleet-namespace
 
-# Each Bundle apply blocks up to wait_timeout (Ready condition). Run the
-# applies in parallel (async/poll:0) so total runtime is bounded by the
-# slowest Bundle, not the sum. The blocking wait stays inside each async
-# job (the k8s module still runs wait:true in the background); async_status
-# only polls for module completion.
-- name: "Manage Fleet Bundles (async)"
-  kubernetes.core.k8s: &fleet_bundle_apply
+# Each Bundle apply blocks up to wait_timeout (Ready condition). These used
+# to be fired in parallel via async/poll:0, but kubernetes.core.k8s ships an
+# action plugin wrapper that never sets _supports_async, so ActionBase.run()
+# rejects the task before the module runs ("This action (kubernetes.core.k8s)
+# does not support async"). That path could never run — only check_mode ever
+# reached the synchronous fallback.
+- name: "Manage Fleet Bundles"
+  kubernetes.core.k8s:
+      kubeconfig: "{{ fleet_kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
       definition:
           apiVersion: "{{ fleet_api_version }}"
           kind: Bundle
@@ -33,114 +35,68 @@
               namespace: "{{ item.namespace | default(fleet_defaults.namespace) }}"
               labels: "{{ item.labels | combine({'app.kubernetes.io/managed-by': 'ansible', 'app.kubernetes.io/component': 'fleet-bundle'}) }}"
               annotations: "{{ item.annotations | default({}) }}"
+          # Optional fields are omitted rather than sent as an empty value.
+          # The API drops empty strings, empty collections and false
+          # booleans it treats as unset, so sending them made every apply
+          # differ from the stored object: the resource's generation
+          # incremented on each run and the role never reported the same
+          # state twice.
           spec:
               namespace: "{{ item.target_namespace | default(item.namespace | default(fleet_defaults.namespace)) }}"
-              defaultNamespace: "{{ item.default_namespace | default('') }}"
+              defaultNamespace: "{{ item.default_namespace | default(omit) }}"
               serviceAccount: "{{ item.service_account | default(fleet_defaults.service_account) }}"
               forceSyncGeneration: "{{ item.force_update | default(fleet_defaults.force_update) | int }}"
-              paused: "{{ item.paused | default(false) | bool }}"
+              paused: "{{ item.paused | default(omit) | bool if item.paused is defined else omit }}"
               rolloutStrategy:
                   maxUnavailable: "{{ item.rollout_strategy.max_unavailable | default(1) }}"
                   maxUnavailablePartitions: "{{ item.rollout_strategy.max_unavailable_partitions | default(0) }}"
                   autoPartitionSize: "{{ item.rollout_strategy.auto_partition_size | default(0) }}"
-                  partitions: "{{ item.rollout_strategy.partitions | default([]) }}"
-              targets: "{{ item.targets | default([]) }}"
-              targetRestrictions: "{{ item.target_restrictions | default([]) }}"
-              dependsOn: "{{ item.depends_on | default([]) }}"
-              resources: "{{ item.resources | default([]) }}"
+                  partitions: "{{ item.rollout_strategy.partitions | default(omit) }}"
+              # Same snake_case -> camelCase transform as gitrepos.yml: the
+              # argument spec documents snake_case keys (cluster_selector,
+              # match_labels) for targets, so they have to be converted to the
+              # API's spelling here rather than passed through verbatim.
+              targets: "{{ item.targets | default([]) | arillso.container.fleet_transform_targets }}"
+              targetRestrictions: "{{ item.target_restrictions | default(omit) }}"
+              dependsOn: "{{ item.depends_on | default(omit) }}"
+              resources: "{{ item.resources | default(omit) }}"
               helm:
-                  chart: "{{ item.helm.chart | default('') }}"
-                  repo: "{{ item.helm.repo | default('') }}"
-                  version: "{{ item.helm.version | default('') }}"
+                  chart: "{{ item.helm.chart | default(omit) }}"
+                  repo: "{{ item.helm.repo | default(omit) }}"
+                  version: "{{ item.helm.version | default(omit) }}"
                   releaseName: "{{ item.helm.release_name | default(item.name) }}"
                   values: "{{ item.helm.values | default({}) }}"
-                  valuesFiles: "{{ item.helm.values_files | default([]) }}"
-                  valuesFrom: "{{ item.helm.values_from | default([]) }}"
-                  force: "{{ item.helm.force | default(false) | bool }}"
-                  takeOwnership: "{{ item.helm.take_ownership | default(false) | bool }}"
+                  valuesFiles: "{{ item.helm.values_files | default(omit) }}"
+                  valuesFrom: "{{ item.helm.values_from | default(omit) }}"
+                  force: "{{ item.helm.force | default(omit) }}"
+                  takeOwnership: "{{ item.helm.take_ownership | default(omit) }}"
                   maxHistory: "{{ item.helm.max_history | default(5) | int }}"
-                  timeout: "{{ item.helm.timeout | default('5m') }}"
-                  timeoutForceDelete: "{{ item.helm.timeout_force_delete | default(false) | bool }}"
-                  atomic: "{{ item.helm.atomic | default(false) | bool }}"
-                  disablePreProcess: "{{ item.helm.disable_pre_process | default(false) | bool }}"
+                  atomic: "{{ item.helm.atomic | default(omit) }}"
+                  disablePreProcess: "{{ item.helm.disable_pre_process | default(omit) }}"
               kustomize:
-                  dir: "{{ item.kustomize.dir | default('') }}"
-              yodaMode:
-                  enabled: "{{ item.yoda_mode.enabled | default(false) | bool }}"
+                  dir: "{{ item.kustomize.dir | default(omit) }}"
               correctDrift:
-                  enabled: "{{ item.correct_drift.enabled | default(false) | bool }}"
-                  force: "{{ item.correct_drift.force | default(false) | bool }}"
-                  keepFailHistory: "{{ item.correct_drift.keep_fail_history | default(1) | int }}"
-              keepResources: "{{ item.keep_resources | default(false) | bool }}"
+                  enabled: "{{ item.correct_drift.enabled | default(omit) }}"
+                  force: "{{ item.correct_drift.force | default(omit) }}"
+                  keepFailHistory: "{{ item.correct_drift.keep_fail_history | default(omit) }}"
+              keepResources: "{{ item.keep_resources | default(omit) }}"
               diff:
-                  comparePatches: "{{ item.diff.compare_patches | default([]) }}"
+                  comparePatches: "{{ item.diff.compare_patches | default(omit) }}"
       state: "{{ fleet_state }}"
+      # Server-side apply, so the comparison runs against the fields this
+      # role owns. Without it the module patches and reports changed
+      # whenever the live object carries a server-defaulted field the
+      # role never sent (spec.targetCustomizationMode), which no amount
+      # of omitting on our side can match.
+      apply: true
       wait: true
       wait_condition:
           type: Ready
           status: "True"
       wait_timeout: 300
   loop: "{{ fleet_bundles }}"
-  when:
-      - fleet_bundles | length > 0
-      - fleet_async_enabled | bool
-      - not ansible_check_mode
-  async: "{{ fleet_async_timeout }}"
-  poll: 0
-  # Fire-and-forget always reports changed (no module result yet); the real
-  # changed/failed status is surfaced by the async_status wait task below.
-  changed_when: false
-  register: fleet_bundle_async
-  tags:
-      - fleet
-      - fleet-bundles
-
-- name: "Wait for Fleet Bundle apply jobs"
-  ansible.builtin.async_status:
-      jid: "{{ item.ansible_job_id }}"
-  loop: "{{ fleet_bundle_async.results | default([]) }}"
-  loop_control:
-      label: "{{ item.item.name | default('') }}"
-  when:
-      - fleet_bundles | length > 0
-      - fleet_async_enabled | bool
-      - not ansible_check_mode
-      - item.ansible_job_id is defined
-  register: fleet_bundle_async_wait
-  until: fleet_bundle_async_wait.finished
-  retries: "{{ fleet_async_retries }}"
-  delay: "{{ fleet_async_delay }}"
-  tags:
-      - fleet
-      - fleet-bundles
-
-# Synchronous fallback: check_mode (async unsupported) or async disabled.
-- name: "Manage Fleet Bundles (sync)"
-  kubernetes.core.k8s: *fleet_bundle_apply
-  loop: "{{ fleet_bundles }}"
-  when:
-      - fleet_bundles | length > 0
-      - not (fleet_async_enabled | bool) or ansible_check_mode
-  register: fleet_bundle_sync
-  tags:
-      - fleet
-      - fleet-bundles
-
-# Normalize both paths to a single .results shape carrying the original
-# bundle as .item, so downstream consumers stay path-agnostic. The
-# async_status loop nests the original bundle at item.item.item; the sync
-# path already exposes it at item.item.
-- name: "Collect Fleet Bundle deployment results"
-  ansible.builtin.set_fact:
-      fleet_bundle_results:
-          results: >-
-              {{
-                (fleet_bundle_sync.results | default([]))
-                if (not (fleet_async_enabled | bool) or ansible_check_mode)
-                else (fleet_bundle_async_wait.results | default([]))
-                     | map(attribute='item') | list
-              }}
   when: fleet_bundles | length > 0
+  register: fleet_bundle_results
   tags:
       - fleet
       - fleet-bundles

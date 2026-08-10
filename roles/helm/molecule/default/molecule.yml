@@ -1,14 +1,12 @@
 ---
-# SYNTAX-ONLY scenario.
+# Full converge against an ephemeral k3s cluster.
 #
 # The helm role drives a live Kubernetes API (HelmChart CRDs via
-# kubernetes.core / the k3s Helm controller). It cannot converge
-# without a running cluster, and standing up k3s here would make this
-# leg slow (~10 min VM + cluster) and flaky. We therefore stop the
-# test_sequence after `syntax`, which still catches playbook/role
-# wiring and template errors cheaply. A full converge against a real
-# cluster is deferred (mirrors how kernel-/cluster-bound roles are
-# documented elsewhere in the collection).
+# kubernetes.core / the k3s Helm controller). `prepare.yml` stands that
+# cluster up inside this VM, so the role is exercised end to end without
+# an external cluster and without credentials: the CR is applied, the
+# k3s Helm controller picks it up, and verify asserts the resulting
+# install Job and Pod.
 dependency:
     name: galaxy
     options:
@@ -26,7 +24,7 @@ platforms:
       network_ssh_port: 2222
       network_ssh_user: ubuntu
       vm_cpus: 2
-      vm_memory: 2048
+      vm_memory: 3072
 
     - name: helm-rocky-9
       image_url: https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2
@@ -64,6 +62,7 @@ provisioner:
             helm-rocky-9:
                 ansible_become: true
     playbooks:
+        prepare: prepare.yml
         converge: converge.yml
         verify: verify.yml
 
@@ -77,5 +76,10 @@ scenario:
         - cleanup
         - destroy
         - syntax
+        - create
+        - prepare
+        - converge
+        - idempotence
+        - verify
         - cleanup
         - destroy

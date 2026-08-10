@@ -1,10 +1,54 @@
 ---
-# Exercised by the `syntax` step only (see molecule.yml). Converge
-# against a live cluster is deferred; the role needs a running
-# Kubernetes API with Rancher Fleet installed to apply its CRDs.
 - name: Converge
   hosts: all
   become: true
+  vars:
+      fleet_enable_gitrepos: true
+      fleet_enable_bundles: true
+      # A public read-only repository: the GitRepo CR only has to be
+      # accepted and reconciled by the Fleet controller, so no git
+      # credentials are involved and none are configured below.
+      fleet_gitrepos:
+          - name: molecule-gitrepo
+            namespace: fleet-local
+            repository: "https://github.com/rancher/fleet-examples.git"
+            branch: master
+            paths:
+                - simple
+      # labels is not optional: bundles.yml combines it without a
+      # default, so a bundle without labels fails to template.
+      fleet_bundles:
+          - name: molecule-bundle
+            namespace: fleet-local
+            labels:
+                molecule.test/scenario: default
+            # The apply blocks on the Ready condition. Target the local
+            # cluster explicitly so the Bundle actually has somewhere to
+            # deploy — with no targets it has nothing to become ready
+            # for, and the wait would ride out its timeout.
+            #
+            # snake_case as the argument spec documents it; the role
+            # converts the keys to the API's camelCase spelling.
+            targets:
+                - name: local
+                  cluster_selector: {}
+            resources:
+                - content: |
+                      apiVersion: v1
+                      kind: ConfigMap
+                      metadata:
+                          name: molecule-bundle-config
+                      data:
+                          scenario: default
+                  name: configmap.yaml
+      # Deliberately not exercised here:
+      # - fleet_workspaces needs management.cattle.io/v3 (Rancher only),
+      #   which standalone Fleet does not serve.
+      # - fleet_registration_tokens: the controller rotates the token
+      #   secret after ttl, so the resource never settles for
+      #   idempotence.
+      # - fleet_clusters needs the kubeconfig secret of a second
+      #   cluster (clusters.yml), which this single node cannot provide.
   tasks:
       - name: Include fleet role
         ansible.builtin.include_role:

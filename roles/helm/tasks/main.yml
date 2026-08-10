@@ -1,16 +1,53 @@
 ---
-# Install required Python dependencies for Kubernetes operations
-- name: Install Python packages for Kubernetes
-  ansible.builtin.include_role:
-      name: arillso.system.packages
-      tasks_from: packages
-  vars:
-      packages_list:
-          - name: "python3-kubernetes"
-            state: "present"
-      packages_retry_count: 3
-      packages_retry_delay: 10
+# Install required Python dependencies for Kubernetes operations.
+# The packages role's `packages` entry point runs unhold/remove/install/hold
+# only — it never includes cache.yml, and install.yml pins
+# `update_cache: false`. On a host whose apt cache is empty (a fresh VM, as in
+# the molecule scenarios) the package is then unfindable, so refresh the cache
+# here first.
+- name: Update the package cache for the Kubernetes Python client
+  ansible.builtin.apt:
+      update_cache: true
+      cache_valid_time: 3600
+  become: true
+  when: ansible_facts['pkg_mgr'] in ['apt', 'apt-get']
+  changed_when: false
+  tags:
+      - helm
+      - helm-dependencies
+      - system-packages
 
+# arillso.system.packages drives ansible.builtin.apt throughout and
+# advertises Debian and Ubuntu only, so it cannot serve the EL 9 platform
+# this role declares. The client comes from PyPI rather than the
+# distribution, because python3-kubernetes is a Debian name and the EL 9
+# equivalent lives in EPEL, which is not enabled by default.
+- name: Install pip for the Kubernetes Python client
+  ansible.builtin.package:
+      name: python3-pip
+      state: present
+  become: true
+  tags:
+      - helm
+      - helm-dependencies
+      - system-packages
+
+# oauthlib is listed explicitly because pip leaves a distribution-provided
+# copy in place: EL 9 ships oauthlib 3.1.1 as an RPM, while the kubernetes
+# client pulls requests-oauthlib, which needs SIGNATURE_RSA from a newer
+# oauthlib. Without the upgrade the install succeeds and the very next
+# module import dies with "cannot import name 'SIGNATURE_RSA'".
+- name: Install Python packages for Kubernetes
+  ansible.builtin.pip:
+      name:
+          - kubernetes
+          - oauthlib>=3.2.0
+      state: present
+  become: true
+  register: _helm_python_client_install
+  retries: 3
+  delay: 10
+  until: _helm_python_client_install is succeeded
   tags:
       - helm
       - helm-dependencies

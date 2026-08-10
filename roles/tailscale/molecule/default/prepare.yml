@@ -1,0 +1,114 @@
+---
+# Stand up an ephemeral k3s cluster with the Tailscale operator's CRDs
+# registered, so the tailscale role can converge against the real
+# tailscale.com API. Deliberately no real tailnet: the operator is
+# installed with dummy OAuth credentials purely to register its CRDs.
+- name: Prepare
+  hosts: all
+  become: true
+  vars:
+      k3s_disable_traefik: true
+      k3s_disable_servicelb: true
+      k3s_write_kubeconfig_mode: "0644"
+      # The chart repo is the datasource, not tailscale/tailscale GitHub
+      # releases: the client is released ahead of the Helm chart, so
+      # tracking releases pins a chart version that does not exist yet.
+      # renovate: datasource=helm depName=tailscale-operator registryUrl=https://pkgs.tailscale.com/helmcharts
+      tailscale_prepare_chart_version: "1.98.9"
+      tailscale_prepare_chart_repo: "https://pkgs.tailscale.com/helmcharts"
+      tailscale_prepare_kubeconfig: /etc/rancher/k3s/k3s.yaml
+  tasks:
+      - name: Include k3s role
+        ansible.builtin.include_role:
+            name: arillso.container.k3s
+
+      - name: Wait for the k3s kubeconfig to appear
+        ansible.builtin.wait_for:
+            path: "{{ tailscale_prepare_kubeconfig }}"
+            state: present
+            timeout: 300
+
+      - name: Wait for the node to register as Ready
+        ansible.builtin.command: kubectl wait --for=condition=Ready node --all --timeout=300s
+        changed_when: false
+        environment:
+            KUBECONFIG: "{{ tailscale_prepare_kubeconfig }}"
+
+      # `package` cannot refresh apt metadata, so the Debian family needs
+      # an explicit cache update before the install below.
+      - name: Refresh apt cache on the Debian family
+        ansible.builtin.apt:
+            update_cache: true
+        when: ansible_facts['os_family'] == "Debian"
+
+      # The tailscale role talks to the API through kubernetes.core and,
+      # like the fleet role, does not install the Python client itself.
+      # Installed from PyPI rather than the distribution: python3-kubernetes
+      # is a Debian name, and the EL 9 equivalent lives in EPEL, which the
+      # Rocky cloud image does not enable.
+      - name: Install pip for the Kubernetes Python client
+        ansible.builtin.package:
+            name: python3-pip
+            state: present
+
+      # oauthlib is listed explicitly because pip leaves the RPM-provided
+      # 3.1.1 in place on EL 9, and requests-oauthlib then fails to import
+      # SIGNATURE_RSA from it.
+      - name: Install the Kubernetes Python client
+        ansible.builtin.pip:
+            name:
+                - kubernetes
+                - oauthlib>=3.2.0
+            state: present
+
+      - name: Install the helm binary
+        ansible.builtin.unarchive:
+            src: "https://get.helm.sh/helm-v{{ tailscale_prepare_helm_version }}-linux-amd64.tar.gz"
+            dest: /usr/local/bin
+            remote_src: true
+            extra_opts:
+                - --strip-components=1
+                - linux-amd64/helm
+            creates: /usr/local/bin/helm
+            mode: "0755"
+        vars:
+            # renovate: datasource=github-releases depName=helm/helm extractVersion=^v(?<version>.*)$
+            tailscale_prepare_helm_version: "3.21.3"
+
+      # Dummy OAuth credentials and no --wait on purpose. Without a real
+      # tailnet the operator Pod never reaches Ready, but the chart
+      # registers the tailscale.com CRDs regardless (installCRDs
+      # defaults to true), and those are all the role needs. Waiting
+      # would fail the run for a condition the test does not care about,
+      # and using a real credential would make the job depend on repo
+      # secrets, which fork PRs never receive.
+      - name: Install the Tailscale operator
+        ansible.builtin.command:
+            argv:
+                - helm
+                - upgrade
+                - --install
+                - tailscale-operator
+                - tailscale-operator
+                - --repo
+                - "{{ tailscale_prepare_chart_repo }}"
+                - --version
+                - "{{ tailscale_prepare_chart_version }}"
+                - --namespace
+                - tailscale
+                - --create-namespace
+                - --set
+                - oauth.clientId=molecule-dummy-client-id
+                - --set
+                - oauth.clientSecret=molecule-dummy-client-secret
+        changed_when: true
+        environment:
+            KUBECONFIG: "{{ tailscale_prepare_kubeconfig }}"
+
+      - name: Wait for the ProxyGroup CRD to be established
+        ansible.builtin.command: >-
+            kubectl wait --for=condition=Established
+            crd/proxygroups.tailscale.com --timeout=300s
+        changed_when: false
+        environment:
+            KUBECONFIG: "{{ tailscale_prepare_kubeconfig }}"
