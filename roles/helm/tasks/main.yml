@@ -46,6 +46,48 @@
       - helm-dependencies
       - system-packages
 
+# Debug aid for the EL 9 import failure: pip reports success while
+# kubernetes.core cannot import the library from the interpreter Ansible
+# discovered. Ask that exact interpreter what it sees.
+- name: Probe the discovered interpreter for the Kubernetes client
+  ansible.builtin.command:
+      argv:
+          - "{{ ansible_facts['python']['executable'] }}"
+          - -c
+          - |
+              import sys
+              try:
+                  import kubernetes
+                  loc = getattr(kubernetes, "__file__", "?")
+              except Exception as exc:
+                  loc = f"IMPORT FAILED: {exc!r}"
+              print(sys.executable)
+              print(sys.version.replace("\n", " "))
+              print(loc)
+              print("\n".join(sys.path))
+  become: true
+  changed_when: false
+  failed_when: false
+  register: _helm_python_client_probe
+  tags:
+      - helm
+      - helm-dependencies
+      - system-packages
+
+- name: Show what the pip install produced
+  ansible.builtin.debug:
+      msg:
+          - "pip module target: {{ _helm_python_client_install.cmd | default('n/a') }}"
+          - "pip stdout: {{ _helm_python_client_install.stdout_lines | default([]) }}"
+          - "ansible interpreter: {{ ansible_facts['python']['executable'] }}"
+          - "probe rc: {{ _helm_python_client_probe.rc }}"
+          - "probe stdout: {{ _helm_python_client_probe.stdout_lines | default([]) }}"
+          - "probe stderr: {{ _helm_python_client_probe.stderr_lines | default([]) }}"
+  tags:
+      - helm
+      - helm-dependencies
+      - system-packages
+
 - name: "Helm Chart Management"
   tags:
       - helm
