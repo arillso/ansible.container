@@ -195,10 +195,11 @@ def test_redhat_vars_pin_uses_rpm_compatible_wildcard():
 
 
 @pytest.mark.parametrize("vars_file", ["Debian.yml", "Ubuntu.yml"])
-def test_apt_vars_pin_uses_apt_compatible_wildcard(vars_file):
-    """apt version strings carry an epoch and a distro release suffix, so an
-    exact `docker-ce=<version>` pin never matches; the glob does. The trailing
-    `-*` keeps it exact, so 28.5.2 does not also match 28.5.20."""
+def test_apt_vars_pin_uses_the_resolved_full_version(vars_file):
+    """apt matches an `=` pin against the full version string (epoch and
+    distro release suffix) and does not expand globs in it: both
+    `docker-ce=29.7.2` and `docker-ce=*29.7.2-*` fail with "Version not
+    found". Only the runtime-resolved `docker_apt_version` matches."""
     text = read("roles", "docker", "vars", vars_file)
     # compare package entries only; comments mention forms they must not use
     entries = [
@@ -206,6 +207,23 @@ def test_apt_vars_pin_uses_apt_compatible_wildcard(vars_file):
         for line in text.splitlines()
         if line.strip().startswith("-")
     ]
-    assert any("docker-ce=*' + docker_version + '-*" in e for e in entries), entries
-    # a bare pin without the globs is the defect this guards against
+    assert any("'docker-ce=' + docker_apt_version" in e for e in entries), entries
+    # a bare pin on docker_version is the original defect
     assert not any("'docker-ce=' + docker_version" in e for e in entries), entries
+    # the glob form is the defect the previous round shipped: apt rejects it
+    assert not any("docker-ce=*" in e for e in entries), entries
+
+
+@pytest.mark.parametrize("tasks_file", ["install_docker_debian.yml", "install_docker_ubuntu.yml"])
+def test_apt_tasks_resolve_the_pin_and_fail_loudly(tasks_file):
+    """`docker_apt_version` must actually be produced, and a version that the
+    repository no longer carries must fail with a message instead of silently
+    installing whatever apt picks."""
+    text = read("roles", "docker", "tasks", tasks_file)
+    assert "apt-cache madison docker-ce" in text, tasks_file
+    assert "docker_apt_version:" in text, tasks_file
+    assert "ansible.builtin.fail:" in text, tasks_file
+    # the match must anchor on ":<version>-" so 29.7.1 cannot take 29.7.10,
+    # and regex_escape must keep the dots from matching arbitrary characters
+    assert "regex_escape" in text, tasks_file
+    assert "':' ~ (docker_version | regex_escape) ~ '-'" in text, tasks_file

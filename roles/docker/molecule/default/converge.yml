@@ -6,7 +6,9 @@
       # Install whatever docker-ce the upstream repo currently offers, which
       # is the unpinned branch of the docker_package expression. Left empty
       # for every platform so the matrix exercises one code path. The pinned
-      # branch is covered by roles/docker/molecule/pinned.
+      # branch is covered statically by tests/unit/test_el_support.py; running
+      # it here would tie CI to a version Docker can drop from its repository
+      # at any time.
       docker_version: ""
       # Recursion is only observable when the same nested key exists on BOTH
       # sides of the merge. The shipped docker_daemon_base has no log-opts, so

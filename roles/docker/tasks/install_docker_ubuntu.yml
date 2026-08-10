@@ -51,3 +51,38 @@
   ansible.builtin.apt:
       update_cache: true
   when: docker_repo is changed
+
+# apt matches an "=" pin against the full version string (epoch + distro
+# suffix) and does not expand globs in it, so the exact candidate has to be
+# looked up on the host. The pattern anchors on ":<version>-" so that 29.7.1
+# cannot match 29.7.10 and a bare prefix like "29.7" resolves to nothing
+# instead of an arbitrary patch release; regex_escape keeps the dots literal,
+# without it "29.7.1" would also match a "29X7X1" build.
+- name: "Ubuntu : resolve the apt version string for the pin"
+  ansible.builtin.command:
+      cmd: apt-cache madison docker-ce
+  register: docker_madison
+  changed_when: false
+  when: docker_version != ''
+
+- name: "Ubuntu : fail when the pinned docker version is not in the repository"
+  ansible.builtin.fail:
+      msg: >-
+          docker_version {{ docker_version }} is not available as a docker-ce
+          package for {{ ansible_facts['distribution'] }}
+          {{ ansible_facts['distribution_release'] }}. Docker drops old
+          packages from its repository, so an exact pin stops resolving once
+          the release is removed.
+  when:
+      - docker_version != ''
+      - docker_madison.stdout_lines
+        | select('search', ':' ~ (docker_version | regex_escape) ~ '-')
+        | list | length == 0
+
+- name: "Ubuntu : set the resolved apt version string"
+  ansible.builtin.set_fact:
+      docker_apt_version: >-
+          {{ (docker_madison.stdout_lines
+              | select('search', ':' ~ (docker_version | regex_escape) ~ '-')
+              | first).split('|')[1] | trim }}
+  when: docker_version != ''

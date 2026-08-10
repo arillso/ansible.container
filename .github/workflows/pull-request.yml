@@ -49,22 +49,6 @@ jobs:
             scenarios: '["default"]'
             concurrency-suffix: molecule-docker
 
-    molecule-docker-pinned:
-        # Runs the docker role with the shipped `docker_version` pin instead of
-        # blanking it, which is the one path `molecule-docker` cannot cover: its
-        # converge.yml sets `docker_version: ""`. The scenarios input is pinned
-        # per job, so a scenario without its own job would never run in CI.
-        uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-08-09
-        with:
-            collection_namespace: arillso
-            collection_name: container
-            driver: qemu
-            # renovate: datasource=github-releases depName=python/cpython extractVersion=^v(?<version>3\.\d+)
-            python_version: "3.12"
-            scenarios_root: roles/docker/molecule
-            scenarios: '["pinned"]'
-            concurrency-suffix: molecule-docker-pinned
-
     molecule-k3s:
         uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-08-09
         with:

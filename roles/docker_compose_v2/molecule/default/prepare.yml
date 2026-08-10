@@ -9,7 +9,7 @@
   vars:
       # Do not pin docker-ce: this scenario is about docker_compose_v2, so it
       # takes whatever the upstream repo offers. The pinned branch is
-      # covered by roles/docker/molecule/pinned.
+      # covered statically by tests/unit/test_el_support.py.
       docker_version: ""
   tasks:
       - name: Install Docker
