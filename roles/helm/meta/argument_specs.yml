@@ -61,23 +61,11 @@ argument_specs:
                         default: "5m"
                         description: "Default timeout for Helm operations"
 
-            helm_kubectl_context:
-                type: "str"
-                required: false
-                default: ""
-                description: "Kubernetes context to use for Helm operations"
-
             helm_validation_enabled:
                 type: "bool"
                 required: false
                 default: true
                 description: "Enable post-deployment validation"
-
-            helm_validation_timeout:
-                type: "int"
-                required: false
-                default: 300
-                description: "Timeout for validation checks in seconds"
 
             helm_validation_retries:
                 type: "int"
@@ -108,27 +96,3 @@ argument_specs:
                 required: false
                 default: false
                 description: "Enable debug output for Helm commands"
-
-            helm_log_level:
-                type: "str"
-                required: false
-                default: "info"
-                choices: ["debug", "info", "warn", "error"]
-                description: "Helm log level"
-
-            helm_target_groups:
-                type: "list"
-                required: false
-                default:
-                    - "kubernetes_masters"
-                    - "k3s_servers"
-                    - "k8s_masters"
-                    - "control_plane"
-                elements: "str"
-                description: "Inventory groups to target for Helm operations"
-
-            helm_target_host:
-                type: "str"
-                required: false
-                default: "{{ inventory_hostname }}"
-                description: "Target host for Helm operations"
