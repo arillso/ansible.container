@@ -51,9 +51,14 @@
             name: python3-pip
             state: present
 
+      # oauthlib is listed explicitly because pip leaves the RPM-provided
+      # 3.1.1 in place on EL 9, and requests-oauthlib then fails to import
+      # SIGNATURE_RSA from it.
       - name: Install the Kubernetes Python client
         ansible.builtin.pip:
-            name: kubernetes
+            name:
+                - kubernetes
+                - oauthlib>=3.2.0
             state: present
 
       # kubernetes.core.helm needs a helm binary on the target host, and
