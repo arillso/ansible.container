@@ -7,8 +7,9 @@
   hosts: all
   become: true
   vars:
-      # Do not pin docker-ce; apt's full version string never matches a
-      # bare "docker-ce=<x>" pin (see roles/docker/molecule converge).
+      # Do not pin docker-ce: this scenario is about docker_login, so it
+      # takes whatever the upstream repo offers. The pinned branch is
+      # covered statically by tests/unit/test_el_support.py.
       docker_version: ""
   tasks:
       - name: Install Docker

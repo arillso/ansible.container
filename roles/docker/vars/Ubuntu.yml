@@ -1,4 +1,11 @@
 ---
+# apt matches "docker-ce=<x>" against the *full* version string, which carries
+# an epoch and a distro release suffix (e.g. 5:29.7.2-1~ubuntu.24.04~noble), so
+# a bare "docker-ce=29.7.2" never matches. apt does not evaluate globs in an
+# "=" pin either -- "docker-ce=*29.7.2-*" fails with "Version not found" -- so
+# the full string is resolved at runtime from apt-cache madison into
+# docker_apt_version (see tasks/install_docker_ubuntu.yml) and pinned exactly.
+# The RedHat pin cannot share this: dnf does accept the wildcard suffix it uses.
 docker_package:
-    - "{{ 'docker-ce=' + docker_version if docker_version != '' else 'docker-ce' }}"
+    - "{{ 'docker-ce=' + docker_apt_version if docker_version != '' else 'docker-ce' }}"
     - python3-docker

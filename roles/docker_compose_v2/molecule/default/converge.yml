@@ -3,10 +3,11 @@
   hosts: all
   become: true
   vars:
-      # Do not pin the plugin version: apt has no candidate for an exact
-      # `docker-compose-plugin=5.1.4` on the CI image (same class of issue
-      # the docker role avoids by leaving docker_version empty). Empty
-      # version installs whatever the docker-ce repo currently offers.
+      # Do not pin the plugin version: the pin is built as a bare
+      # `docker-compose-plugin=<version>`, which apt matches against the full
+      # version string (epoch and distro suffix) and therefore never resolves.
+      # The docker role resolves that string at runtime; this role does not
+      # yet, so an empty version installs whatever the repo currently offers.
       docker_compose_v2_version: ""
       docker_compose_v2_project: "molecule"
       # Deploy a minimal compose project from a templated file so we
