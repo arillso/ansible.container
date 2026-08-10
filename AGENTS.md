@@ -17,7 +17,6 @@ ansible.container/
 │   └── tag.yml             # Galaxy publishing (triggered by tag)
 ├── roles/
 │   ├── docker/
-│   ├── docker_compose/
 │   ├── docker_compose_v2/
 │   ├── docker_login/
 │   ├── fleet/
@@ -32,7 +31,7 @@ ansible.container/
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 ├── galaxy.yml
-├── pytest.ini
+├── pyproject.toml
 └── requirements.txt
 ```
 
@@ -76,7 +75,6 @@ structural gain. The role stays as it is.
 #### Docker Ecosystem
 
 - **docker** - Docker Engine installation (28.5.2)
-- **docker_compose** - Docker Compose v1
 - **docker_compose_v2** - Docker Compose v2 (5.1.0)
 - **docker_login** - Docker registry authentication
 
@@ -136,7 +134,7 @@ Tests run via the reusable CI (`arillso/.github`) on pull requests and merges.
 All versions managed by Renovate:
 
 - Docker: `docker_version` with renovate comment
-- Docker Compose: `docker_compose_version` / `docker_compose_v2_version`
+- Docker Compose: `docker_compose_v2_version`
 - K3s: `k3s_version`
 
 Format:

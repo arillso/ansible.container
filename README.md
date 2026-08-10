@@ -11,7 +11,6 @@ This is an Ansible collection that provides comprehensive roles for container an
 ### Docker Ecosystem
 
 - **[docker](roles/docker/README.md)** - Docker Engine installation and configuration with comprehensive daemon settings
-- **[docker_compose](roles/docker_compose/README.md)** - Docker Compose v1 (legacy) installation and management
 - **[docker_compose_v2](roles/docker_compose_v2/README.md)** - Docker Compose v2 (modern) installation as Docker CLI plugin
 - **[docker_login](roles/docker_login/README.md)** - Docker registry authentication management for multiple registries
 
