@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- **Five unused helm variables**: `helm_target_groups`, `helm_target_host`,
+  `helm_kubectl_context`, `helm_validation_timeout` and `helm_log_level` are
+  gone from `roles/helm/defaults/main.yml` and
+  `roles/helm/meta/argument_specs.yml`. No task file in the role ever read
+  them, so setting them changed nothing and produced no warning.
+  `helm_target_groups` and `helm_target_host` were especially misleading: they
+  suggested the role filters its own target hosts, which it does not — host
+  selection belongs in the play (`hosts:`). Validation behaviour is unaffected:
+  `helm_validation_retries` and `helm_validation_delay` are read by
+  `roles/helm/tasks/charts.yml`, `helm_validation_enabled` by
+  `roles/helm/tasks/prerequisites.yml`, and together they cover the validation
+  flow.
+
 ### Added
 
 - **k3s container log rotation defaults**: `k3s_container_log_max_size`
