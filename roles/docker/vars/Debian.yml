@@ -1,4 +1,10 @@
 ---
+# apt version strings carry an epoch and a distro-specific release suffix
+# (e.g. 5:<version>-1~debian.12~bookworm), which a bare "docker-ce=<version>"
+# never matches. The leading glob absorbs the epoch without hard-coding it, so
+# an upstream epoch bump does not break the pin. The trailing "-*" keeps the
+# match exact: "*28.5.2-*" requires a hyphen after the version and therefore
+# does not also match 28.5.20. Same principle as the dnf pin in RedHat.yml.
 docker_package:
-    - "{{ 'docker-ce=' + docker_version if docker_version != '' else 'docker-ce' }}"
+    - "{{ 'docker-ce=*' + docker_version + '-*' if docker_version != '' else 'docker-ce' }}"
     - python3-docker

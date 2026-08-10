@@ -192,3 +192,20 @@ def test_redhat_vars_pin_uses_rpm_compatible_wildcard():
     # role installs neither; scenarios that need the SDK install it
     assert "python3-docker" not in entries, entries
     assert "python3-pip" not in entries, entries
+
+
+@pytest.mark.parametrize("vars_file", ["Debian.yml", "Ubuntu.yml"])
+def test_apt_vars_pin_uses_apt_compatible_wildcard(vars_file):
+    """apt version strings carry an epoch and a distro release suffix, so an
+    exact `docker-ce=<version>` pin never matches; the glob does. The trailing
+    `-*` keeps it exact, so 28.5.2 does not also match 28.5.20."""
+    text = read("roles", "docker", "vars", vars_file)
+    # compare package entries only; comments mention forms they must not use
+    entries = [
+        line.strip().lstrip("-").strip()
+        for line in text.splitlines()
+        if line.strip().startswith("-")
+    ]
+    assert any("docker-ce=*' + docker_version + '-*" in e for e in entries), entries
+    # a bare pin without the globs is the defect this guards against
+    assert not any("'docker-ce=' + docker_version" in e for e in entries), entries
