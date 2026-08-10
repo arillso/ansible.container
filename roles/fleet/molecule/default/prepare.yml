@@ -33,14 +33,20 @@
         environment:
             KUBECONFIG: "{{ fleet_prepare_kubeconfig }}"
 
+      # `package` cannot refresh apt metadata, so the Debian family needs
+      # an explicit cache update before the install below.
+      - name: Refresh apt cache on the Debian family
+        ansible.builtin.apt:
+            update_cache: true
+        when: ansible_facts['os_family'] == "Debian"
+
       # The fleet role talks to the API through kubernetes.core, which
       # needs the Python client on the target. Unlike the helm role
       # (roles/helm/tasks/main.yml), the fleet role does not install it.
       - name: Install the Kubernetes Python client
-        ansible.builtin.apt:
+        ansible.builtin.package:
             name: python3-kubernetes
             state: present
-            update_cache: true
 
       # kubernetes.core.helm needs a helm binary on the target host, and
       # the collection ships none. Install the official binary, then

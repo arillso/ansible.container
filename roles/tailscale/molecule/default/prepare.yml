@@ -34,13 +34,19 @@
         environment:
             KUBECONFIG: "{{ tailscale_prepare_kubeconfig }}"
 
+      # `package` cannot refresh apt metadata, so the Debian family needs
+      # an explicit cache update before the install below.
+      - name: Refresh apt cache on the Debian family
+        ansible.builtin.apt:
+            update_cache: true
+        when: ansible_facts['os_family'] == "Debian"
+
       # The tailscale role talks to the API through kubernetes.core and,
       # like the fleet role, does not install the Python client itself.
       - name: Install the Kubernetes Python client
-        ansible.builtin.apt:
+        ansible.builtin.package:
             name: python3-kubernetes
             state: present
-            update_cache: true
 
       - name: Install the helm binary
         ansible.builtin.unarchive:
