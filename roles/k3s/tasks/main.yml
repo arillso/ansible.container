@@ -214,7 +214,7 @@
   ansible.builtin.shell:
       cmd: "set -o pipefail && grep ' k3s{{ k3s_suffix | default('') }}$' /tmp/k3s-sha256sum-{{ k3s_version }}.txt | awk '{print $1}'"
       executable: /bin/bash
-  register: k3s_release_checksum
+  register: _k3s_release_checksum
   changed_when: false
   become: true
   when: >-
@@ -229,7 +229,7 @@
       mode: "0755"
       owner: root
       group: root
-      checksum: "sha256:{{ k3s_binary_checksum if k3s_binary_checksum else k3s_release_checksum.stdout }}"
+      checksum: "sha256:{{ k3s_binary_checksum if k3s_binary_checksum else _k3s_release_checksum.stdout }}"
   become: true
   when: >-
       not ansible_facts['ansible_local']['k3s'].service.binary_installed | bool
@@ -242,8 +242,8 @@
 - name: Apply SELinux context to k3s binary
   ansible.builtin.command: restorecon -v /usr/local/bin/k3s
   become: true
-  register: k3s_selinux_restorecon
-  changed_when: "'restorecon reset' in k3s_selinux_restorecon.stdout"
+  register: _k3s_selinux_restorecon
+  changed_when: "'restorecon reset' in _k3s_selinux_restorecon.stdout"
   when:
       - ansible_facts['os_family'] == "RedHat"
       - k3s_security_hardening | default(true) | bool
@@ -373,7 +373,7 @@
   ansible.builtin.stat:
       path: "{{ k3s_data_dir }}/server/cred/admin.kubeconfig"
   become: true
-  register: k3s_kubeconfig_check
+  register: _k3s_kubeconfig_check
   when: k3s_role == "server"
 
 - name: Set kubeconfig permissions
@@ -383,7 +383,7 @@
       owner: "{{ k3s_kubeconfig_owner }}"
       group: "{{ k3s_kubeconfig_group }}"
   become: true
-  when: k3s_kubeconfig_check.stat.exists | default(false)
+  when: _k3s_kubeconfig_check.stat.exists | default(false)
 
 - name: Create k3s uninstall script
   ansible.builtin.template:

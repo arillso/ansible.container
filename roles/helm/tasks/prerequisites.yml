@@ -65,14 +65,14 @@
       name: helm-controller
       namespace: kube-system
       kubeconfig: "{{ helm_kubeconfig_path }}"
-  register: helm_controller_check
+  register: _helm_controller_check
   run_once: true
   failed_when: false
 
 - name: "Display Helm Controller status"
   ansible.builtin.debug:
       msg: |
-          Helm Controller Status: {% if helm_controller_check.resources | length > 0 %}Running{% else %}Not Found (may be embedded in K3s){% endif %}
+          Helm Controller Status: {% if _helm_controller_check.resources | length > 0 %}Running{% else %}Not Found (may be embedded in K3s){% endif %}
   run_once: true
 
 - name: "Display Helm configuration summary"

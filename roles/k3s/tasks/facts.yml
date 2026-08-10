@@ -32,7 +32,7 @@
       mode: "0755"
   when:
       - k3s_auto_facts | default(true) | bool
-  register: k3s_facts_script_deployed
+  register: _k3s_facts_script_deployed
 
 # Refresh facts after deploying facts script
 - name: Refresh local facts after facts deployment
@@ -41,4 +41,4 @@
           - "!all"
           - "!any"
           - "local"
-  when: k3s_facts_script_deployed is changed
+  when: _k3s_facts_script_deployed is changed
