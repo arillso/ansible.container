@@ -21,7 +21,9 @@ argument_specs:
                 description:
                     - List of Docker Compose packages for installation. Appends the specified version to the package name if docker_compose_v2_version is set.
                     - Useful for ensuring consistency across environments by locking to a specific version.
-                    - Carries no default here on purpose. The pin form differs per package manager, so it is set in vars/<distribution>.yml, which tasks/main.yml loads before the packages run. A default in this spec would win over those vars.
+                    - Carries no default here on purpose. The pin form differs per package manager,
+                      so it is set in vars/<distribution>.yml, which tasks/main.yml loads before
+                      the packages run. A default in this spec would win over those vars.
 
             docker_compose_v2_directory_path:
                 type: str

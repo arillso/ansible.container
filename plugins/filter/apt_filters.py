@@ -13,7 +13,9 @@ version_added: "1.5.0"
 short_description: Resolve an apt version pin from apt-cache madison output
 description:
     - Picks the full apt version string for a marketing version out of C(apt-cache madison) output.
-    - apt matches an C(=) pin against the full version string, which carries an optional epoch and a distro release suffix, and it does not expand globs in that pin.
+    - apt matches an C(=) pin against the full version string, which carries an
+      optional epoch and a distro release suffix, and it does not expand globs
+      in that pin.
     - A bare pin such as C(docker-ce=29.7.2) therefore never resolves, and neither does C(docker-ce=*29.7.2-*); only the string madison prints does.
     - Returns C(None) when the version is not in the repository, so the calling task can fail with a readable message instead of a Python traceback.
 options:
@@ -27,7 +29,10 @@ options:
     version:
         description:
             - The marketing version to resolve, for example C(29.7.2) or C(5.4.0).
-            - Matched on C((^|:)<version>-) so the version either opens the string or follows the epoch colon, and the trailing hyphen keeps C(29.7.1) from taking C(29.7.10) and rejects a bare prefix like C(29.7).
+            - Matched on C((^|:)<version>-) so the version either opens the
+              string or follows the epoch colon, and the trailing hyphen keeps
+              C(29.7.1) from taking C(29.7.10) and rejects a bare prefix like
+              C(29.7).
             - Dots are matched literally, so C(5.4.0) does not also match a C(5X4X0) build.
         type: str
         required: true
