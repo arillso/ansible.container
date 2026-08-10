@@ -7,7 +7,7 @@ galaxy_info:
     author: Arillso Team
     description: Lightweight Kubernetes distribution with security hardening
     license: MIT
-    min_ansible_version: "2.15"
+    min_ansible_version: "2.18"
     platforms:
         - name: Ubuntu
           versions:

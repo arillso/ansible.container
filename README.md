@@ -41,7 +41,7 @@ collections:
 
 ## Requirements
 
-- Ansible >= 2.15
+- Ansible >= 2.18
 - Python >= 3.9
 
 ## Documentation

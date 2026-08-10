@@ -5,7 +5,7 @@ galaxy_info:
     description: Manages Rancher Fleet GitRepos and Bundles on Kubernetes
     company: Arillso
     license: MIT
-    min_ansible_version: "2.9"
+    min_ansible_version: "2.18"
     platforms:
         - name: Ubuntu
           versions:

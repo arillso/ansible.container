@@ -3,7 +3,7 @@ galaxy_info:
     author: "arillso (@arillso)"
     description: "Logs into Docker registries on Debian, RedHat, and Ubuntu."
     license: MIT
-    min_ansible_version: "2.15"
+    min_ansible_version: "2.18"
     platforms:
         - name: Debian
           versions:
