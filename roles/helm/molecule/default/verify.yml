@@ -4,11 +4,10 @@
 # the workload that Job released. Anything short of the Pod would pass
 # even if the controller never acted on the CR.
 #
-# Scoped to a single host, mirroring the role: every task in charts.yml
-# carries run_once, so the CR is applied to exactly one of the two VMs.
-# Each VM is its own k3s cluster, so asserting on both would fail on
-# whichever host the role skipped. run_once picks the same host the role
-# did, which keeps the assertions valid on either platform.
+# Asserted on every host, mirroring the role: each VM runs its own k3s
+# cluster, so the role applies the CR to all of them and every cluster
+# must carry the full chain. Scoping this to a single host would let a
+# role that silently skipped a cluster still pass.
 - name: Verify
   hosts: all
   become: true
@@ -25,7 +24,6 @@
             namespace: kube-system
             kubeconfig: "{{ helm_verify_kubeconfig }}"
         register: helm_verify_chart
-        run_once: true
 
       - name: Assert the HelmChart carries the role's spec and labels
         ansible.builtin.assert:
@@ -39,7 +37,6 @@
                     == "ansible-helm-role"
             fail_msg: "HelmChart 'podinfo' is missing or does not match the converge spec"
             success_msg: "HelmChart 'podinfo' applied with the expected spec"
-        run_once: true
 
       - name: Fetch the Helm install Job
         kubernetes.core.k8s_info:
@@ -49,7 +46,6 @@
             namespace: kube-system
             kubeconfig: "{{ helm_verify_kubeconfig }}"
         register: helm_verify_job
-        run_once: true
 
       - name: Assert the install Job succeeded
         ansible.builtin.assert:
@@ -58,7 +54,6 @@
                 - helm_verify_job.resources[0].status.succeeded | default(0) | int >= 1
             fail_msg: "Helm install Job 'helm-install-podinfo' did not complete successfully"
             success_msg: "Helm install Job 'helm-install-podinfo' completed"
-        run_once: true
 
       - name: Fetch the released pods
         kubernetes.core.k8s_info:
@@ -77,7 +72,6 @@
             | list | length >= 1
         retries: 30
         delay: 10
-        run_once: true
 
       - name: Assert the chart released a running pod
         ansible.builtin.assert:
@@ -88,4 +82,3 @@
                     | list | length >= 1
             fail_msg: "No running podinfo pod in namespace 'podinfo'"
             success_msg: "Chart released a running pod in namespace 'podinfo'"
-        run_once: true

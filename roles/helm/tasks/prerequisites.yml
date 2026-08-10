@@ -12,22 +12,34 @@
       - "/root/.kube/config"
       - "{{ ansible_facts['env']['HOME'] | default('/root') }}/.kube/config"
   when: helm_kubeconfig_path is not defined or helm_kubeconfig_path == ""
-  run_once: true
 
+# A set_fact in a loop has no break: every matching candidate overwrote
+# the previous one, so the *last* existing path won although the task
+# promises the first. selectattr picks the first match in one pass.
+# The stat guard comes first on purpose: the stat task above is
+# conditional, so its items may carry no stat dict at all, and Jinja
+# resolves the dotted path before the `defined` test would catch it.
 - name: "Set detected kubeconfig path to first existing file"
   ansible.builtin.set_fact:
-      helm_kubeconfig_path: "{{ item.item }}"
-  loop: "{{ _helm_kubeconfig_check.results | default([]) }}"
+      helm_kubeconfig_path: >-
+          {{ _helm_kubeconfig_check.results
+             | selectattr('stat', 'defined')
+             | selectattr('stat.exists', 'defined')
+             | selectattr('stat.exists')
+             | map(attribute='item')
+             | first }}
   when:
       - _helm_kubeconfig_check is defined
-      - item.stat.exists | default(false)
-  run_once: true
+      - _helm_kubeconfig_check.results | default([])
+        | selectattr('stat', 'defined')
+        | selectattr('stat.exists', 'defined')
+        | selectattr('stat.exists')
+        | list | length > 0
 
 - name: "Validate final kubeconfig file exists"
   ansible.builtin.stat:
       path: "{{ helm_kubeconfig_path }}"
   register: _helm_kubeconfig_stat
-  run_once: true
 
 - name: "Fail if kubeconfig file does not exist"
   ansible.builtin.fail:
@@ -41,7 +53,6 @@
           Please ensure K3s is installed and running, or set helm_kubeconfig_path manually.
   when:
       - not _helm_kubeconfig_stat.stat.exists
-  run_once: true
 
 - name: "Check if Kubernetes cluster is accessible"
   kubernetes.core.k8s_info:
@@ -49,14 +60,12 @@
       kind: Node
       kubeconfig: "{{ helm_kubeconfig_path }}"
   register: _helm_cluster_check
-  run_once: true
 
 - name: "Fail if Kubernetes cluster is not accessible"
   ansible.builtin.fail:
       msg: "Kubernetes cluster is not accessible. Please ensure kubeconfig is valid and cluster is running."
   when:
       - _helm_cluster_check.resources | length == 0
-  run_once: true
 
 - name: "Check if Cattle Operator (Helm Controller) is running"
   kubernetes.core.k8s_info:
@@ -66,14 +75,12 @@
       namespace: kube-system
       kubeconfig: "{{ helm_kubeconfig_path }}"
   register: _helm_controller_check
-  run_once: true
   failed_when: false
 
 - name: "Display Helm Controller status"
   ansible.builtin.debug:
       msg: |
           Helm Controller Status: {% if _helm_controller_check.resources | length > 0 %}Running{% else %}Not Found (may be embedded in K3s){% endif %}
-  run_once: true
 
 - name: "Display Helm configuration summary"
   ansible.builtin.debug:
@@ -84,4 +91,3 @@
           - Validation enabled: {{ helm_validation_enabled }}
           - Deployment wait: {{ helm_deployment_wait }}
           - Kubeconfig: {{ helm_kubeconfig_path }}
-  run_once: true
