@@ -11,14 +11,14 @@
 
       - name: Check if k3s is installed
         ansible.builtin.command: k3s --version
-        register: k3s_version
+        register: k3s_cli_version
         changed_when: false
 
       - name: Verify k3s version output
         ansible.builtin.assert:
             that:
-                - k3s_version.rc == 0
-                - "'k3s version' in k3s_version.stdout"
+                - k3s_cli_version.rc == 0
+                - "'k3s version' in k3s_cli_version.stdout"
             fail_msg: "K3s is not properly installed"
             success_msg: "K3s is installed correctly"
 

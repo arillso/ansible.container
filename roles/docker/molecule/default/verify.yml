@@ -5,14 +5,14 @@
   tasks:
       - name: Check if Docker is installed
         ansible.builtin.command: docker --version
-        register: docker_version
+        register: docker_cli_version
         changed_when: false
 
       - name: Verify Docker version output
         ansible.builtin.assert:
             that:
-                - docker_version.rc == 0
-                - "'Docker version' in docker_version.stdout"
+                - docker_cli_version.rc == 0
+                - "'Docker version' in docker_cli_version.stdout"
             fail_msg: "Docker is not properly installed"
             success_msg: "Docker is installed correctly"
 
