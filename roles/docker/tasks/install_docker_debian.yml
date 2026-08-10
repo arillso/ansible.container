@@ -48,8 +48,9 @@
 # 29.7.1 from taking 29.7.10 and rejects a bare prefix like "29.7". docker-ce
 # currently always carries an epoch, but docker-compose-plugin in the same
 # repository does not, so the epoch is matched as optional rather than
-# assumed. regex_escape keeps the dots literal; without it "29.7.1" would
-# also match a "29X7X1" build.
+# assumed. The matching lives in the apt_version_pin filter, which keeps the
+# regex out of YAML -- in a bare `when:` Jinja consumes its backslashes
+# differently and silently turns the guard below into a no-op.
 - name: "Debian : resolve the apt version string for the pin"
   ansible.builtin.command:
       cmd: apt-cache madison docker-ce
@@ -57,16 +58,12 @@
   changed_when: false
   when: docker_version != ''
 
-# The match is resolved inside {{ }} rather than in a bare `when:`, because
-# `when` evaluates its argument as raw Jinja and consumes the backslashes of
-# the regex differently, which silently turns the guard below into a no-op.
-- name: "Debian : collect the matching apt version strings"
+- name: "Debian : set the resolved apt version string"
   ansible.builtin.set_fact:
-      docker_apt_candidates: >-
+      docker_apt_version: >-
           {{ docker_madison.stdout_lines
-             | map('regex_replace', '^[^|]*\|\s*([^|]+?)\s*\|.*$', '\1')
-             | select('search', '(^|:)' ~ (docker_version | regex_escape) ~ '-')
-             | list }}
+             | arillso.container.apt_version_pin(docker_version)
+             | default('', true) }}
   when: docker_version != ''
 
 - name: "Debian : fail when the pinned docker version is not in the repository"
@@ -79,9 +76,4 @@
           the release is removed.
   when:
       - docker_version != ''
-      - docker_apt_candidates | length == 0
-
-- name: "Debian : set the resolved apt version string"
-  ansible.builtin.set_fact:
-      docker_apt_version: "{{ docker_apt_candidates | first }}"
-  when: docker_version != ''
+      - docker_apt_version | length == 0

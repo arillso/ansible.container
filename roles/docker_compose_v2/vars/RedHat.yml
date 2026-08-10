@@ -1,0 +1,10 @@
+---
+# Covers the whole RedHat family (Rocky, AlmaLinux, RHEL, CentOS) via the
+# os_family fallback in tasks/main.yml. dnf does not know the apt "pkg=version"
+# syntax at all and expects "pkg-version"; RPM version strings additionally
+# carry a release part (e.g. <version>-1.el9), which a bare
+# "docker-compose-plugin-<version>" never matches, so the pin uses a wildcard
+# suffix. dnf expands that glob, apt does not -- which is why the Debian and
+# Ubuntu vars resolve the exact string at runtime instead.
+docker_compose_v2_packages:
+    - name: "{{ 'docker-compose-plugin-' + docker_compose_v2_version + '*' if docker_compose_v2_version != '' else 'docker-compose-plugin' }}"

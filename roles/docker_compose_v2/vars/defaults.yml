@@ -1,0 +1,4 @@
+---
+# Last entry of the with_first_found chain in tasks/main.yml. Deliberately
+# empty: a distribution that reaches this file has no known pin form, and
+# guessing one would install a wrong package instead of failing visibly.

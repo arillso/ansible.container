@@ -93,10 +93,55 @@ filters:
                 description: String converted to camelCase format
                 type: string
 
+    apt_version_pin:
+        description:
+            - Pick the full apt version string for a marketing version out of apt-cache madison output
+            - apt matches an "=" pin against the full version string, which carries an optional epoch and a distro release suffix, and does not expand globs in that pin
+            - A bare pin such as docker-ce=29.7.2 therefore never resolves, and neither does docker-ce=*29.7.2-*; only the string madison prints does
+            - Returns none when the version is not in the repository, so the calling task can fail with a readable message instead of a Python traceback
+        version_added: "1.0.0"
+        options:
+            _input:
+                description:
+                    - Lines of apt-cache madison <package> output, typically stdout_lines of the command
+                    - Each line looks like "<package> | <version> | <repository>"; only the middle field is read
+                type: list
+                elements: string
+                required: true
+            version:
+                description:
+                    - The marketing version to resolve, for example 29.7.2 or 5.4.0
+                    - Matched on "(^|:)<version>-" so the version either opens the string or follows the epoch colon, and the trailing hyphen keeps 29.7.1 from taking 29.7.10 and rejects a bare prefix like 29.7
+                    - Dots are matched literally, so 5.4.0 does not also match a 5X4X0 build
+                type: string
+                required: true
+        examples:
+            - name: Resolve an apt pin at runtime
+              description: Look up the exact version string before pinning it
+              code: |
+                  - name: Resolve the apt version string for the pin
+                    ansible.builtin.command:
+                      cmd: apt-cache madison docker-compose-plugin
+                    register: compose_madison
+                    changed_when: false
+
+                  - name: Set the resolved apt version string
+                    ansible.builtin.set_fact:
+                      docker_compose_v2_apt_version: >-
+                        {{ compose_madison.stdout_lines
+                           | arillso.container.apt_version_pin(docker_compose_v2_version) }}
+                    # Returns: 5.4.0-1~ubuntu.24.04~noble
+
+        return:
+            _value:
+                description: Full apt version string including epoch and distro suffix, or none when no line matches
+                type: string
+
 notes:
-    - These filters are specifically designed for Rancher Fleet GitOps target configurations
+    - The Fleet filters are specifically designed for Rancher Fleet GitOps target configurations
     - Common transformations include cluster_selector -> clusterSelector, match_labels -> matchLabels
-    - The filters preserve all values unchanged, only transforming dictionary keys
+    - The Fleet filters preserve all values unchanged, only transforming dictionary keys
+    - apt_version_pin never raises on a missing version; the readable error belongs in an ansible.builtin.fail task
     - Nested structures are handled recursively
 
 seealso:
