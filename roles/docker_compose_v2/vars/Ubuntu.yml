@@ -1,0 +1,11 @@
+---
+# apt matches "docker-compose-plugin=<x>" against the *full* version string,
+# which carries a distro release suffix (e.g. 5.4.0-1~ubuntu.24.04~noble), so a
+# bare "docker-compose-plugin=5.4.0" never matches. apt does not evaluate globs
+# in an "=" pin either -- "docker-compose-plugin=*5.4.0-*" fails with "Version
+# not found" -- so the full string is resolved at runtime from apt-cache madison
+# into docker_compose_v2_apt_version (see tasks/resolve_apt_version.yml) and
+# pinned exactly. The RedHat pin cannot share this: dnf rejects the "=" syntax
+# outright and takes the wildcard suffix instead.
+docker_compose_v2_packages:
+    - name: "{{ 'docker-compose-plugin=' + docker_compose_v2_apt_version if docker_compose_v2_version != '' else 'docker-compose-plugin' }}"

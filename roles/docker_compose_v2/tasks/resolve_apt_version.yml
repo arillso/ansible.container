@@ -1,0 +1,31 @@
+---
+# apt matches an "=" pin against the full version string (distro suffix, and an
+# epoch where the package carries one) and does not expand globs in it, so the
+# exact candidate has to be looked up on the host. The matching itself lives in
+# the apt_version_pin filter, which returns the full string or none -- keeping
+# the regex out of YAML, where a bare `when:` would consume its backslashes and
+# silently turn the guard below into a no-op.
+
+- name: Resolve the apt version string for the pin
+  ansible.builtin.command:
+      cmd: apt-cache madison docker-compose-plugin
+  register: docker_compose_v2_madison
+  changed_when: false
+
+- name: Set the resolved apt version string
+  ansible.builtin.set_fact:
+      docker_compose_v2_apt_version: >-
+          {{ docker_compose_v2_madison.stdout_lines
+             | arillso.container.apt_version_pin(docker_compose_v2_version)
+             | default('', true) }}
+
+- name: Fail when the pinned Docker Compose version is not in the repository
+  ansible.builtin.fail:
+      msg: >-
+          docker_compose_v2_version {{ docker_compose_v2_version }} is not
+          available as a docker-compose-plugin package for
+          {{ ansible_facts['distribution'] }}
+          {{ ansible_facts['distribution_release'] }}. Docker drops old
+          packages from its repository, so an exact pin stops resolving once
+          the release is removed.
+  when: docker_compose_v2_apt_version | length == 0

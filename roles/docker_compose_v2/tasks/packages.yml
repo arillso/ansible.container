@@ -1,6 +1,15 @@
 ---
 # Docker Compose package installation and target directory
 
+# Only apt needs the lookup: the unpinned branch installs whatever the
+# repository offers, and dnf expands the wildcard suffix in vars/RedHat.yml
+# by itself.
+- name: Resolve the pinned apt version
+  ansible.builtin.include_tasks: resolve_apt_version.yml
+  when:
+      - docker_compose_v2_version != ''
+      - ansible_facts['pkg_mgr'] in ['apt']
+
 - name: Install Docker Compose packages
   become: true
   ansible.builtin.package:

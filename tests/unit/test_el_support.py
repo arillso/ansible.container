@@ -223,26 +223,103 @@ def test_apt_tasks_resolve_the_pin_and_fail_loudly(tasks_file):
     assert "apt-cache madison docker-ce" in text, tasks_file
     assert "docker_apt_version:" in text, tasks_file
     assert "ansible.builtin.fail:" in text, tasks_file
-    # the match must anchor on "(^|:)<version>-" so 29.7.1 cannot take
-    # 29.7.10 and a package without an epoch still resolves, and regex_escape
-    # must keep the dots from matching arbitrary characters
-    assert "regex_escape" in text, tasks_file
-    assert "'(^|:)' ~ (docker_version | regex_escape) ~ '-'" in text, tasks_file
+    # The match lives in the filter, which anchors on "(^|:)<version>-" and
+    # escapes the dots. Hand-rolling it in Jinja again is the defect this
+    # replaced: a regex in YAML loses its backslashes in a bare `when:`.
+    assert "arillso.container.apt_version_pin(docker_version)" in text, tasks_file
+    assert "regex_replace" not in text, tasks_file
+    assert "docker_apt_candidates" not in text, tasks_file
 
-    # The regex must be evaluated inside {{ }}, never in a bare `when:`: there
-    # Jinja consumes the backslashes differently, the select matches nothing
-    # and the guard degrades into a no-op that fails every pinned run.
-    in_when = False
-    when_indent = 0
-    for line in text.splitlines():
-        if not line.strip():
-            continue
-        indent = len(line) - len(line.lstrip())
-        if in_when and indent <= when_indent and not line.lstrip().startswith("-"):
-            in_when = False
-        if in_when:
-            assert "regex_replace" not in line, (
-                f"{tasks_file}: regex evaluated in a bare when: -- {line.strip()}"
-            )
-        if line.lstrip().startswith("when:"):
-            in_when, when_indent = True, indent
+
+@pytest.mark.parametrize("vars_file", ["Debian.yml", "Ubuntu.yml"])
+def test_compose_apt_vars_pin_uses_the_resolved_full_version(vars_file):
+    """Same defect as docker-ce: apt matches an "=" pin against the full
+    version string, so only the runtime-resolved value can be pinned."""
+    text = read("roles", "docker_compose_v2", "vars", vars_file)
+    entries = [
+        line.strip().lstrip("-").strip()
+        for line in text.splitlines()
+        if line.strip().startswith("-")
+    ]
+    assert any("'docker-compose-plugin=' + docker_compose_v2_apt_version" in e for e in entries), (
+        entries
+    )
+    # a bare pin on the marketing version is the original defect
+    assert not any("'docker-compose-plugin=' + docker_compose_v2_version" in e for e in entries), (
+        entries
+    )
+    # apt rejects a glob inside an "=" pin
+    assert not any("docker-compose-plugin=*" in e for e in entries), entries
+
+
+def test_compose_redhat_vars_pin_uses_rpm_compatible_syntax():
+    """dnf does not know the apt "pkg=version" syntax at all and RPM version
+    strings carry a release part, so the pin needs "pkg-version*"."""
+    text = read("roles", "docker_compose_v2", "vars", "RedHat.yml")
+    entries = [
+        line.strip().lstrip("-").strip()
+        for line in text.splitlines()
+        if line.strip().startswith("-")
+    ]
+    assert any("docker-compose-plugin-' + docker_compose_v2_version + '*" in e for e in entries), (
+        entries
+    )
+    # apt syntax in a RedHat vars file would break dnf
+    assert not any("docker-compose-plugin=" in e for e in entries), entries
+
+
+def test_compose_defaults_define_no_package_pin():
+    """A default for docker_compose_v2_packages outranks the distro vars and
+    would reinstate the single broken pin form for every package manager."""
+    for parts in (
+        ("roles", "docker_compose_v2", "defaults", "main.yml"),
+        ("roles", "docker_compose_v2", "meta", "argument_specs.yml"),
+    ):
+        text = read(*parts)
+        entries = [
+            line.strip().lstrip("-").strip()
+            for line in text.splitlines()
+            if line.strip().startswith("-")
+        ]
+        assert not any("docker-compose-plugin" in e for e in entries), (
+            f"{'/'.join(parts)} still pins a package: {entries}"
+        )
+
+
+def test_compose_resolves_the_apt_pin_and_fails_loudly():
+    """The resolution must run, and a version the repository no longer
+    carries must fail with a message instead of installing anything."""
+    text = read("roles", "docker_compose_v2", "tasks", "resolve_apt_version.yml")
+    assert "apt-cache madison docker-compose-plugin" in text
+    assert "arillso.container.apt_version_pin(docker_compose_v2_version)" in text
+    assert "ansible.builtin.fail:" in text
+    assert "regex_replace" not in text
+
+    # dnf expands the wildcard itself and the unpinned branch needs no lookup,
+    # so the madison call has to stay guarded to a pinned apt run.
+    packages = read("roles", "docker_compose_v2", "tasks", "packages.yml")
+    assert "resolve_apt_version.yml" in packages
+    assert "docker_compose_v2_version != ''" in packages
+    assert "ansible_facts['pkg_mgr'] in ['apt']" in packages
+
+
+def test_compose_loads_the_os_specific_vars():
+    """Without the include_vars, docker_compose_v2_packages is undefined and
+    the install loop dies -- the defaults no longer carry it."""
+    text = read("roles", "docker_compose_v2", "tasks", "main.yml")
+    assert "ansible.builtin.include_vars:" in text
+    assert "with_first_found:" in text
+
+    facts = ROCKY_FACTS
+    vars_hit = first_found(
+        "roles/docker_compose_v2/vars",
+        [
+            f"{facts['distribution']}-{facts['distribution_version']}.yml",
+            f"{facts['distribution']}-{facts['distribution_major_version']}.yml",
+            f"{facts['distribution']}.yml",
+            f"{facts['os_family']}.yml",
+            f"{facts['system']}.yml",
+            "defaults.yml",
+        ],
+    )
+    assert vars_hit == "RedHat.yml", f"Rocky resolved compose vars to {vars_hit}"

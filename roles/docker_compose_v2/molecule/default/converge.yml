@@ -3,11 +3,12 @@
   hosts: all
   become: true
   vars:
-      # Do not pin the plugin version: the pin is built as a bare
-      # `docker-compose-plugin=<version>`, which apt matches against the full
-      # version string (epoch and distro suffix) and therefore never resolves.
-      # The docker role resolves that string at runtime; this role does not
-      # yet, so an empty version installs whatever the repo currently offers.
+      # Do not pin the plugin version. The role does resolve the pin at
+      # runtime now (tasks/resolve_apt_version.yml), so a pin would work --
+      # but Docker drops old releases from its repository, which would break
+      # this scenario on a schedule nobody controls. The pinned branch is
+      # covered by the apt_version_pin unit tests instead; an empty version
+      # installs whatever the repo currently offers.
       docker_compose_v2_version: ""
       docker_compose_v2_project: "molecule"
       # Deploy a minimal compose project from a templated file so we
