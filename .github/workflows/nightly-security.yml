@@ -22,21 +22,21 @@ permissions:
 
 jobs:
     codeql:
-        uses: arillso/.github/.github/workflows/security-codeql.yml@2026-08-11
+        uses: arillso/.github/.github/workflows/security-codeql.yml@2026-08-12
         with:
             language: python
 
     security-secrets:
-        uses: arillso/.github/.github/workflows/security-secrets.yml@2026-08-11
+        uses: arillso/.github/.github/workflows/security-secrets.yml@2026-08-12
 
     security-config:
-        uses: arillso/.github/.github/workflows/security-config.yml@2026-08-11
+        uses: arillso/.github/.github/workflows/security-config.yml@2026-08-12
         with:
             scan-ansible: true
             ansible-path: roles
 
     security-sbom:
-        uses: arillso/.github/.github/workflows/security-sbom.yml@2026-08-11
+        uses: arillso/.github/.github/workflows/security-sbom.yml@2026-08-12
         with:
             artifact-type: filesystem
             artifact-ref: "."
