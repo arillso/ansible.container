@@ -73,7 +73,7 @@
             mode: "0755"
         vars:
             # renovate: datasource=github-releases depName=helm/helm extractVersion=^v(?<version>.*)$
-            tailscale_prepare_helm_version: "3.21.3"
+            tailscale_prepare_helm_version: "4.2.3"
 
       # Dummy OAuth credentials and no --wait on purpose. Without a real
       # tailnet the operator Pod never reaches Ready, but the chart
