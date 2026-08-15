@@ -8,28 +8,39 @@
       # path is meant to clean up — without them the role finds nothing,
       # skips every cleanup task and verify.yml would pass trivially on a
       # host that never had the profile.
-      - name: Ensure the AppArmor profile directories exist
-        ansible.builtin.file:
-            path: "{{ item }}"
-            state: directory
-            mode: "0755"
-        loop:
-            - /etc/apparmor.d
-            - /etc/apparmor.d/disable
+      #
+      # Gated on the same fact the role's AppArmor block uses
+      # (`k3s_security_framework == "apparmor"` in tasks/security.yml), so
+      # this only runs where the cleanup path runs. On a SELinux host the
+      # block never executes, and a profile planted there would simply stay
+      # on disk.
+      - name: Plant a leftover K3s AppArmor profile and disable symlink
+        when: >-
+            ansible_facts['apparmor'] is defined
+            and ansible_facts['apparmor']['status'] == "enabled"
+        block:
+            - name: Ensure the AppArmor profile directories exist
+              ansible.builtin.file:
+                  path: "{{ item }}"
+                  state: directory
+                  mode: "0755"
+              loop:
+                  - /etc/apparmor.d
+                  - /etc/apparmor.d/disable
 
-      - name: Plant a leftover K3s AppArmor profile
-        ansible.builtin.copy:
-            content: |
-                #include <tunables/global>
+            - name: Plant a leftover K3s AppArmor profile
+              ansible.builtin.copy:
+                  content: |
+                      #include <tunables/global>
 
-                /usr/local/bin/k3s flags=(attach_disconnected,mediate_deleted,complain) {
-                  #include <abstractions/base>
-                }
-            dest: /etc/apparmor.d/k3s
-            mode: "0644"
+                      /usr/local/bin/k3s flags=(attach_disconnected,mediate_deleted,complain) {
+                        #include <abstractions/base>
+                      }
+                  dest: /etc/apparmor.d/k3s
+                  mode: "0644"
 
-      - name: Plant a hand-made K3s AppArmor disable symlink
-        ansible.builtin.file:
-            src: /etc/apparmor.d/k3s
-            dest: /etc/apparmor.d/disable/k3s
-            state: link
+            - name: Plant a hand-made K3s AppArmor disable symlink
+              ansible.builtin.file:
+                  src: /etc/apparmor.d/k3s
+                  dest: /etc/apparmor.d/disable/k3s
+                  state: link
