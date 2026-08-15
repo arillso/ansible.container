@@ -131,7 +131,7 @@ Fixes #123
 2. Run `make lint` and fix all issues
 3. Update `CHANGELOG.md` under `[Unreleased]`
 4. Update relevant documentation
-5. Create PR using our [PR template](.github/pull_request_template.md)
+5. Create PR using the organization PR template (applied automatically)
 6. Fill out all template sections and link related issues
 
 ### PR Review
