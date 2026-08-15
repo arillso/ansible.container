@@ -16,7 +16,9 @@
       # on disk.
       - name: Plant a leftover K3s AppArmor profile and disable symlink
         when: >-
-            ansible_facts['apparmor'] is defined
+            not (ansible_facts['selinux']['status'] is defined
+            and ansible_facts['selinux']['status'] != "disabled")
+            and ansible_facts['apparmor'] is defined
             and ansible_facts['apparmor']['status'] == "enabled"
         block:
             - name: Ensure the AppArmor profile directories exist

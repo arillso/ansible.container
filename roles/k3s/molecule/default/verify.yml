@@ -308,7 +308,9 @@
       # platform the change never touches.
       - name: Assert the AppArmor cleanup on AppArmor hosts
         when: >-
-            ansible_facts['apparmor'] is defined
+            not (ansible_facts['selinux']['status'] is defined
+            and ansible_facts['selinux']['status'] != "disabled")
+            and ansible_facts['apparmor'] is defined
             and ansible_facts['apparmor']['status'] == "enabled"
         block:
             - name: Check the K3s AppArmor profile file is gone
