@@ -5,6 +5,10 @@
         {
             "matchPackageNames": ["ansible-core"],
             "enabled": false
+        },
+        {
+            "matchPackageNames": ["molecule-qemu"],
+            "enabled": false
         }
     ],
     "customManagers": [
