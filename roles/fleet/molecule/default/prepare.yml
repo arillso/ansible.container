@@ -78,7 +78,7 @@
             mode: "0755"
         vars:
             # renovate: datasource=github-releases depName=helm/helm extractVersion=^v(?<version>.*)$
-            fleet_prepare_helm_version: "4.2.3"
+            fleet_prepare_helm_version: "4.2.4"
 
       - name: Install the Fleet CRDs
         ansible.builtin.command:
