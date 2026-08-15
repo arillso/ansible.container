@@ -296,9 +296,10 @@
         changed_when: true
 
       # converge.yml leaves k3s_apparmor_profile unset, so the role default
-      # (false) applies and the disable path runs. Assert it actually cleans
-      # up: a leftover profile is reloaded on every boot and breaks `kubectl
-      # exec` and pod termination.
+      # (false) applies and the disable path runs. prepare.yml plants a
+      # leftover profile and disable symlink beforehand, so this exercises the
+      # cleanup rather than a host that never had the profile: a leftover is
+      # reloaded on every boot and breaks `kubectl exec` and pod termination.
       - name: Check the K3s AppArmor profile file is gone
         ansible.builtin.stat:
             path: /etc/apparmor.d/k3s
@@ -309,22 +310,37 @@
             path: /etc/apparmor.d/disable/k3s
         register: k3s_apparmor_disable_stat
 
+      # securityfs is absent where AppArmor is not enabled (Rocky), which is
+      # not the same as "the profile is unloaded" - assert the two apart
+      # instead of letting an unreadable path count as a pass.
+      - name: Check whether the kernel exposes AppArmor profiles
+        ansible.builtin.stat:
+            path: /sys/kernel/security/apparmor/profiles
+        register: k3s_apparmor_securityfs
+
       - name: Search the kernel for a loaded K3s AppArmor profile
         ansible.builtin.command:
             cmd: grep -qE '^/usr/local/bin/k3s' /sys/kernel/security/apparmor/profiles
         register: k3s_apparmor_kernel_match
         changed_when: false
         failed_when: false
+        when: k3s_apparmor_securityfs.stat.exists
 
       - name: Verify the disabled K3s AppArmor profile is removed
         ansible.builtin.assert:
             that:
                 - not k3s_apparmor_profile_stat.stat.exists
                 - not k3s_apparmor_disable_stat.stat.exists
-                - k3s_apparmor_kernel_match.rc != 0
+                # rc 1 is "no match", rc 2 is a grep error - only the former
+                # proves the profile is not loaded.
+                - >-
+                    not k3s_apparmor_securityfs.stat.exists
+                    or k3s_apparmor_kernel_match.rc == 1
             fail_msg: >-
-                k3s_apparmor_profile is off, but the profile is still present:
+                k3s_apparmor_profile is off, but the profile is still present
+                or the check could not run:
                 file={{ k3s_apparmor_profile_stat.stat.exists }},
                 disable symlink={{ k3s_apparmor_disable_stat.stat.exists }},
-                loaded in kernel={{ k3s_apparmor_kernel_match.rc == 0 }}
+                securityfs={{ k3s_apparmor_securityfs.stat.exists }},
+                grep rc={{ k3s_apparmor_kernel_match.rc | default('skipped') }}
             success_msg: "Disabled K3s AppArmor profile is removed and unloaded"
