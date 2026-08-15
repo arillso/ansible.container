@@ -294,3 +294,37 @@
         environment:
             KUBECONFIG: /etc/rancher/k3s/k3s.yaml
         changed_when: true
+
+      # converge.yml leaves k3s_apparmor_profile unset, so the role default
+      # (false) applies and the disable path runs. Assert it actually cleans
+      # up: a leftover profile is reloaded on every boot and breaks `kubectl
+      # exec` and pod termination.
+      - name: Check the K3s AppArmor profile file is gone
+        ansible.builtin.stat:
+            path: /etc/apparmor.d/k3s
+        register: k3s_apparmor_profile_stat
+
+      - name: Check the K3s AppArmor disable symlink is gone
+        ansible.builtin.stat:
+            path: /etc/apparmor.d/disable/k3s
+        register: k3s_apparmor_disable_stat
+
+      - name: Search the kernel for a loaded K3s AppArmor profile
+        ansible.builtin.command:
+            cmd: grep -qE '^/usr/local/bin/k3s' /sys/kernel/security/apparmor/profiles
+        register: k3s_apparmor_kernel_match
+        changed_when: false
+        failed_when: false
+
+      - name: Verify the disabled K3s AppArmor profile is removed
+        ansible.builtin.assert:
+            that:
+                - not k3s_apparmor_profile_stat.stat.exists
+                - not k3s_apparmor_disable_stat.stat.exists
+                - k3s_apparmor_kernel_match.rc != 0
+            fail_msg: >-
+                k3s_apparmor_profile is off, but the profile is still present:
+                file={{ k3s_apparmor_profile_stat.stat.exists }},
+                disable symlink={{ k3s_apparmor_disable_stat.stat.exists }},
+                loaded in kernel={{ k3s_apparmor_kernel_match.rc == 0 }}
+            success_msg: "Disabled K3s AppArmor profile is removed and unloaded"
