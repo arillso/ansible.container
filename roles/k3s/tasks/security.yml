@@ -317,9 +317,59 @@
         ansible.builtin.command: apparmor_parser -r /etc/apparmor.d/k3s
         become: true
         when:
-            - k3s_apparmor_profile | default(true) | bool
+            - k3s_apparmor_profile | default(false) | bool
             - _k3s_apparmor_profile_created is changed
         changed_when: true
+
+      # Disable path: remove any previously deployed k3s profile. The deploy
+      # task above only stops writing the file; a copy left from an earlier run
+      # is reloaded by apparmor.service on every boot, so switching the variable
+      # off never took effect on existing hosts.
+      # Stacked child profiles (/usr/local/bin/k3s//null-/runc//null-*) block
+      # runc from writing /proc/thread-self/attr/apparmor/exec and from
+      # signalling container init: `kubectl exec` fails with "operation not
+      # permitted" and pods hang in Terminating with FailedKillPod. Observed on
+      # Ubuntu 24.04, kernel 6.8.0-137 - the same failure the cri-containerd
+      # disable path above addresses for kernel 6.17, so it is not limited to
+      # that version.
+      - name: Stat existing K3s AppArmor profile
+        ansible.builtin.stat:
+            path: /etc/apparmor.d/k3s
+        register: _k3s_apparmor_profile_file
+        when: not (k3s_apparmor_profile | default(false) | bool)
+
+      - name: Unload K3s AppArmor profile from kernel
+        ansible.builtin.command:
+            cmd: apparmor_parser -R /etc/apparmor.d/k3s
+        become: true
+        when:
+            - not (k3s_apparmor_profile | default(false) | bool)
+            - _k3s_apparmor_profile_file.stat.exists | default(false)
+        register: _k3s_apparmor_profile_unloaded
+        changed_when: _k3s_apparmor_profile_unloaded.rc == 0
+        failed_when: false
+        notify: Restart k3s
+
+      - name: Remove K3s AppArmor profile file
+        ansible.builtin.file:
+            path: /etc/apparmor.d/k3s
+            state: absent
+        become: true
+        when:
+            - not (k3s_apparmor_profile | default(false) | bool)
+            - _k3s_apparmor_profile_file.stat.exists | default(false)
+        notify: Restart k3s
+
+      # A hand-placed disable symlink keeps the profile from loading even once
+      # the file is gone; left behind it silently masks whether re-enabling the
+      # variable works. The role never creates it, so this only cleans up
+      # manual workarounds.
+      - name: Remove K3s AppArmor disable symlink
+        ansible.builtin.file:
+            path: /etc/apparmor.d/disable/k3s
+            state: absent
+        become: true
+        when: not (k3s_apparmor_profile | default(false) | bool)
 
 # General Security Hardening
 # K3s configuration directory permissions are set during directory creation in main.yml
