@@ -90,6 +90,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Renovate could not refresh the pinned nginx digest**: the `image:` lines in
+  `roles/docker_compose_v2/molecule/default/converge.yml` and `verify.yml`
+  carried a `# renovate: datasource=docker depName=nginx` comment, which the
+  comment manager from the shared `renovate-base` preset read as
+  `currentValue: nginx:alpine`. The resulting request for the
+  `library/nginx:nginx:alpine` manifest returned `400 DIGEST_INVALID` and every
+  Renovate run reported "Could not determine new digest for update" as a
+  repository problem, leaving the digest frozen. The comments are gone and
+  `.github/renovate.json` gained a `customManager` that parses the `image:`
+  line itself, so `depName` is `nginx`, `currentValue` is `alpine` and the
+  digest updates again. The match requires an `@sha256:` suffix, which keeps
+  tag-only test images such as `registry:2` in `docker_login` untracked.
+
 - **k3s AppArmor profile survived being disabled**: setting
   `k3s_apparmor_profile` to `false` only stopped
   `roles/k3s/tasks/security.yml` from writing `/etc/apparmor.d/k3s`; a copy

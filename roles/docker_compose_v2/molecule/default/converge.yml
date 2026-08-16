@@ -23,7 +23,12 @@
                   # tag resolves to a different ID than the stored one, compose
                   # recreates the container even though the config hash still
                   # matches, and the idempotence step fails on the launch task.
-                  # renovate: datasource=docker depName=nginx versioning=docker
+                  # Renovate keeps the digest fresh through the molecule-image
+                  # customManager in .github/renovate.json, which parses this
+                  # `image:` line directly. A `# renovate:` comment here would
+                  # be picked up by the comment manager in the shared preset
+                  # instead, which reads the whole `nginx:alpine` as the tag
+                  # and fails the registry lookup.
                   image: nginx:alpine@sha256:1d40e3eb3bf4f138de1d67193f2aa5309fcaf343eb5ffadbf5e9439de1eb1ebb
                   ports:
                       - "8080:80"
