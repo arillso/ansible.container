@@ -486,7 +486,11 @@ argument_specs:
             k3s_apparmor_profile:
                 type: "bool"
                 default: false
-                description: "Apply AppArmor profile for K3s"
+                description: >-
+                    Deploy and load the K3s AppArmor profile.
+                    When false, any existing profile is unloaded and removed,
+                    along with a hand-placed /etc/apparmor.d/disable/k3s
+                    symlink.
 
             k3s_cri_apparmor_profile_enabled:
                 type: "bool"

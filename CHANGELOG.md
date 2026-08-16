@@ -90,6 +90,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **k3s AppArmor profile survived being disabled**: setting
+  `k3s_apparmor_profile` to `false` only stopped
+  `roles/k3s/tasks/security.yml` from writing `/etc/apparmor.d/k3s`; a copy
+  left from an earlier run stayed on disk and was reloaded by
+  `apparmor.service` on every boot, so turning the variable off never took
+  effect on hosts that once had it on. The role now mirrors the cri-containerd
+  disable path — it unloads the profile with `apparmor_parser -R`, removes the
+  file and clears a hand-placed `/etc/apparmor.d/disable/k3s` symlink. With the
+  profile still loaded, container processes ran under stacked child profiles,
+  so `kubectl exec` failed with an AppArmor `operation not permitted` error and
+  pods hung in Terminating with `FailedKillPod`. The load task also read
+  `k3s_apparmor_profile | default(true)` where the deploy task read
+  `default(false)`; both now use `default(false)`.
+
 - **k3s server nodes ignored container log rotation**: the
   `container-log-max-size` and `container-log-max-files` kubelet args were only
   built by `agent-config.yaml.j2`, so a server node never rotated container
