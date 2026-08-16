@@ -22,7 +22,7 @@ permissions:
 
 jobs:
     ci:
-        uses: arillso/.github/.github/workflows/ci-ansible-collection.yml@2026-08-15
+        uses: arillso/.github/.github/workflows/ci-ansible-collection.yml@2026-08-16
         with:
             collection_namespace: arillso
             collection_name: container
@@ -38,7 +38,7 @@ jobs:
         # the matrix is pinned to the single `default` scenario. The
         # concurrency-suffix keeps each role's nested call out of the
         # caller's concurrency group.
-        uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-08-15
+        uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-08-16
         with:
             collection_namespace: arillso
             collection_name: container
@@ -50,7 +50,7 @@ jobs:
             concurrency-suffix: molecule-docker
 
     molecule-k3s:
-        uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-08-15
+        uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-08-16
         with:
             collection_namespace: arillso
             collection_name: container
@@ -62,7 +62,7 @@ jobs:
             concurrency-suffix: molecule-k3s
 
     molecule-docker-login:
-        uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-08-15
+        uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-08-16
         with:
             collection_namespace: arillso
             collection_name: container
@@ -74,7 +74,7 @@ jobs:
             concurrency-suffix: molecule-docker-login
 
     molecule-docker-compose-v2:
-        uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-08-15
+        uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-08-16
         with:
             collection_namespace: arillso
             collection_name: container
@@ -86,7 +86,7 @@ jobs:
             concurrency-suffix: molecule-docker-compose-v2
 
     molecule-helm:
-        uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-08-15
+        uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-08-16
         with:
             collection_namespace: arillso
             collection_name: container
@@ -98,7 +98,7 @@ jobs:
             concurrency-suffix: molecule-helm
 
     molecule-fleet:
-        uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-08-15
+        uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-08-16
         with:
             collection_namespace: arillso
             collection_name: container
@@ -110,7 +110,7 @@ jobs:
             concurrency-suffix: molecule-fleet
 
     molecule-tailscale:
-        uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-08-15
+        uses: arillso/.github/.github/workflows/ci-ansible-molecule.yml@2026-08-16
         with:
             collection_namespace: arillso
             collection_name: container
@@ -122,12 +122,12 @@ jobs:
             concurrency-suffix: molecule-tailscale
 
     security-secrets:
-        uses: arillso/.github/.github/workflows/security-secrets.yml@2026-08-15
+        uses: arillso/.github/.github/workflows/security-secrets.yml@2026-08-16
 
     security-deps:
-        uses: arillso/.github/.github/workflows/security-deps.yml@2026-08-15
+        uses: arillso/.github/.github/workflows/security-deps.yml@2026-08-16
 
     claude-review:
-        uses: arillso/.github/.github/workflows/ai-claude-review.yml@2026-08-15
+        uses: arillso/.github/.github/workflows/ai-claude-review.yml@2026-08-16
         secrets:
             CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
