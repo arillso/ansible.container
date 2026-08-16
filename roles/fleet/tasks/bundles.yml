@@ -25,6 +25,11 @@
 # does not support async"). That path could never run — only check_mode ever
 # reached the synchronous fallback.
 - name: "Manage Fleet Bundles"
+  vars:
+      # Resolved once so wait, wait_condition and wait_timeout below cannot
+      # drift apart: a true wait with an omitted condition would block on mere
+      # existence instead of Ready=True.
+      _bundle_wait: "{{ item.wait | default(fleet_bundle_wait) | bool }}"
   kubernetes.core.k8s:
       kubeconfig: "{{ fleet_kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
       definition:
@@ -89,11 +94,12 @@
       # role never sent (spec.targetCustomizationMode), which no amount
       # of omitting on our side can match.
       apply: true
-      wait: true
-      wait_condition:
-          type: Ready
-          status: "True"
-      wait_timeout: 300
+      # Per-bundle override of the readiness gate, falling back to the role
+      # default. When wait is false the Bundle is applied without blocking on
+      # Ready, so a long serial loop no longer stacks up wait_timeout per item.
+      wait: "{{ _bundle_wait | bool }}"
+      wait_condition: "{{ {'type': 'Ready', 'status': 'True'} if (_bundle_wait | bool) else omit }}"
+      wait_timeout: "{{ item.wait_timeout | default(fleet_bundle_wait_timeout) | int if (_bundle_wait | bool) else omit }}"
   loop: "{{ fleet_bundles }}"
   when: fleet_bundles | length > 0
   register: fleet_bundle_results
