@@ -9,7 +9,7 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 name: apt_version_pin
-version_added: "1.5.0"
+version_added: "2.0.0"
 short_description: Resolve an apt version pin from apt-cache madison output
 description:
     - Picks the full apt version string for a marketing version out of C(apt-cache madison) output.
