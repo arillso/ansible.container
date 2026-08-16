@@ -97,8 +97,8 @@ fleet_resource_timeout: 300
 # grows with the number of bundles (up to fleet_bundle_wait_timeout each).
 # Set false (globally, or per bundle via `wait: false` on the item) to apply
 # stable bundles fire-and-forget and let Fleet reconcile them asynchronously,
-# trading the readiness gate for a much shorter run. Mirrors the per-item
-# wait handling already used in clusters.yml.
+# trading the readiness gate for a much shorter run. Clusters gate their wait
+# on kubeconfig_secret instead and have no equivalent knob.
 fleet_bundle_wait: true
 fleet_bundle_wait_timeout: 300
 
