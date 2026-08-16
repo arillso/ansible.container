@@ -24,6 +24,20 @@
             ],
             "extractVersionTemplate": "{{#if extractVersion}}{{{extractVersion}}}{{else}}^(?<version>.*)${{/if}}",
             "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
+        },
+        {
+            "description": [
+                "Digest-pinned images in Molecule scenario playbooks. The shared preset only parses `image:` in molecule.yml, so the images embedded in converge.yml/verify.yml need their own manager. Parsing the line directly keeps depName as the repository and currentValue as the bare tag; a `# renovate:` comment would instead be matched by the comment manager in renovate-base, which captures `nginx:alpine` as the tag and makes the registry return 400 DIGEST_INVALID. The digest is required in the match so that throwaway test images pinned by tag alone (registry:2 in docker_login) stay untracked."
+            ],
+            "customType": "regex",
+            "managerFilePatterns": [
+                "/^roles/[^/]+/molecule/[^/]+/(converge|verify|prepare|side_effect|cleanup)\\.yml$/"
+            ],
+            "datasourceTemplate": "docker",
+            "versioningTemplate": "docker",
+            "matchStrings": [
+                "image:\\s*[\"']?(?<depName>[^:\\s\"']+):(?<currentValue>[^@\\s\"']+?)@(?<currentDigest>sha256:[a-f0-9]+)[\"']?\\s*(?:\\r?\\n|\\r|$)"
+            ]
         }
     ]
 }

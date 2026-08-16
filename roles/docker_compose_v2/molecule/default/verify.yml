@@ -72,8 +72,9 @@
                     web:
                         # Must match converge.yml: the role renders this into
                         # the project file, and compose resolves the project to
-                        # tear down from it.
-                        # renovate: datasource=docker depName=nginx versioning=docker
+                        # tear down from it. Renovate updates the digest here
+                        # through the molecule-image customManager in
+                        # .github/renovate.json.
                         image: nginx:alpine@sha256:1d40e3eb3bf4f138de1d67193f2aa5309fcaf343eb5ffadbf5e9439de1eb1ebb
                         ports:
                             - "8080:80"
