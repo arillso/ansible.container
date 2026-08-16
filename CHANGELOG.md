@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-08-16
+
 ### Removed
 
 - **Five unused helm variables**: `helm_target_groups`, `helm_target_host`,
@@ -23,6 +25,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   flow.
 
 ### Added
+
+- **`apt_version_pin` filter plugin**: resolves a version prefix to the full
+  version string apt reports, replacing four hand-rolled Jinja regex copies in
+  the docker and `docker_compose_v2` roles. Documented in
+  `plugins/filter/DOCUMENTATION.yml` and covered by
+  `tests/unit/plugins/filter/test_apt_filters.py`.
+
+- **Configurable fleet bundle readiness wait**: `fleet_bundle_wait` (`true`)
+  and `fleet_bundle_wait_timeout` (`300`) in `roles/fleet/defaults/main.yml`,
+  both overridable per bundle via `wait` / `wait_timeout` on the item and
+  declared in `meta/argument_specs.yml`. The "Manage Fleet Bundles" task
+  previously applied each bundle with a hardcoded wait for `Ready`, so a serial
+  loop over many bundles stacked up the 300s timeout per item. Stable bundles
+  can now be applied fire-and-forget and let Fleet reconcile them
+  asynchronously; the registered result shape is unchanged.
 
 - **k3s container log rotation defaults**: `k3s_container_log_max_size`
   (`10Mi`) and `k3s_container_log_max_files` (`5`) now have defaults in
@@ -89,6 +106,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   role creates.
 
 ### Fixed
+
+- **docker version pin never matched on the Debian family**: apt matches an `=`
+  pin against the full version string and does not expand globs in it, so the
+  shipped `docker_version` default (`docker-ce=28.5.2`) was unusable on Debian
+  and Ubuntu — apt reports the version with an epoch and a distro release
+  suffix. `install_docker_debian.yml` and `install_docker_ubuntu.yml` now
+  resolve the full version string on the host before pinning. Every existing
+  docker scenario blanked `docker_version`, so the shipped default had never
+  been exercised; a new `pinned` molecule scenario runs the role without that
+  override and asserts the installed server version equals the pin.
+
+- **docker_compose_v2 pin was built in one form for three package managers**:
+  apt needed the full version string it never got, and dnf does not know the
+  `pkg=version` syntax at all, so every pinned run failed on a role that
+  advertises Debian, Ubuntu and EL 9. The pin form now lives in
+  per-distribution `vars/` files, and the apt string is resolved on the host
+  through the new `apt_version_pin` filter.
+
+- **helm applied charts to only one host per play**: `charts.yml`,
+  `prerequisites.yml` and `repositories.yml` carried `run_once`, but each host
+  the role targets is its own k3s cluster, so the HelmChart CRs reached a single
+  host and left the other clusters empty. Removing `run_once` also unmasks the
+  kubeconfig autodetection, which promised the first existing candidate but let
+  the loop overwrite it down to the last; it now selects the first match in one
+  pass.
+
+- **`helm_kubeconfig_path` was undocumented and unvalidated**: the role read it
+  in 13 task lines, including as `kubeconfig` for every `kubernetes.core` call,
+  but declared it in neither `defaults/main.yml` nor `meta/argument_specs.yml`.
+  Both now declare it. The default stays empty, since `prerequisites.yml` only
+  autodetects the path while the value is unset or empty.
+
+- **lefthook could not lint without Galaxy access**: the `ansible-lint` hook
+  resolved the collections declared in the molecule requirements against
+  `galaxy.ansible.com`, so a machine without Galaxy egress could not commit any
+  file under the hook's glob and had to reach for `--no-verify`, which drops the
+  gitleaks hook too. The hook now lints offline.
 
 - **Renovate could not refresh the pinned nginx digest**: the `image:` lines in
   `roles/docker_compose_v2/molecule/default/converge.yml` and `verify.yml`
@@ -392,13 +446,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `name: Release - Ansible Collection`, simplify `run-name` to
   `Release <ref>`, use a `release-<ref>` concurrency group, rename the job to
   `release`, and pin the reusable workflow to `@2026-06-18`.
-- `.python-version` `3.14` → `3.13` (org-wide target — `3.14` is rejected by
-  `ansible-test`, which supports at most `3.13`).
+- The `python_version` CI input is pinned to `3.13` in `pull-request.yml` and
+  `merge.yml`, because `ansible-test sanity` rejects `3.14`. The local
+  `.python-version` tracks the newest CPython release (`3.14.7`) and is not
+  used by the test matrix.
 - Security scan runs as `nightly-security.yml` (`name: Nightly Security Scan`)
   on a daily cron (`0 2 * * *`). Per the repo-standard visibility rule, public
   repos run the scan daily (free Actions minutes); private repos run it weekly.
 - `LICENSE` copyright `2025` → `2023-2026` (org range `FIRST-CURRENT`,
   consistent with the README).
+- **Repo standard alignment**: dropped scanner configs no consumer reads
+  (`.checkov.yml`, `.grype.yaml`, `.jscpd.json`, `.markdown-link-check.json`,
+  `.secretlintrc.json`, `.trivy.yaml`) — no reusable workflow or lefthook hook
+  passed them to their tools, so they documented settings that never reached a
+  scanner. The repo-local community health files (issue templates, PR template,
+  `CODEOWNERS`) are gone as well, so the `arillso/.github` org defaults apply
+  directly; the copies had drifted, and `CODEOWNERS` replaced the org file
+  rather than extending it.
+- **helm chart install in the fleet and tailscale molecule prepare steps** now
+  uses `helm/helm` v4 (Renovate).
 - **Role metadata**: drop EOL Ubuntu `focal` (and Debian `buster` where present)
   from `galaxy_info.platforms` across all roles; ensure `jammy`/`noble` and
   `bullseye`/`bookworm` are listed.
