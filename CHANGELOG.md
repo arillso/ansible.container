@@ -101,7 +101,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `.github/renovate.json` gained a `customManager` that parses the `image:`
   line itself, so `depName` is `nginx`, `currentValue` is `alpine` and the
   digest updates again. The match requires an `@sha256:` suffix, which keeps
-  tag-only test images such as `registry:2` in `docker_login` untracked.
+  tag-only test images such as `registry:2` in `docker_login` untracked, while
+  the tag itself is optional so a digest-only pin (`image: nginx@sha256:…`) is
+  still tracked rather than silently frozen. Excluding `/` from the tag keeps a
+  port-qualified registry (`registry.example.com:5000/nginx`) inside `depName`
+  instead of splitting it at the port.
 
 - **k3s AppArmor profile survived being disabled**: setting
   `k3s_apparmor_profile` to `false` only stopped

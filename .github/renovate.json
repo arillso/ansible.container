@@ -27,7 +27,7 @@
         },
         {
             "description": [
-                "Digest-pinned images in Molecule scenario playbooks. The shared preset only parses `image:` in molecule.yml, so the images embedded in converge.yml/verify.yml need their own manager. Parsing the line directly keeps depName as the repository and currentValue as the bare tag; a `# renovate:` comment would instead be matched by the comment manager in renovate-base, which captures `nginx:alpine` as the tag and makes the registry return 400 DIGEST_INVALID. The digest is required in the match so that throwaway test images pinned by tag alone (registry:2 in docker_login) stay untracked."
+                "Digest-pinned images in Molecule scenario playbooks. The shared preset only parses `image:` in molecule.yml, so the images embedded in converge.yml/verify.yml need their own manager. Parsing the line directly keeps depName as the repository and currentValue as the bare tag; a `# renovate:` comment would instead be matched by the comment manager in renovate-base, which captures `nginx:alpine` as the tag and makes the registry return 400 DIGEST_INVALID. The digest is required in the match so that throwaway test images pinned by tag alone (registry:2 in docker_login) stay untracked, while the tag itself is optional so a digest-only pin is still picked up. Excluding `/` from the tag keeps a port-qualified registry (registry.example.com:5000/nginx) inside depName instead of splitting it at the port."
             ],
             "customType": "regex",
             "managerFilePatterns": [
@@ -36,7 +36,7 @@
             "datasourceTemplate": "docker",
             "versioningTemplate": "docker",
             "matchStrings": [
-                "image:\\s*[\"']?(?<depName>[^:\\s\"']+):(?<currentValue>[^@\\s\"']+?)@(?<currentDigest>sha256:[a-f0-9]+)[\"']?\\s*(?:\\r?\\n|\\r|$)"
+                "image:\\s*[\"']?(?<depName>[^\\s\"'@]+?)(?::(?<currentValue>[^@\\s\"'/]+))?@(?<currentDigest>sha256:[a-f0-9]+)[\"']?\\s*(?:\\r?\\n|\\r|$)"
             ]
         }
     ]
