@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **CI now runs on Python 3.14**: the nine `python_version` inputs in
+  `.github/workflows/pull-request.yml` and `.github/workflows/merge.yml` moved
+  from `3.13` to `3.14`, matching `.python-version`.
+- **Reusable workflow references pinned to `2026-08-17`**: all 18 calls to
+  `arillso/.github` moved off `2026-08-16`. The bump is a prerequisite for the
+  change above — the older reusable pinned the sanity job to Python 3.12 for
+  `stable-2.20` and `devel` and ignored the caller's `python_version`, so
+  raising the input alone would have had no effect.
+
 ## [2.0.0] - 2026-08-16
 
 ### Removed
