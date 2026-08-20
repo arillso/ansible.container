@@ -1,6 +1,6 @@
 ---
 # renovate: datasource=github-releases depName=docker/compose
-docker_compose_v2_version: "5.4.0"
+docker_compose_v2_version: "5.5.0"
 # docker_compose_v2_packages is intentionally not defined here: the pin form
 # differs per package manager (apt needs the full version string resolved at
 # runtime, dnf needs "pkg-version*"), so it lives in vars/<distribution>.yml,
