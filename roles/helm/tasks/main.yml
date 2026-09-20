@@ -17,16 +17,58 @@
       - helm-dependencies
       - system-packages
 
-# arillso.system.packages drives ansible.builtin.apt throughout and
-# advertises Debian and Ubuntu only, so it cannot serve the EL 9 platform
-# this role declares. The client comes from PyPI rather than the
-# distribution, because python3-kubernetes is a Debian name and the EL 9
-# equivalent lives in EPEL, which is not enabled by default.
+# PEP 668 decides where the client comes from, not the package manager.
+# An interpreter that ships an EXTERNALLY-MANAGED marker refuses a
+# system-wide `pip install` with "error: externally-managed-environment",
+# so there the distribution packages are the only way in. Everywhere else
+# PyPI stays, because it is the only source that honours the version
+# floors below on every platform this role advertises.
+#
+# Keying on the marker rather than on the distribution matters for the
+# older apt platforms: bullseye, bookworm and jammy predate PEP 668 and
+# ship python3-kubernetes/python3-oauthlib too old for
+# `kubernetes.core >= 2.4.0` (needs kubernetes >= 12.0.0) and for
+# SIGNATURE_RSA (needs oauthlib >= 3.2.0). They keep the PyPI path and
+# its floors; only a marked interpreter takes the distribution packages,
+# which on those releases (noble and newer) are new enough.
+# Ask the target interpreter for its own stdlib path instead of guessing
+# it from the version: the marker sits next to the stdlib, and only the
+# interpreter that would run the install knows where that is.
+- name: Check whether the system interpreter is externally managed
+  ansible.builtin.command:
+      cmd: >-
+          {{ ansible_facts['python']['executable'] }} -c
+          "import os,sysconfig;print(os.path.exists(os.path.join(sysconfig.get_path('stdlib'),'EXTERNALLY-MANAGED')))"
+  register: _helm_externally_managed
+  changed_when: false
+  check_mode: false
+  tags:
+      - helm
+      - helm-dependencies
+      - system-packages
+
+# arillso.system.packages is no help here: it drives ansible.builtin.apt
+# throughout and advertises Debian and Ubuntu only, so it cannot serve
+# the EL 9 platform this role declares.
+- name: Install the Kubernetes Python client from the distribution
+  ansible.builtin.apt:
+      name:
+          - python3-kubernetes
+          - python3-oauthlib
+      state: present
+  become: true
+  when: _helm_externally_managed.stdout | trim == 'True'
+  tags:
+      - helm
+      - helm-dependencies
+      - system-packages
+
 - name: Install pip for the Kubernetes Python client
   ansible.builtin.package:
       name: python3-pip
       state: present
   become: true
+  when: _helm_externally_managed.stdout | trim != 'True'
   tags:
       - helm
       - helm-dependencies
@@ -37,13 +79,14 @@
 # client pulls requests-oauthlib, which needs SIGNATURE_RSA from a newer
 # oauthlib. Without the upgrade the install succeeds and the very next
 # module import dies with "cannot import name 'SIGNATURE_RSA'".
-- name: Install Python packages for Kubernetes
+- name: Install the Kubernetes Python client from PyPI
   ansible.builtin.pip:
       name:
           - kubernetes
           - oauthlib>=3.2.0
       state: present
   become: true
+  when: _helm_externally_managed.stdout | trim != 'True'
   register: _helm_python_client_install
   retries: 3
   delay: 10

@@ -16,9 +16,14 @@ driver:
     name: molecule-qemu
 
 platforms:
-    - name: helm-ubuntu-22.04
-      image_url: https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img
-      image_checksum: sha256:https://cloud-images.ubuntu.com/jammy/current/SHA256SUMS
+    # noble, while the other six roles of this collection test on jammy.
+    # This role is the only one that installs a Python client on the
+    # system interpreter, so it is the only one PEP 668 can reach — and
+    # jammy ships Python 3.10, which predates it. On jammy the branch
+    # below would pass without ever touching the failure case.
+    - name: helm-ubuntu-24.04
+      image_url: https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img
+      image_checksum: sha256:https://cloud-images.ubuntu.com/noble/current/SHA256SUMS
       image_arch: x86_64
       network_mode: user
       network_ssh_port: 2222
@@ -57,7 +62,7 @@ provisioner:
             result_format: yaml
     inventory:
         host_vars:
-            helm-ubuntu-22.04:
+            helm-ubuntu-24.04:
                 ansible_become: true
             helm-rocky-9:
                 ansible_become: true
