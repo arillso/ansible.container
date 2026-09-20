@@ -26,6 +26,8 @@ k3s_disable_traefik: false
 k3s_disable_servicelb: false
 k3s_disable_metrics_server: false
 k3s_disable_cloud_controller: false
+k3s_disable_local_storage: false
+k3s_disable_helm_controller: false
 
 # K3s server configuration
 k3s_tls_san: []
