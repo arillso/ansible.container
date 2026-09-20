@@ -357,3 +357,31 @@
                       securityfs={{ k3s_apparmor_securityfs.stat.exists }},
                       grep rc={{ k3s_apparmor_kernel_match.rc | default('skipped') }}
                   success_msg: "Disabled K3s AppArmor profile is removed and unloaded"
+
+      # helm-controller, cloud-controller and network-policy are flags of
+      # their own, not `disable:` targets. Appending them to that list
+      # renders a config k3s silently ignores, so the toggle appears to
+      # work while the component stays enabled.
+      - name: Verify the controller toggles render as their own flags
+        ansible.builtin.assert:
+            that:
+                - k3s_config_parsed['disable-helm-controller'] | default(false) | bool
+                - "'helm-controller' not in (k3s_config_parsed.disable | default([]))"
+                - "'cloud-controller' not in (k3s_config_parsed.disable | default([]))"
+                - "'network-policy' not in (k3s_config_parsed.disable | default([]))"
+            fail_msg: >-
+                Controller toggles are misrendered:
+                disable={{ k3s_config_parsed.disable | default([]) }},
+                disable-helm-controller={{
+                    k3s_config_parsed['disable-helm-controller'] | default('<absent>') }}
+            success_msg: "Controller toggles render as dedicated flags"
+
+      - name: Verify the disable list keeps its real targets
+        ansible.builtin.assert:
+            that:
+                - "'traefik' in k3s_config_parsed.disable"
+                - "'servicelb' in k3s_config_parsed.disable"
+            fail_msg: >-
+                Expected traefik and servicelb in the disable list, got
+                {{ k3s_config_parsed.disable | default([]) }}
+            success_msg: "The disable list carries its real targets"
