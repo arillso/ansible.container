@@ -6,6 +6,9 @@
       k3s_role: server
       k3s_disable_traefik: true
       k3s_disable_servicelb: true
+      # Not a `disable:` list target — k3s takes it through its own flag.
+      # verify.yml asserts it lands as `disable-helm-controller`.
+      k3s_disable_helm_controller: true
       k3s_write_kubeconfig_mode: "0644"
       # Passthrough args must survive alongside the hardening args the role
       # adds itself; verify.yml asserts both are present.

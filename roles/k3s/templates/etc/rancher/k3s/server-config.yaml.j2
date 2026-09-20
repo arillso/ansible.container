@@ -193,17 +193,18 @@
 {%- if k3s_disable_local_storage is defined and k3s_disable_local_storage -%}
 {%-   set _ = disable_components.append('local-storage') -%}
 {%- endif -%}
-{%- if k3s_disable_network_policy is defined and k3s_disable_network_policy -%}
-{%-   set _ = disable_components.append('network-policy') -%}
-{%- endif -%}
-{%- if k3s_disable_helm_controller is defined and k3s_disable_helm_controller -%}
-{%-   set _ = disable_components.append('helm-controller') -%}
-{%- endif -%}
-{%- if k3s_disable_cloud_controller is defined and k3s_disable_cloud_controller -%}
-{%-   set _ = disable_components.append('cloud-controller') -%}
-{%- endif -%}
 {%- if disable_components | length > 0 -%}
 {%-   set _ = k3s_config.update({'disable': disable_components}) -%}
+{%- endif -%}
+
+{#- helm-controller, cloud-controller and network-policy are not `disable:`
+    targets; k3s takes each through its own flag. network-policy is already
+    handled above with the other networking settings. -#}
+{%- if k3s_disable_helm_controller is defined and k3s_disable_helm_controller -%}
+{%-   set _ = k3s_config.update({'disable-helm-controller': true}) -%}
+{%- endif -%}
+{%- if k3s_disable_cloud_controller is defined and k3s_disable_cloud_controller -%}
+{%-   set _ = k3s_config.update({'disable-cloud-controller': true}) -%}
 {%- endif -%}
 
 {#- === LOGGING CONFIGURATION === -#}

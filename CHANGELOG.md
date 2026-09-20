@@ -18,10 +18,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `roles/k3s/templates/etc/rancher/k3s/server-config.yaml.j2` (lines 193 and
   199) behind an `is defined` guard, so a typo in either name silently
   disabled nothing instead of failing. The defaults match the previous
-  effective behaviour: with no value set, the guard did not fire.
+  effective behaviour: with no value set, the guard did not fire. See the
+  matching fix below — before it, `k3s_disable_helm_controller` rendered into
+  a field k3s ignores.
 
 ### Fixed
 
+- **The k3s controller toggles now render as their own flags**:
+  `k3s_disable_helm_controller`, `k3s_disable_cloud_controller` and
+  `k3s_disable_network_policy` were appended to the `disable:` list in
+  `roles/k3s/templates/etc/rancher/k3s/server-config.yaml.j2`. That list only
+  accepts packaged components (`traefik`, `servicelb`, `metrics-server`,
+  `local-storage`); k3s takes these three through `disable-helm-controller`,
+  `disable-cloud-controller` and `disable-network-policy` instead. k3s ignores
+  the unknown list entries without warning, so setting any of the three
+  appeared to work while the component kept running. `disable-network-policy`
+  was additionally already emitted correctly higher up in the same template,
+  so that toggle rendered twice, once in the wrong place. The k3s molecule
+  scenario now sets `k3s_disable_helm_controller` and asserts in `verify.yml`
+  that it lands as a dedicated key and that no controller name reaches the
+  `disable:` list.
 - **PEP 668 no longer breaks the helm role on Debian/Ubuntu**: the Kubernetes
   Python client in `roles/helm/tasks/main.yml` now comes from the
   distribution (`python3-kubernetes`, `python3-oauthlib`) on interpreters that
