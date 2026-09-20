@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **PEP 668 no longer breaks the helm role on Debian/Ubuntu**: the Kubernetes
+  Python client in `roles/helm/tasks/main.yml` now comes from the
+  distribution (`python3-kubernetes`, `python3-oauthlib`) where the package
+  manager is apt, and from PyPI everywhere else. Since Python 3.11 the system
+  interpreter is marked externally managed, so the previous system-wide
+  `pip install` aborted with `error: externally-managed-environment` and took
+  the whole run with it. `python3-pip` is likewise restricted to the EL
+  branch, where it is still needed.
+- **The helm scenario now tests the platform that can fail**: the molecule
+  platform moved from `helm-ubuntu-22.04` (jammy, Python 3.10) to
+  `helm-ubuntu-24.04` (noble). Jammy predates PEP 668, so the scenario could
+  not have caught the bug above. `verify.yml` additionally asserts that both
+  branches land an importable kubernetes client and an oauthlib of at least
+  3.2.0, the version that carries `SIGNATURE_RSA`.
+
 ### Changed
 
 - **CI now runs on Python 3.14**: the nine `python_version` inputs in

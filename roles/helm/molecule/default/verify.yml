@@ -82,3 +82,37 @@
                     | list | length >= 1
             fail_msg: "No running podinfo pod in namespace 'podinfo'"
             success_msg: "Chart released a running pod in namespace 'podinfo'"
+
+      # The role installs the Kubernetes Python client from the
+      # distribution on Debian/Ubuntu and from PyPI on EL. Both branches
+      # must land the same two importable modules, and oauthlib must be
+      # new enough to carry SIGNATURE_RSA — the distribution package is
+      # not version-pinned the way the PyPI requirement is, so assert it
+      # here rather than assume it.
+      - name: Read the installed oauthlib version
+        ansible.builtin.command:
+            cmd: "{{ ansible_python_interpreter | default('/usr/bin/python3') }} -c 'import oauthlib; print(oauthlib.__version__)'"
+        register: helm_verify_oauthlib
+        changed_when: false
+
+      - name: Assert oauthlib satisfies the SIGNATURE_RSA requirement
+        ansible.builtin.assert:
+            that:
+                - helm_verify_oauthlib.stdout | trim is version('3.2.0', '>=')
+            fail_msg: >-
+                oauthlib {{ helm_verify_oauthlib.stdout | trim }} is older than 3.2.0,
+                so requests-oauthlib cannot import SIGNATURE_RSA
+            success_msg: "oauthlib {{ helm_verify_oauthlib.stdout | trim }} satisfies >= 3.2.0"
+
+      - name: Read the installed kubernetes client version
+        ansible.builtin.command:
+            cmd: "{{ ansible_python_interpreter | default('/usr/bin/python3') }} -c 'import kubernetes; print(kubernetes.__version__)'"
+        register: helm_verify_kubernetes
+        changed_when: false
+
+      - name: Assert the kubernetes client imports
+        ansible.builtin.assert:
+            that:
+                - helm_verify_kubernetes.stdout | trim | length > 0
+            fail_msg: "The kubernetes Python client is not importable"
+            success_msg: "Kubernetes Python client {{ helm_verify_kubernetes.stdout | trim }} is importable"

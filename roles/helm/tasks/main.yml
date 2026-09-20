@@ -17,16 +17,37 @@
       - helm-dependencies
       - system-packages
 
-# arillso.system.packages drives ansible.builtin.apt throughout and
-# advertises Debian and Ubuntu only, so it cannot serve the EL 9 platform
-# this role declares. The client comes from PyPI rather than the
-# distribution, because python3-kubernetes is a Debian name and the EL 9
-# equivalent lives in EPEL, which is not enabled by default.
+# The client is installed per package manager, because neither source
+# serves both platforms this role declares:
+#
+# * Debian/Ubuntu take the distribution packages. Since Python 3.11 the
+#   system interpreter is marked externally managed (PEP 668) and a
+#   system-wide `pip install` aborts with
+#   "error: externally-managed-environment".
+# * EL 9 takes PyPI, because python3-kubernetes is a Debian name and the
+#   EL 9 equivalent lives in EPEL, which is not enabled by default.
+#
+# arillso.system.packages is no help here either: it drives
+# ansible.builtin.apt throughout and advertises Debian and Ubuntu only.
+- name: Install the Kubernetes Python client from the distribution
+  ansible.builtin.apt:
+      name:
+          - python3-kubernetes
+          - python3-oauthlib
+      state: present
+  become: true
+  when: ansible_facts['pkg_mgr'] in ['apt', 'apt-get']
+  tags:
+      - helm
+      - helm-dependencies
+      - system-packages
+
 - name: Install pip for the Kubernetes Python client
   ansible.builtin.package:
       name: python3-pip
       state: present
   become: true
+  when: ansible_facts['pkg_mgr'] not in ['apt', 'apt-get']
   tags:
       - helm
       - helm-dependencies
@@ -37,13 +58,14 @@
 # client pulls requests-oauthlib, which needs SIGNATURE_RSA from a newer
 # oauthlib. Without the upgrade the install succeeds and the very next
 # module import dies with "cannot import name 'SIGNATURE_RSA'".
-- name: Install Python packages for Kubernetes
+- name: Install the Kubernetes Python client from PyPI
   ansible.builtin.pip:
       name:
           - kubernetes
           - oauthlib>=3.2.0
       state: present
   become: true
+  when: ansible_facts['pkg_mgr'] not in ['apt', 'apt-get']
   register: _helm_python_client_install
   retries: 3
   delay: 10
