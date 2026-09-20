@@ -180,6 +180,16 @@ argument_specs:
                 default: false
                 description: "Disable built-in cloud controller manager"
 
+            k3s_disable_local_storage:
+                type: "bool"
+                default: false
+                description: "Disable built-in local storage provisioner"
+
+            k3s_disable_helm_controller:
+                type: "bool"
+                default: false
+                description: "Disable built-in Helm controller"
+
             k3s_data_dir:
                 type: "str"
                 default: "/var/lib/rancher/k3s"
