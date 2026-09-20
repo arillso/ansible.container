@@ -29,7 +29,7 @@
                   # be picked up by the comment manager in the shared preset
                   # instead, which reads the whole `nginx:alpine` as the tag
                   # and fails the registry lookup.
-                  image: nginx:alpine@sha256:1d40e3eb3bf4f138de1d67193f2aa5309fcaf343eb5ffadbf5e9439de1eb1ebb
+                  image: nginx:alpine@sha256:7396be67b6f53012a5cf955fa9040619294c25ccacf11e22af5de1b572fc756e
                   ports:
                       - "8080:80"
   tasks:
