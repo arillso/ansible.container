@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-09-20
+
+### Added
+
+- **k3s local storage and Helm controller toggles declared**:
+  `k3s_disable_local_storage` (`false`) and `k3s_disable_helm_controller`
+  (`false`) now exist in `roles/k3s/defaults/main.yml` and
+  `roles/k3s/meta/argument_specs.yml`. Both were already rendered by
+  `roles/k3s/templates/etc/rancher/k3s/server-config.yaml.j2` (lines 193 and
+  199) behind an `is defined` guard, so a typo in either name silently
+  disabled nothing instead of failing. The defaults match the previous
+  effective behaviour: with no value set, the guard did not fire.
+
 ### Fixed
 
 - **PEP 668 no longer breaks the helm role on Debian/Ubuntu**: the Kubernetes
@@ -31,12 +44,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **CI now runs on Python 3.14**: the nine `python_version` inputs in
   `.github/workflows/pull-request.yml` and `.github/workflows/merge.yml` moved
-  from `3.13` to `3.14`, matching `.python-version`.
-- **Reusable workflow references pinned to `2026-08-17`**: all 18 calls to
-  `arillso/.github` moved off `2026-08-16`. The bump is a prerequisite for the
-  change above — the older reusable pinned the sanity job to Python 3.12 for
-  `stable-2.20` and `devel` and ignored the caller's `python_version`, so
-  raising the input alone would have had no effect.
+  from `3.13` to `3.14`, matching `.python-version`. The accompanying bump of
+  the `arillso/.github` reusable workflows was the prerequisite: the previous
+  reusable pinned the sanity job to Python 3.12 for `stable-2.20` and `devel`
+  and ignored the caller's `python_version`, so raising the input alone would
+  have had no effect.
+- **Reusable workflow references moved to `2026-09-19`**: all 18 calls to
+  `arillso/.github` across the four workflow files, plus the
+  `renovate-ansible` preset in `.github/renovate.json`, advanced from
+  `2026-08-16` through the Renovate series to `2026-09-19`.
+
+### Dependencies
+
+- `k3s_version` from `v1.36.3+k3s1` to `v1.37.0+k3s1`.
+- `docker_compose_v2_version` from `5.4.0` to `5.5.1`.
+- Helm from `4.2.4` to `4.3.0` in the fleet and tailscale molecule prepare
+  playbooks.
+- `ruff` from `>=0.16.3` to `>=0.16.8` in `requirements.txt`.
+- `nginx:alpine` digest updated in the `docker_compose_v2` molecule scenario.
 
 ## [2.0.0] - 2026-08-16
 
