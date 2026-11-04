@@ -135,7 +135,7 @@
 
       - name: Read kubelet config drop-in
         ansible.builtin.slurp:
-            src: /var/lib/rancher/k3s/agent/etc/kubelet.conf.d/50-ansible.conf
+            src: "{{ k3s_data_dir | default('/var/lib/rancher/k3s') }}/agent/etc/kubelet.conf.d/50-ansible.conf"
         register: k3s_verify_kubelet_dropin
 
       - name: Verify kubelet config drop-in content
@@ -153,7 +153,9 @@
       # kubelet actually loaded the drop-in from --config-dir.
       - name: Read running kubelet configuration
         ansible.builtin.command:
-            cmd: kubectl get --raw /api/v1/nodes/{{ inventory_hostname }}/proxy/configz
+            cmd: >-
+                kubectl get --raw
+                /api/v1/nodes/{{ k3s_node_name | default(inventory_hostname) }}/proxy/configz
         environment:
             KUBECONFIG: /etc/rancher/k3s/k3s.yaml
         register: k3s_verify_kubelet_configz
