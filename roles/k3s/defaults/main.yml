@@ -141,6 +141,11 @@ k3s_pod_security_admission_profile: ""
 k3s_container_log_max_size: "10Mi"
 k3s_container_log_max_files: 5
 
+# Extra kubelet CLI flags (key=value); config-only fields go in k3s_kubelet_config
+k3s_kubelet_args: []
+# KubeletConfiguration fields written to kubelet.conf.d/50-ansible.conf ({} removes it)
+k3s_kubelet_config: {}
+
 # K3s private registry configuration
 k3s_private_registries: []
 # Example configuration:

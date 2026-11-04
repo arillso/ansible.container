@@ -18,6 +18,10 @@
       # verify.yml asserts the entry reaches the unit's EnvironmentFile.
       k3s_environment_vars:
           NO_PROXY: "localhost,127.0.0.1,10.0.0.0/8"
+      # Config-only kubelet field (GA, default 2m); verify.yml asserts it in
+      # the drop-in file and in the running kubelet's configz.
+      k3s_kubelet_config:
+          imageMinimumGCAge: 3m
   pre_tasks:
       # `package` cannot refresh apt metadata, so the Debian family needs
       # an explicit cache update first; a cloud image ships stale lists and
