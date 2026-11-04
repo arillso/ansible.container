@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-11-04
+
 ### Added
 
 - **k3s kubelet configuration drop-in**: the new `k3s_kubelet_config`
@@ -23,6 +25,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `roles/k3s/defaults/main.yml` and `roles/k3s/meta/argument_specs.yml`
   (default `[]`, same behaviour as unset). Its description notes that only
   real kubelet CLI flags belong there; an unknown flag makes the kubelet abort.
+
+### Changed
+
+- **k3s**: the default `k3s_version` moves from `v1.37.0+k3s1` to
+  `v1.37.1+k3s1`. Hosts that leave it unset are upgraded on the next run.
+- **docker_compose_v2**: the default `docker_compose_v2_version` moves from
+  `5.5.1` to `5.6.1`.
+- **deps**: Python development dependencies, molecule image tags and the
+  `arillso/.github` reusable workflow pins were updated by Renovate.
 
 ## [2.1.0] - 2026-09-20
 
