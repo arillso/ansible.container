@@ -74,3 +74,48 @@
   no_log: true
   when: k3s_private_registries | length > 0
   notify: Restart k3s
+
+# k3s starts the kubelet with --config-dir pointing at kubelet.conf.d.
+# On a fresh install the parents do not exist yet. Created without a mode
+# here, so they get the umask default instead of the 0700 the drop-in
+# directory below would otherwise push onto every missing parent.
+- name: Create kubelet config drop-in parent directory # noqa risky-file-permissions
+  ansible.builtin.file:
+      path: "{{ k3s_data_dir }}/agent/etc"
+      state: directory
+  become: true
+  when: k3s_kubelet_config | length > 0
+
+- name: Create kubelet config drop-in directory
+  ansible.builtin.file:
+      path: "{{ k3s_data_dir }}/agent/etc/kubelet.conf.d"
+      state: directory
+      # Matches what k3s itself creates, so the mode does not flip-flop.
+      mode: "0700"
+      owner: root
+      group: root
+  become: true
+  when: k3s_kubelet_config | length > 0
+
+- name: Write kubelet config drop-in
+  ansible.builtin.copy:
+      content: >-
+          {{ k3s_kubelet_config
+          | combine({'apiVersion': 'kubelet.config.k8s.io/v1beta1',
+                     'kind': 'KubeletConfiguration'})
+          | to_nice_yaml }}
+      dest: "{{ k3s_data_dir }}/agent/etc/kubelet.conf.d/50-ansible.conf"
+      mode: "0600"
+      owner: root
+      group: root
+  become: true
+  when: k3s_kubelet_config | length > 0
+  notify: Restart k3s
+
+- name: Remove kubelet config drop-in
+  ansible.builtin.file:
+      path: "{{ k3s_data_dir }}/agent/etc/kubelet.conf.d/50-ansible.conf"
+      state: absent
+  become: true
+  when: k3s_kubelet_config | length == 0
+  notify: Restart k3s

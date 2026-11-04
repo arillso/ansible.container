@@ -133,6 +133,44 @@
             fail_msg: "User-supplied apiserver arg was dropped by the hardening merge"
             success_msg: "User apiserver arg survived the hardening merge"
 
+      - name: Read kubelet config drop-in
+        ansible.builtin.slurp:
+            src: "{{ k3s_data_dir | default('/var/lib/rancher/k3s') }}/agent/etc/kubelet.conf.d/50-ansible.conf"
+        register: k3s_verify_kubelet_dropin
+
+      - name: Verify kubelet config drop-in content
+        vars:
+            k3s_verify_kubelet_dropin_parsed: "{{ k3s_verify_kubelet_dropin.content | b64decode | from_yaml }}"
+        ansible.builtin.assert:
+            that:
+                - k3s_verify_kubelet_dropin_parsed.kind == 'KubeletConfiguration'
+                - k3s_verify_kubelet_dropin_parsed.apiVersion == 'kubelet.config.k8s.io/v1beta1'
+                - k3s_verify_kubelet_dropin_parsed.imageMinimumGCAge == '3m'
+            fail_msg: "kubelet.conf.d/50-ansible.conf does not carry k3s_kubelet_config"
+            success_msg: "kubelet config drop-in rendered from k3s_kubelet_config"
+
+      # The file alone proves nothing: configz shows whether the running
+      # kubelet actually loaded the drop-in from --config-dir.
+      - name: Read running kubelet configuration
+        ansible.builtin.command:
+            cmd: >-
+                kubectl get --raw
+                /api/v1/nodes/{{ k3s_node_name | default(inventory_hostname) }}/proxy/configz
+        environment:
+            KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+        register: k3s_verify_kubelet_configz
+        changed_when: false
+
+      - name: Verify the kubelet applied the drop-in
+        ansible.builtin.assert:
+            that:
+                - (k3s_verify_kubelet_configz.stdout | from_json).kubeletconfig.imageMinimumGCAge == '3m0s'
+            fail_msg: >-
+                Running kubelet reports imageMinimumGCAge={{
+                    (k3s_verify_kubelet_configz.stdout | from_json).kubeletconfig.imageMinimumGCAge
+                    | default('<absent>') }}, expected 3m0s from the drop-in
+            success_msg: "Running kubelet applied the drop-in"
+
       - name: Check the audit log actually received events
         ansible.builtin.stat:
             path: /etc/rancher/k3s/audit.log

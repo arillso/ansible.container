@@ -479,6 +479,30 @@ argument_specs:
                     Disable the unauthenticated kubelet read-only port 10255.
                     Requires k3s_security_hardening to take effect.
 
+            k3s_kubelet_args:
+                type: "list"
+                elements: "str"
+                default: []
+                description: >-
+                    Extra kubelet command-line flags as key=value, passed to
+                    k3s as kubelet-arg. Only real kubelet CLI flags belong
+                    here: an unknown flag makes the kubelet abort on start.
+                    Fields that exist only in KubeletConfiguration (for
+                    example imageMaximumGCAge) go in k3s_kubelet_config.
+
+            k3s_kubelet_config:
+                type: "dict"
+                default: {}
+                description: >-
+                    KubeletConfiguration fields, without apiVersion and kind,
+                    which the role sets itself. A non-empty dict is written to
+                    <k3s_data_dir>/agent/etc/kubelet.conf.d/50-ansible.conf;
+                    an empty dict removes that file. Any change restarts k3s.
+                    Kubelet flags win over config-dir values, so a field the
+                    role already sets as a flag (container-log-max-size,
+                    container-log-max-files, read-only-port, max-pods, ...)
+                    has no effect here; change the matching role variable.
+
             k3s_pod_security_admission_profile:
                 type: "str"
                 default: ""

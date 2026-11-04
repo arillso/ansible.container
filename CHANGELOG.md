@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **k3s kubelet configuration drop-in**: the new `k3s_kubelet_config`
+  (dict, default `{}`) sets KubeletConfiguration fields that have no kubelet
+  CLI flag, such as `imageMaximumGCAge`. A non-empty dict is written to
+  `{{ k3s_data_dir }}/agent/etc/kubelet.conf.d/50-ansible.conf`, an empty dict
+  removes the file; both paths restart k3s through the `Restart k3s` handler.
+  Applies to servers and agents. **Upgrade note:** the role now owns
+  `50-ansible.conf`. With the default `{}`, a file at that path written by a
+  playbook or by hand is removed and k3s restarts; move its fields into
+  `k3s_kubelet_config` before upgrading.
+- **`k3s_kubelet_args` declared**: the variable was already rendered as
+  `kubelet-arg` behind an `is defined` guard and now exists in
+  `roles/k3s/defaults/main.yml` and `roles/k3s/meta/argument_specs.yml`
+  (default `[]`, same behaviour as unset). Its description notes that only
+  real kubelet CLI flags belong there; an unknown flag makes the kubelet abort.
+
 ## [2.1.0] - 2026-09-20
 
 ### Added
@@ -15,8 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `k3s_disable_local_storage` (`false`) and `k3s_disable_helm_controller`
   (`false`) now exist in `roles/k3s/defaults/main.yml` and
   `roles/k3s/meta/argument_specs.yml`. Both were already rendered by
-  `roles/k3s/templates/etc/rancher/k3s/server-config.yaml.j2` (lines 193 and
-  199) behind an `is defined` guard, so a typo in either name silently
+  `roles/k3s/templates/etc/rancher/k3s/server-config.yaml.j2` (lines
+  193 and 199) behind an `is defined` guard, so a typo in either name silently
   disabled nothing instead of failing. The defaults match the previous
   effective behaviour: with no value set, the guard did not fire. See the
   matching fix below — before it, `k3s_disable_helm_controller` rendered into

@@ -75,6 +75,13 @@ For detailed documentation including all variables, examples, and usage instruct
 - **Upgrade is rejected**: the role enforces one-minor-version-at-a-time and no
   downgrades (see _Upgrading K3s_ above). Set an allowed `k3s_version` if the
   upgrade-path validation fails.
+- **`k3s_kubelet_config` change not applied**: a change writes or removes
+  `kubelet.conf.d/50-ansible.conf` and restarts k3s through the role handler.
+  If a run aborts after the file change but before the handler runs, the next
+  run sees no change and does not restart; run `systemctl restart k3s` by hand.
+  The same applies to every config file the role manages. Setting
+  `force_handlers: true` on the play runs pending handlers even when a later
+  task fails.
 
 For detailed guidance see <https://guide.arillso.io>.
 
