@@ -17,7 +17,7 @@
       docker_compose_v2_config:
           services:
               web:
-                  # Pin the image by digest. `nginx:alpine` is an OCI image
+                  # Pin the image by digest. `nginx:1.31.8-alpine` is an OCI image
                   # index with 16 manifests, and compose stores the resolved
                   # image ID in the `com.docker.compose.image` label. When the
                   # tag resolves to a different ID than the stored one, compose
@@ -27,9 +27,9 @@
                   # customManager in .github/renovate.json, which parses this
                   # `image:` line directly. A `# renovate:` comment here would
                   # be picked up by the comment manager in the shared preset
-                  # instead, which reads the whole `nginx:alpine` as the tag
+                  # instead, which reads the whole `nginx:<tag>` as the tag
                   # and fails the registry lookup.
-                  image: nginx:alpine@sha256:7396be67b6f53012a5cf955fa9040619294c25ccacf11e22af5de1b572fc756e
+                  image: nginx:1.31.8-alpine@sha256:713fc2ebfd92e8217db451477182ee91944b123d2b1ee9fd5a8c6e91ca6c3a11
                   ports:
                       - "8080:80"
   tasks:

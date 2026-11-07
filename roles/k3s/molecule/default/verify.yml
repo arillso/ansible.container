@@ -298,7 +298,7 @@
             cmd: >-
                 kubectl run molecule-smoketest
                 --namespace default
-                --image=nginx:alpine@sha256:1d40e3eb3bf4f138de1d67193f2aa5309fcaf343eb5ffadbf5e9439de1eb1ebb
+                --image=nginx:1.31.8-alpine@sha256:713fc2ebfd92e8217db451477182ee91944b123d2b1ee9fd5a8c6e91ca6c3a11
                 --port=80
         environment:
             KUBECONFIG: /etc/rancher/k3s/k3s.yaml
