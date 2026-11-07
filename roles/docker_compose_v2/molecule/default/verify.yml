@@ -75,7 +75,7 @@
                         # tear down from it. Renovate updates the digest here
                         # through the molecule-image customManager in
                         # .github/renovate.json.
-                        image: nginx:alpine@sha256:7396be67b6f53012a5cf955fa9040619294c25ccacf11e22af5de1b572fc756e
+                        image: nginx:1.31.8-alpine@sha256:713fc2ebfd92e8217db451477182ee91944b123d2b1ee9fd5a8c6e91ca6c3a11
                         ports:
                             - "8080:80"
 
