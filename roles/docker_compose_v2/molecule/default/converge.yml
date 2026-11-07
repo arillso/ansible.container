@@ -17,7 +17,7 @@
       docker_compose_v2_config:
           services:
               web:
-                  # Pin the image by digest. `nginx:1.31.8-alpine` is an OCI image
+                  # Pin the image by digest. `nginx:<tag>` is an OCI image
                   # index with 16 manifests, and compose stores the resolved
                   # image ID in the `com.docker.compose.image` label. When the
                   # tag resolves to a different ID than the stored one, compose

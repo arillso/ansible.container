@@ -13,7 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the `k3s` and `docker_compose_v2` scenarios. On the floating `alpine` tag
   Renovate only proposed digest updates, which have no release timestamp and
   skipped the release-age cooldown; a version tag gets version updates with a
-  timestamp.
+  timestamp. The `molecule-image` Renovate manager now also matches the
+  `--image=` form, so the k3s smoke-test pin, which had drifted to an older
+  digest, is tracked as well.
 
 ## [2.2.0] - 2026-11-04
 
