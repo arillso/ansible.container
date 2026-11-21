@@ -65,10 +65,10 @@ validation, the flow-control tasks (`include_vars`, `meta`) and one
   inner tasks are never reached. Where only part of a file must stay selectable,
   split that part into its own include and tag that (see `refresh_facts.yml`).
 
-Exception: `docker_login` consists of a single task
-(`community.docker.docker_login`). There is no second phase to split off, so a
-`main.yml` including one file with one task would be indirection without
-structural gain. The role stays as it is.
+Exception: `docker_login` consists of the role-level credential check plus a
+single task (`community.docker.docker_login`). There is no second phase to
+split off, so a `main.yml` including one file with one task would be
+indirection without structural gain. The role stays as it is.
 
 ### Roles
 

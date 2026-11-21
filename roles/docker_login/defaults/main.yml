@@ -2,7 +2,7 @@
 docker_login_api_version: "auto"
 docker_login_config_path: "~/.docker/config.json"
 docker_login_debug: false
-docker_login_docker_host: "unix://var/run/docker.sock"
+docker_login_docker_host: "unix:///var/run/docker.sock"
 docker_login_password: ""
 docker_login_reauthorize: false
 docker_login_registry_url: "https://index.docker.io/v1/"

@@ -19,3 +19,31 @@
                 - "'localhost:5000' in docker_login_config_json.auths"
             fail_msg: "docker_login did not record an auth entry for localhost:5000"
             success_msg: "docker_login authenticated against localhost:5000 successfully"
+
+      - name: Log out of the local registry
+        ansible.builtin.include_role:
+            name: arillso.container.docker_login
+        vars:
+            docker_login_registry_url: "localhost:5000"
+            docker_login_state: absent
+
+      - name: Read the Docker client config after logout
+        ansible.builtin.slurp:
+            path: /root/.docker/config.json
+        register: docker_login_config_after_logout
+
+      - name: Verify the local registry auth entry was removed
+        ansible.builtin.assert:
+            that:
+                - "'localhost:5000' not in ((docker_login_config_after_logout.content | b64decode | from_json).auths | default({}))"
+            fail_msg: "docker_login state=absent left an auth entry for localhost:5000"
+            success_msg: "docker_login logged out of localhost:5000 successfully"
+
+      # Log back in so verify can run again without a fresh converge.
+      - name: Log back in to the local registry
+        ansible.builtin.include_role:
+            name: arillso.container.docker_login
+        vars:
+            docker_login_registry_url: "localhost:5000"
+            docker_login_username: "moleculeuser"
+            docker_login_password: "moleculepass"

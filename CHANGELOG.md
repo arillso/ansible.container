@@ -7,7 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Contains breaking changes; release it as `3.0.0`.
+
 ### Fixed
+
+- **docker_login**: `docker_login_state`, `docker_login_config_path` and
+  `docker_login_use_ssh_client` are now passed to the module; before, logout
+  and a custom config path had no effect. `docker_login_state` is limited to
+  `present` / `absent`.
+- **docker_login**: the role fails early when `docker_login_username` or
+  `docker_login_password` is empty and `docker_login_state` is `present`.
+- **docker_login**: README Quick Start used the nonexistent
+  `docker_login_registries`; it now shows the real single-registry variables.
+- **docker_login**: argument_specs now state that `docker_login_tls` and
+  `docker_login_validate_certs` cover the Docker daemon connection, not the
+  registry.
 
 - **docker**: the prune timers are now started, not only enabled. Before, they
   stayed inactive until the next reboot.
@@ -52,6 +66,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **BREAKING — docker_login no longer escalates privileges**: the login task
+  no longer sets `become: true`, and `no_log` now follows
+  `docker_login_debug` (hidden by default; enable debug to see login
+  errors). **Upgrade note:** the task now connects to the Docker socket as the
+  user it runs as, so a user that is neither root nor in the `docker` group
+  fails with a permission error on `/var/run/docker.sock`; the credentials land
+  in that user's config. Set `become: true` on the play or role to keep the
+  previous behavior and keep writing to `/root/.docker/config.json`.
+- **docker_login**: `docker_login_docker_host` defaults to
+  `unix:///var/run/docker.sock` (three slashes, the module default).
+
 - **docker**: the prune timer runs daily with `until=24h` instead of every 5
   minutes with `until=1h`. The new `docker_prune_enabled` (default `true`)
   stops the timers and removes the prune units. **Upgrade note:** stopped containers, unused
@@ -85,6 +110,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   timestamp. The `molecule-image` Renovate manager now also matches the
   `--image=` form, so the k3s smoke-test pin, which had drifted to an older
   digest, is tracked as well.
+
+### Removed
+
+- **BREAKING — docker_login**: `docker_login_ssl_version`. community.docker
+  removed `ssl_version` in 4.0.0, so from that release on setting it failed
+  with "Unsupported parameters". On community.docker 3.x the variable is now
+  ignored.
 
 ## [2.2.0] - 2026-11-04
 

@@ -1,20 +1,31 @@
 ---
-- name: Login to Docker registry
-  become: true
-  no_log: true
+- name: Validate registry credentials
+  ansible.builtin.assert:
+      that:
+          - docker_login_username | default('', true) | length > 0
+          - docker_login_password | default('', true) | length > 0
+      fail_msg: "docker_login_username and docker_login_password must be set for state=present."
+      quiet: true
+  when: docker_login_state == "present"
+
+- name: Manage Docker registry login
+  # login_result can carry a registry IdentityToken the module does not mask.
+  no_log: "{{ not docker_login_debug }}"
   community.docker.docker_login:
       api_version: "{{ docker_login_api_version }}"
       ca_cert: "{{ docker_login_ca_cert | default(omit) }}"
       client_cert: "{{ docker_login_client_cert | default(omit) }}"
       client_key: "{{ docker_login_client_key | default(omit) }}"
+      config_path: "{{ docker_login_config_path }}"
       debug: "{{ docker_login_debug }}"
       docker_host: "{{ docker_login_docker_host }}"
-      password: "{{ docker_login_password }}"
+      password: "{{ docker_login_password if docker_login_state == 'present' else omit }}"
       reauthorize: "{{ docker_login_reauthorize }}"
       registry_url: "{{ docker_login_registry_url }}"
-      ssl_version: "{{ docker_login_ssl_version | default(omit) }}"
+      state: "{{ docker_login_state }}"
       timeout: "{{ docker_login_timeout }}"
       tls: "{{ docker_login_tls }}"
       tls_hostname: "{{ docker_login_tls_hostname | default(omit) }}"
-      tls_verify: "{{ docker_login_validate_certs }}"
-      username: "{{ docker_login_username }}"
+      use_ssh_client: "{{ docker_login_use_ssh_client }}"
+      username: "{{ docker_login_username if docker_login_state == 'present' else omit }}"
+      validate_certs: "{{ docker_login_validate_certs }}"

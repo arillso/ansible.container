@@ -37,20 +37,20 @@ argument_specs:
             docker_login_debug:
                 type: bool
                 description:
-                    - Enable or disable debug mode.
+                    - Enable debug mode. Also disables no_log on the login task, so errors and the login result (including a registry identity token) are shown.
                 default: false
 
             docker_login_docker_host:
                 type: str
                 description:
                     - Docker host URL or Unix socket path for API connection.
-                default: "unix://var/run/docker.sock"
+                default: "unix:///var/run/docker.sock"
 
             docker_login_password:
                 type: str
                 no_log: true
                 description:
-                    - The plaintext password for the registry account.
+                    - The plaintext password for the registry account. Required when docker_login_state is 'present'.
                 default: ""
 
             docker_login_reauthorize:
@@ -65,15 +65,11 @@ argument_specs:
                     - The registry URL.
                 default: "https://index.docker.io/v1/"
 
-            docker_login_ssl_version:
-                type: str
-                description:
-                    - Specify a valid SSL version number for secure communication.
-
             docker_login_state:
                 type: str
                 description:
-                    - Controls the current state of the user. 'present' to login, 'absent' to log out.
+                    - Use present to log in and absent to log out. Logout needs only the registry URL.
+                choices: ["present", "absent"]
                 default: "present"
 
             docker_login_timeout:
@@ -85,7 +81,8 @@ argument_specs:
             docker_login_tls:
                 type: bool
                 description:
-                    - Secures connection to the API using TLS without verifying Docker host server.
+                    - Use TLS for the connection to the Docker daemon API, without verifying the daemon's certificate.
+                    - Does not affect the connection to the registry.
                 default: false
 
             docker_login_tls_hostname:
@@ -96,17 +93,18 @@ argument_specs:
             docker_login_use_ssh_client:
                 type: bool
                 description:
-                    - Use the SSH CLI tool instead of paramiko for SSH transports. Currently ignored.
+                    - Use the SSH CLI tool instead of paramiko for SSH transports.
                 default: false
 
             docker_login_username:
                 type: str
                 description:
-                    - Username for the registry account.
+                    - Username for the registry account. Required when docker_login_state is 'present'.
                 default: ""
 
             docker_login_validate_certs:
                 type: bool
                 description:
-                    - Secures the connection to the API by using TLS and verifying the Docker host server authenticity.
+                    - Use TLS for the connection to the Docker daemon API and verify the daemon's certificate.
+                    - Does not affect the connection to the registry; registry TLS is configured on the Docker daemon.
                 default: false
