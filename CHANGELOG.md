@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the role never installs, so the unit could not start. The unit is removed,
   together with any instance enabled by hand. **Upgrade note:** restart after
   a reboot comes from the `restart:` policy in the compose file.
+- **docker_compose_v2**: the EL pin is now
+  `docker-compose-plugin-<version>-*`. The old `docker-compose-plugin-<version>*`
+  also matched e.g. 5.8.10 for 5.8.1.
 - **docker_compose_v2**: failures of the template and compose tasks are no
   longer swallowed by a `rescue` that only printed a debug message; the play
   now fails.
