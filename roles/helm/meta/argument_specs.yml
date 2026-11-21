@@ -71,9 +71,8 @@ argument_specs:
                         type: "str"
                         default: "5m"
                         description: |
-                            Default timeout for Helm operations, as a duration such
-                            as 5m, 1h or 1m30s. Also bounds each wait for the
-                            install Job.
+                            Default timeout for Helm operations, as a Go duration
+                            such as 5m, 1h30m or 90s.
 
             helm_kubeconfig_path:
                 type: "str"
@@ -103,6 +102,16 @@ argument_specs:
                 required: false
                 default: true
                 description: "Wait for deployment to complete"
+
+            helm_deployment_timeout:
+                type: "int"
+                required: false
+                default: 600
+                description: |
+                    Minimum time in seconds to wait for each install Job. The
+                    Job also schedules its pod and pulls the image, which the
+                    chart's own timeout does not cover; a longer chart timeout
+                    takes precedence.
 
             helm_debug_enabled:
                 type: "bool"

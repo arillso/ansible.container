@@ -28,6 +28,34 @@
       - item.create_namespace | default(helm_chart_defaults.create_namespace) | bool
       - item.namespace is defined or helm_chart_defaults.namespace != 'default'
 
+# Snapshot before the deploy, so the wait below can tell whether this run
+# changed a chart and therefore has to see a new install Job.
+- name: "Read current HelmCharts"
+  kubernetes.core.k8s_info:
+      api_version: helm.cattle.io/v1
+      kind: HelmChart
+      name: "{{ item.name }}"
+      namespace: kube-system
+      kubeconfig: "{{ helm_kubeconfig_path }}"
+  loop: "{{ helm_charts }}"
+  loop_control:
+      label: "{{ item.name }}"
+  when: helm_deployment_wait | bool
+  register: _helm_charts_before
+
+- name: "Read current Helm install Jobs"
+  kubernetes.core.k8s_info:
+      api_version: batch/v1
+      kind: Job
+      name: "helm-install-{{ item.name }}"
+      namespace: kube-system
+      kubeconfig: "{{ helm_kubeconfig_path }}"
+  loop: "{{ helm_charts }}"
+  loop_control:
+      label: "{{ item.name }}"
+  when: helm_deployment_wait | bool
+  register: _helm_jobs_before
+
 # Deploy all Helm charts
 - name: "Deploy Helm charts"
   kubernetes.core.k8s:
@@ -76,16 +104,34 @@
       wait_condition:
           type: "Complete"
           status: "True"
-      wait_timeout: "{{ _helm_timeout_seconds | int }}"
+      wait_timeout: "{{ [_helm_timeout_seconds | float | round(0, 'ceil') | int, helm_deployment_timeout | int] | max }}"
   vars:
-      # Same duration the HelmChart gets, converted from h/m/s to seconds.
-      _helm_timeout: "{{ item.timeout | default(helm_chart_defaults.timeout) | string }}"
+      # The chart's own timeout bounds helm only; the Job also needs time to
+      # schedule its pod and pull the image, hence helm_deployment_timeout
+      # as the floor.
       _helm_timeout_seconds: >-
           {%- set ns = namespace(s=0) -%}
-          {%- for n, u in _helm_timeout | regex_findall('(\\d+)([hms])') -%}
-          {%- set ns.s = ns.s + (n | int) * {'h': 3600, 'm': 60, 's': 1}[u] -%}
+          {%- for n, u in item.timeout | default(helm_chart_defaults.timeout) | string
+                         | regex_findall(helm_duration_part_pattern) -%}
+          {%- set ns.s = ns.s + (n | float) * helm_duration_seconds_per_unit[u] -%}
           {%- endfor -%}
           {{ ns.s }}
+      # The controller derives a new Job only from a changed spec, and it
+      # does not write the spec itself (helm-controller chart.go only adds
+      # its managed-by annotation). A changed spec therefore has to yield a
+      # Job other than the one that existed before the deploy; otherwise the
+      # wait would accept the previous, completed Job on an upgrade.
+      _helm_spec_before: >-
+          {{ (_helm_charts_before.results | selectattr('item.name', 'equalto', item.name)
+              | map(attribute='resources') | first | default([], true) | first | default({})).spec
+             | default({}) }}
+      _helm_spec_after: >-
+          {{ (_helm_charts_deployment_result.results | selectattr('item.name', 'equalto', item.name)
+              | map(attribute='result') | first | default({})).spec | default({}) }}
+      _helm_job_uid_before: >-
+          {{ _helm_jobs_before.results | selectattr('item.name', 'equalto', item.name)
+             | map(attribute='resources') | first | default([], true)
+             | map(attribute='metadata.uid') | first | default('') }}
   loop: "{{ helm_charts }}"
   loop_control:
       label: "{{ item.name }}"
@@ -96,19 +142,14 @@
       # registers its result.
       - _helm_charts_deployment_result | default({}) is changed
   register: _helm_install_job
-  # On an upgrade the previous, already completed Job stays until the
-  # controller replaces it, and the wait above would accept it. The
-  # controller marks a Job it is about to replace with replace-wait, so a
-  # marked Job is not the result of this deploy. Remaining gap: a check
-  # that runs before the controller has reacted at all still sees the old
-  # Job unmarked.
-  # A wait that ran into the chart timeout ends the loop: retrying it would
+  # A wait that ran into the timeout ends the loop: retrying it would
   # stretch a failing install to retries x timeout before it is reported.
+  # Otherwise retry while the Job is missing or still the pre-deploy one.
   until: >-
       'even after waiting' in (_helm_install_job.msg | default(''))
-      or _helm_install_job.resources | default([]) | length == 1
-      and 'helmcharts.helm.cattle.io/replace-wait'
-      not in (_helm_install_job.resources[0].metadata.annotations | default({}))
+      or (_helm_install_job.resources | default([]) | length == 1
+          and (_helm_spec_before == _helm_spec_after
+               or _helm_install_job.resources[0].metadata.uid != _helm_job_uid_before))
   retries: "{{ helm_validation_retries }}"
   delay: "{{ helm_validation_delay }}"
 

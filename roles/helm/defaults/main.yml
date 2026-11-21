@@ -33,4 +33,5 @@ helm_kubeconfig_path: ""
 helm_validation_retries: 10
 helm_validation_delay: 30
 helm_deployment_wait: true
+helm_deployment_timeout: 600
 helm_debug_enabled: false

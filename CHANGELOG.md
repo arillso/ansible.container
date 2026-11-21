@@ -106,23 +106,25 @@ Contains breaking changes; release it as `3.0.0`.
   every task inside them and deployed nothing.
 - **helm**: `bootstrap: true` now sets `spec.bootstrap` on the HelmChart. Before,
   it only set a label that the k3s Helm controller never reads.
-- **helm**: The install Job wait now uses the chart's own timeout and parses
-  every h/m/s duration (`1h`, `300s`, `1m30s`); those used to evaluate to a
-  0-second wait. A wait that runs into that timeout fails at once instead of
-  being retried `helm_validation_retries` times.
+- **helm**: The install Job wait parses every Go duration (`1h`, `300s`,
+  `1m30s`, `1.5h`); most of them used to evaluate to a 0-second wait. It waits
+  for the chart's timeout or `helm_deployment_timeout`, whichever is longer, and
+  a wait that runs into it fails at once instead of being retried
+  `helm_validation_retries` times.
 - **helm**: The wait no longer accepts the previous, completed install Job on an
-  upgrade. A Job that the controller has marked for replacement does not count.
-- **helm**: Chart definitions are validated before deploy: an unknown
-  `repository` key or a timeout without a unit now fails instead of producing a
-  HelmChart that fails inside the cluster.
+  upgrade: when the deploy changed the HelmChart spec, it waits for a Job other
+  than the one that existed before.
+- **helm**: Chart definitions are validated before deploy: a missing `name` or
+  `chart`, an unknown `repository` key without `repo`, or a timeout that is not
+  a duration now fails instead of producing a HelmChart that fails inside the
+  cluster. The rescue names each failed chart.
 - **helm**: The Kubernetes Python client is installed only with
   `helm_enable_charts: true`, and the distribution path uses
   `ansible.builtin.package` instead of `apt`.
 
 ### Removed
 
-- **helm**: `helm_validation_enabled` and `helm_deployment_timeout`. The first
-  had no effect; the wait now derives its timeout from the chart's `timeout`.
+- **helm**: `helm_validation_enabled`, which had no effect.
 - **helm**: The repository reachability check, whose result was never evaluated.
 
 ### Changed

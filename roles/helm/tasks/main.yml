@@ -8,18 +8,23 @@
 - name: "Validate Helm chart definitions"
   ansible.builtin.assert:
       that:
-          - item.repository is not defined or item.repository in helm_repositories
+          - item.name is defined
+          - item.chart is defined
+          - >-
+              item.repository is not defined or item.repository in helm_repositories
+              or item.repo is defined
           - >-
               item.timeout | default(helm_chart_defaults.timeout) | string
-              is match('^(?=\\d)(\\d+h)?(\\d+m)?(\\d+s)?$')
+              is match('^(0|(' ~ helm_duration_part_pattern ~ ')+)$')
       fail_msg: >-
-          Chart '{{ item.name }}': repository must be a key of helm_repositories
-          ({{ helm_repositories.keys() | list | join(', ') }}) and timeout a
-          duration such as 5m, 1h or 1m30s.
+          Chart '{{ item.name | default('<unnamed>') }}': needs name and chart,
+          repository must be a key of helm_repositories
+          ({{ helm_repositories.keys() | list | join(', ') }}) unless repo is
+          set, and timeout a duration such as 5m, 1h30m or 90s.
       quiet: true
   loop: "{{ helm_charts }}"
   loop_control:
-      label: "{{ item.name }}"
+      label: "{{ item.name | default('<unnamed>') }}"
   when: helm_enable_charts | bool
   tags:
       - helm
@@ -85,7 +90,10 @@
                 - Kubernetes cluster is accessible
                 - Cattle Operator is running
                 - Chart configurations are valid
-                Error: {{ (ansible_failed_result.results | default([])
-                          | selectattr('failed', 'defined') | selectattr('failed')
-                          | map(attribute='msg', default='') | select | join('; '))
-                          or ansible_failed_result.msg | default('Unknown error') }}
+                {% set failed = ansible_failed_result.results | default([])
+                   | selectattr('failed', 'defined') | selectattr('failed') | list %}
+                {% for r in failed %}
+                - {{ r.item.name | default(r.item) }}: {{ r.msg | default('failed after ' ~ r.attempts | default(1) ~ ' attempts') }}
+                {% else %}
+                Error: {{ ansible_failed_result.msg | default('Unknown error') }}
+                {% endfor %}
