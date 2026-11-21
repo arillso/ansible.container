@@ -55,7 +55,8 @@ git checkout -b fix/issue-description
 - **Idempotency**: All tasks must be idempotent
 - **Handlers**: Use handlers for service restarts and reloads
 - **FQCN**: Use Fully Qualified Collection Names for modules
-- **Variables**: Document all variables in `defaults/main.yml`
+- **Variables**: Document all variables in `meta/argument_specs.yml`; keep
+  `defaults/main.yml` free of explanatory comments
 - **Argument Specs**: Always provide `meta/argument_specs.yml`
 - **Tags**: Use meaningful tags for task organization
 
