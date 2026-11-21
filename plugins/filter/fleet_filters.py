@@ -13,7 +13,8 @@ version_added: "1.0.0"
 short_description: Transform Fleet targets from snake_case to camelCase
 description:
     - Converts Fleet target configurations from Ansible's snake_case convention to Fleet API's camelCase format.
-    - Recursively transforms all nested dictionary keys.
+    - Recursively transforms nested dictionary keys that are API field names.
+    - The content of match_labels, labels, annotations and values is user data (label keys, Helm values) and is passed through unchanged.
     - Handles complex structures including cluster_selector, match_labels, match_expressions, etc.
     - Preserves all values and structure while only changing key names.
 options:
@@ -129,7 +130,14 @@ def to_camel_case(snake_str):
         String in camelCase format
     """
     components = snake_str.split('_')
-    return components[0] + ''.join(x.title() for x in components[1:])
+    # Upper-case only the first letter: str.title() also capitalises after
+    # digits (k8s -> K8S).
+    return components[0] + ''.join(x[:1].upper() + x[1:] for x in components[1:])
+
+
+# Maps whose keys are user data (label keys, Helm values), not API field
+# names. Their content is passed through unchanged.
+_VERBATIM_KEYS = frozenset(['matchLabels', 'labels', 'annotations', 'values'])
 
 
 def transform_fleet_targets(targets):
@@ -157,7 +165,9 @@ def transform_fleet_targets(targets):
             new_key = to_camel_case(key)
 
             # Recursively transform nested dictionaries
-            if isinstance(value, dict):
+            if new_key in _VERBATIM_KEYS:
+                result[new_key] = value
+            elif isinstance(value, dict):
                 result[new_key] = transform_dict(value)
             elif isinstance(value, list):
                 result[new_key] = [transform_dict(item) if isinstance(item, dict) else item for item in value]

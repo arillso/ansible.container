@@ -1,0 +1,64 @@
+---
+# Namespaces for all Fleet resources, created before auth.yml writes the
+# GitRepo credential Secrets into them.
+
+- name: "Create namespace for Fleet GitRepos"
+  kubernetes.core.k8s:
+      name: "{{ item.namespace | default(fleet_defaults.namespace) }}"
+      api_version: v1
+      kind: Namespace
+      state: present
+      kubeconfig: "{{ fleet_kubeconfig_path }}"
+  loop: "{{ fleet_gitrepos }}"
+  when:
+      - fleet_enable_gitrepos | bool
+      - (item.create_namespace | default(fleet_defaults.create_namespace)) | bool
+  tags:
+      - fleet
+      - fleet-gitrepos
+      - fleet-secrets
+      - fleet-namespace
+
+- name: "Create namespace for Fleet Bundles"
+  kubernetes.core.k8s:
+      name: "{{ item.namespace | default(fleet_defaults.namespace) }}"
+      api_version: v1
+      kind: Namespace
+      state: present
+      kubeconfig: "{{ fleet_kubeconfig_path }}"
+  loop: "{{ fleet_bundles }}"
+  when:
+      - fleet_enable_bundles | bool
+      - (item.create_namespace | default(fleet_defaults.create_namespace)) | bool
+  tags:
+      - fleet
+      - fleet-bundles
+      - fleet-namespace
+
+- name: "Create namespace for Fleet Clusters"
+  kubernetes.core.k8s:
+      name: "{{ item.namespace | default(fleet_defaults.namespace) }}"
+      api_version: v1
+      kind: Namespace
+      state: present
+      kubeconfig: "{{ fleet_kubeconfig_path }}"
+  loop: "{{ fleet_clusters }}"
+  when: (item.create_namespace | default(fleet_defaults.create_namespace)) | bool
+  tags:
+      - fleet
+      - fleet-clusters
+      - fleet-namespace
+
+- name: "Create namespace for Fleet ClusterRegistrationTokens"
+  kubernetes.core.k8s:
+      name: "{{ item.namespace | default(fleet_defaults.namespace) }}"
+      api_version: v1
+      kind: Namespace
+      state: present
+      kubeconfig: "{{ fleet_kubeconfig_path }}"
+  loop: "{{ fleet_registration_tokens }}"
+  when: (item.create_namespace | default(fleet_defaults.create_namespace)) | bool
+  tags:
+      - fleet
+      - fleet-registration-tokens
+      - fleet-namespace

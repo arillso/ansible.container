@@ -36,6 +36,9 @@
                 - >-
                     fleet_verify_gitrepo.resources[0].metadata.labels['gitops.infrastructure/gitrepo']
                     == "molecule-gitrepo"
+                # Public repo without credentials: no Secret exists, so the
+                # GitRepo must not reference one.
+                - "'clientSecretName' not in fleet_verify_gitrepo.resources[0].spec"
             fail_msg: "GitRepo 'molecule-gitrepo' is missing or does not match the converge spec"
             success_msg: "GitRepo 'molecule-gitrepo' applied with the expected spec and labels"
 

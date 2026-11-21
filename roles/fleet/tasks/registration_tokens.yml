@@ -1,26 +1,9 @@
 ---
 # Fleet ClusterRegistrationToken management tasks
 
-- name: "Create namespace for Fleet ClusterRegistrationTokens"
-  kubernetes.core.k8s:
-      name: "{{ item.namespace | default(fleet_defaults.namespace) }}"
-      api_version: v1
-      kind: Namespace
-      state: "{{ fleet_state }}"
-      kubeconfig: "{{ fleet_kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
-  loop: "{{ fleet_registration_tokens }}"
-  when:
-      - fleet_registration_tokens | length > 0
-      - (item.create_namespace | default(fleet_defaults.create_namespace)) | bool
-      - fleet_state == "present"
-  tags:
-      - fleet
-      - fleet-registration-tokens
-      - fleet-namespace
-
 - name: "Manage Fleet ClusterRegistrationTokens"
   kubernetes.core.k8s:
-      kubeconfig: "{{ fleet_kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
+      kubeconfig: "{{ fleet_kubeconfig_path }}"
       api_version: "{{ fleet_api_version }}"
       kind: ClusterRegistrationToken
       name: "{{ item.name }}"
@@ -42,7 +25,7 @@
 
 - name: "Retrieve ClusterRegistrationToken values"
   kubernetes.core.k8s_info:
-      kubeconfig: "{{ fleet_kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
+      kubeconfig: "{{ fleet_kubeconfig_path }}"
       api_version: v1
       kind: Secret
       name: "{{ item.name }}"

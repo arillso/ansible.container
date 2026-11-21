@@ -40,6 +40,10 @@ class TestToCamelCase:
         assert to_camel_case("cluster_group") == "clusterGroup"
         assert to_camel_case("target_namespace") == "targetNamespace"
 
+    def test_digit_in_word(self):
+        """Letters after a digit stay as they are."""
+        assert to_camel_case("node_k8s") == "nodeK8s"
+
 
 class TestTransformFleetTargets:
     """Test cases for transform_fleet_targets function."""
@@ -224,6 +228,18 @@ class TestTransformFleetTargets:
         result = transform_fleet_targets(targets)
         # String values in lists should not be transformed
         assert result[0]["matchExpressions"][0]["values"] == ["value_one", "value_two"]
+
+    def test_label_keys_preserved(self):
+        """Label keys inside match_labels are user data, not field names."""
+        targets = [{"cluster_selector": {"match_labels": {"env_type": "prod", "node_k8s": "true"}}}]
+        result = transform_fleet_targets(targets)
+        assert result[0]["clusterSelector"]["matchLabels"] == {"env_type": "prod", "node_k8s": "true"}
+
+    def test_helm_values_preserved(self):
+        """Helm values inside a target are passed through unchanged."""
+        targets = [{"cluster_name": "a", "helm": {"values": {"replica_count": 2}}}]
+        result = transform_fleet_targets(targets)
+        assert result[0]["helm"]["values"] == {"replica_count": 2}
 
 
 if __name__ == "__main__":

@@ -87,9 +87,7 @@ fleet_registration_tokens: []
 
 fleet_api_version: "fleet.cattle.io/v1alpha1"
 fleet_state: "present"
-fleet_validate_manifests: true
-fleet_dry_run: false
-fleet_secret_timeout: 60
+fleet_kubeconfig_path: "/etc/rancher/k3s/k3s.yaml"
 fleet_resource_timeout: 300
 
 # Whether "Manage Fleet Bundles" blocks until each Bundle reports Ready.
@@ -101,7 +99,3 @@ fleet_resource_timeout: 300
 # on kubeconfig_secret instead and have no equivalent knob.
 fleet_bundle_wait: true
 fleet_bundle_wait_timeout: 300
-
-# Fleet authentication parameters (auth entry point) are intentionally left
-# undefined here. They are declared as optional in meta/argument_specs.yml and
-# resolved with default(omit) where consumed, so no string-omit defaults are set.

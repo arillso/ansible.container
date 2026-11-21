@@ -1,23 +1,6 @@
 ---
 # Fleet Bundles management tasks
 
-- name: "Create namespace for Fleet Bundles"
-  kubernetes.core.k8s:
-      name: "{{ item.namespace | default(fleet_defaults.namespace) }}"
-      api_version: v1
-      kind: Namespace
-      state: "{{ fleet_state }}"
-      kubeconfig: "{{ fleet_kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
-  loop: "{{ fleet_bundles }}"
-  when:
-      - fleet_bundles | length > 0
-      - (item.create_namespace | default(fleet_defaults.create_namespace)) | bool
-      - fleet_state == "present"
-  tags:
-      - fleet
-      - fleet-bundles
-      - fleet-namespace
-
 # Each Bundle apply blocks up to wait_timeout (Ready condition). These used
 # to be fired in parallel via async/poll:0, but kubernetes.core.k8s ships an
 # action plugin wrapper that never sets _supports_async, so ActionBase.run()
@@ -31,14 +14,14 @@
       # existence instead of Ready=True.
       _bundle_wait: "{{ item.wait | default(fleet_bundle_wait) | bool }}"
   kubernetes.core.k8s:
-      kubeconfig: "{{ fleet_kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
+      kubeconfig: "{{ fleet_kubeconfig_path }}"
       definition:
           apiVersion: "{{ fleet_api_version }}"
           kind: Bundle
           metadata:
               name: "{{ item.name }}"
               namespace: "{{ item.namespace | default(fleet_defaults.namespace) }}"
-              labels: "{{ item.labels | combine({'app.kubernetes.io/managed-by': 'ansible', 'app.kubernetes.io/component': 'fleet-bundle'}) }}"
+              labels: "{{ item.labels | default({}) | combine({'app.kubernetes.io/managed-by': 'ansible', 'app.kubernetes.io/component': 'fleet-bundle'}) }}"
               annotations: "{{ item.annotations | default({}) }}"
           # Optional fields are omitted rather than sent as an empty value.
           # The API drops empty strings, empty collections and false
@@ -50,43 +33,48 @@
               namespace: "{{ item.target_namespace | default(item.namespace | default(fleet_defaults.namespace)) }}"
               defaultNamespace: "{{ item.default_namespace | default(omit) }}"
               serviceAccount: "{{ item.service_account | default(fleet_defaults.service_account) }}"
-              forceSyncGeneration: "{{ item.force_update | default(fleet_defaults.force_update) | int }}"
-              paused: "{{ item.paused | default(omit) | bool if item.paused is defined else omit }}"
-              rolloutStrategy:
-                  maxUnavailable: "{{ item.rollout_strategy.max_unavailable | default(1) }}"
-                  maxUnavailablePartitions: "{{ item.rollout_strategy.max_unavailable_partitions | default(0) }}"
-                  autoPartitionSize: "{{ item.rollout_strategy.auto_partition_size | default(0) }}"
-                  partitions: "{{ item.rollout_strategy.partitions | default(omit) }}"
+              forceSyncGeneration: "{{ (item.force_update | default(fleet_defaults.force_update) | int) or omit }}"
+              paused: "{{ (item.paused | default(false) | bool) or omit }}"
+              # Sub-objects are only sent when the item sets them. An object
+              # whose fields are all omitted still reached the API as {} (or
+              # filled with role defaults), which the stored Bundle never
+              # matches.
+              rolloutStrategy: >-
+                  {{ {'maxUnavailable': item.rollout_strategy.max_unavailable | default(omit),
+                      'maxUnavailablePartitions': item.rollout_strategy.max_unavailable_partitions | default(omit),
+                      'autoPartitionSize': item.rollout_strategy.auto_partition_size | default(omit),
+                      'partitions': item.rollout_strategy.partitions | default(omit)}
+                     if item.rollout_strategy is defined else omit }}
               # Same snake_case -> camelCase transform as gitrepos.yml: the
               # argument spec documents snake_case keys (cluster_selector,
               # match_labels) for targets, so they have to be converted to the
               # API's spelling here rather than passed through verbatim.
-              targets: "{{ item.targets | default([]) | arillso.container.fleet_transform_targets }}"
+              targets: "{{ item.targets | arillso.container.fleet_transform_targets if item.targets is defined else omit }}"
               targetRestrictions: "{{ item.target_restrictions | default(omit) }}"
               dependsOn: "{{ item.depends_on | default(omit) }}"
               resources: "{{ item.resources | default(omit) }}"
-              helm:
-                  chart: "{{ item.helm.chart | default(omit) }}"
-                  repo: "{{ item.helm.repo | default(omit) }}"
-                  version: "{{ item.helm.version | default(omit) }}"
-                  releaseName: "{{ item.helm.release_name | default(item.name) }}"
-                  values: "{{ item.helm.values | default({}) }}"
-                  valuesFiles: "{{ item.helm.values_files | default(omit) }}"
-                  valuesFrom: "{{ item.helm.values_from | default(omit) }}"
-                  force: "{{ item.helm.force | default(omit) }}"
-                  takeOwnership: "{{ item.helm.take_ownership | default(omit) }}"
-                  maxHistory: "{{ item.helm.max_history | default(5) | int }}"
-                  atomic: "{{ item.helm.atomic | default(omit) }}"
-                  disablePreProcess: "{{ item.helm.disable_pre_process | default(omit) }}"
-              kustomize:
-                  dir: "{{ item.kustomize.dir | default(omit) }}"
-              correctDrift:
-                  enabled: "{{ item.correct_drift.enabled | default(omit) }}"
-                  force: "{{ item.correct_drift.force | default(omit) }}"
-                  keepFailHistory: "{{ item.correct_drift.keep_fail_history | default(omit) }}"
-              keepResources: "{{ item.keep_resources | default(omit) }}"
-              diff:
-                  comparePatches: "{{ item.diff.compare_patches | default(omit) }}"
+              helm: >-
+                  {{ {'chart': item.helm.chart | default(omit),
+                      'repo': item.helm.repo | default(omit),
+                      'version': item.helm.version | default(omit),
+                      'releaseName': item.helm.release_name | default(item.name),
+                      'values': item.helm['values'] | default(omit),
+                      'valuesFiles': item.helm.values_files | default(omit),
+                      'valuesFrom': item.helm.values_from | default(omit),
+                      'force': item.helm.force | default(omit),
+                      'takeOwnership': item.helm.take_ownership | default(omit),
+                      'maxHistory': item.helm.max_history | default(5) | int,
+                      'atomic': item.helm.atomic | default(omit),
+                      'disablePreProcess': item.helm.disable_pre_process | default(omit)}
+                     if item.helm is defined else omit }}
+              kustomize: "{{ {'dir': item.kustomize.dir} if item.kustomize.dir is defined else omit }}"
+              correctDrift: >-
+                  {{ {'enabled': item.correct_drift.enabled | default(omit),
+                      'force': item.correct_drift.force | default(omit),
+                      'keepFailHistory': item.correct_drift.keep_fail_history | default(omit)}
+                     if item.correct_drift is defined else omit }}
+              keepResources: "{{ (item.keep_resources | default(false) | bool) or omit }}"
+              diff: "{{ {'comparePatches': item.diff.compare_patches} if item.diff.compare_patches is defined else omit }}"
       state: "{{ fleet_state }}"
       # Server-side apply, so the comparison runs against the fields this
       # role owns. Without it the module patches and reports changed

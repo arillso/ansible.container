@@ -15,8 +15,6 @@
             branch: master
             paths:
                 - simple
-      # labels is not optional: bundles.yml combines it without a
-      # default, so a bundle without labels fails to template.
       fleet_bundles:
           - name: molecule-bundle
             namespace: fleet-local
