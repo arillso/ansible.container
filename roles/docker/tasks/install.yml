@@ -1,13 +1,12 @@
 ---
 # Docker Engine package installation
 
+# One transaction for the whole list instead of one package per loop item.
 - name: Install docker
   become: true
   ansible.builtin.package:
-      name: "{{ item }}"
+      name: "{{ docker_package }}"
       state: present
-  with_items:
-      - "{{ docker_package }}"
   notify:
       - Start docker
       - Enable docker

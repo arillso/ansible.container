@@ -1,4 +1,12 @@
 ---
+# Covers Debian and Ubuntu via the os_family fallback in tasks/main.yml.
+#
+# Docker publishes one repository per distribution (ubuntu, raspbian, debian).
+# Other distributions fail early in tasks/install_docker_debian.yml.
+docker_apt_distribution: >-
+    {{ ansible_facts['distribution'] | lower
+       if ansible_facts['distribution'] in ['Ubuntu', 'Raspbian'] else 'debian' }}
+
 # apt matches "docker-ce=<x>" against the *full* version string, which carries
 # an epoch and a distro release suffix (e.g. 5:29.7.2-1~debian.12~bookworm), so
 # a bare "docker-ce=29.7.2" never matches. apt does not evaluate globs in an

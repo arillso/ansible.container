@@ -105,3 +105,16 @@
                 - docker_daemon_json['log-opts']['max-file'] == '3'
             fail_msg: "Nested merge replaced log-opts instead of merging sub-keys"
             success_msg: "Nested dicts merge per sub-key"
+
+      - name: Check the prune timers are active
+        ansible.builtin.command: systemctl is-active docker-prune.timer docker-prune-volumes.timer
+        register: docker_prune_timers
+        changed_when: false
+        failed_when: false
+
+      - name: Verify the prune timers run without a reboot
+        ansible.builtin.assert:
+            that:
+                - docker_prune_timers.stdout_lines == ['active', 'active']
+            fail_msg: "Prune timers are enabled but not started"
+            success_msg: "Prune timers are active"
