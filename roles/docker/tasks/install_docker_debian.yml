@@ -11,18 +11,6 @@
       update_cache: true
       cache_valid_time: 3600
 
-# Earlier releases wrote the source list and the key to these paths; the
-# deb822 repository below replaces all of them.
-- name: "Debian : remove legacy docker sources and keys"
-  become: true
-  ansible.builtin.file:
-      path: "{{ item }}"
-      state: absent
-  loop:
-      - /etc/apt/sources.list.d/docker.list
-      - /etc/apt/trusted.gpg.d/docker.asc
-      - /usr/share/keyrings/docker-archive-keyring.asc
-
 - name: "Debian : create keyrings directory"
   become: true
   ansible.builtin.file:
@@ -54,6 +42,19 @@
       state: present
       enabled: true
   register: docker_repo
+
+# Earlier releases wrote the source list and the key to these paths; the
+# deb822 repository above replaces all of them. Removed only after it is in
+# place, so a failed key download never leaves a source without its key.
+- name: "Debian : remove legacy docker sources and keys"
+  become: true
+  ansible.builtin.file:
+      path: "{{ item }}"
+      state: absent
+  loop:
+      - /etc/apt/sources.list.d/docker.list
+      - /etc/apt/trusted.gpg.d/docker.asc
+      - /usr/share/keyrings/docker-archive-keyring.asc
 
 - name: "Debian : update apt cache"
   become: true

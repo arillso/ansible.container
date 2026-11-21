@@ -1,10 +1,12 @@
 ---
 # Covers Debian and Ubuntu via the os_family fallback in tasks/main.yml.
 #
-# Docker publishes one repository per distribution. Derivatives that report
-# their own codename (Kali, Mint, ...) are not supported: their release does
-# not exist in either repository.
-docker_apt_distribution: "{{ 'ubuntu' if ansible_facts['distribution'] == 'Ubuntu' else 'debian' }}"
+# Docker publishes one repository per distribution (ubuntu, raspbian, debian).
+# Derivatives that report their own codename (Kali, Mint, ...) are not
+# supported: their release does not exist in any of these repositories.
+docker_apt_distribution: >-
+    {{ ansible_facts['distribution'] | lower
+       if ansible_facts['distribution'] in ['Ubuntu', 'Raspbian'] else 'debian' }}
 
 # apt matches "docker-ce=<x>" against the *full* version string, which carries
 # an epoch and a distro release suffix (e.g. 5:29.7.2-1~debian.12~bookworm), so
@@ -12,10 +14,7 @@ docker_apt_distribution: "{{ 'ubuntu' if ansible_facts['distribution'] == 'Ubunt
 # "=" pin either -- "docker-ce=*29.7.2-*" fails with "Version not found" -- so
 # the full string is resolved at runtime from apt-cache madison into
 # docker_apt_version (see tasks/install_docker_debian.yml) and pinned exactly.
-# docker-ce-cli is released with the identical version string and pinned with
-# it, so daemon and client stay on the same release.
 # The RedHat pin cannot share this: dnf does accept the wildcard suffix it uses.
 docker_package:
     - "{{ 'docker-ce=' + docker_apt_version if docker_version != '' else 'docker-ce' }}"
-    - "{{ 'docker-ce-cli=' + docker_apt_version if docker_version != '' else 'docker-ce-cli' }}"
     - python3-docker

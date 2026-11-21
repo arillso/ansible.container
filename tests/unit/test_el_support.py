@@ -196,13 +196,12 @@ def test_redhat_vars_pin_uses_rpm_compatible_wildcard():
     assert "python3-pip" not in entries, entries
 
 
-@pytest.mark.parametrize("vars_file", ["Debian.yml"])
-def test_apt_vars_pin_uses_the_resolved_full_version(vars_file):
+def test_apt_vars_pin_uses_the_resolved_full_version():
     """apt matches an `=` pin against the full version string (epoch and
     distro release suffix) and does not expand globs in it: both
     `docker-ce=29.7.2` and `docker-ce=*29.7.2-*` fail with "Version not
     found". Only the runtime-resolved `docker_apt_version` matches."""
-    text = read("roles", "docker", "vars", vars_file)
+    text = read("roles", "docker", "vars", "Debian.yml")
     # compare package entries only; comments mention forms they must not use
     entries = [
         line.strip().lstrip("-").strip()
@@ -216,11 +215,11 @@ def test_apt_vars_pin_uses_the_resolved_full_version(vars_file):
     assert not any("docker-ce=*" in e for e in entries), entries
 
 
-@pytest.mark.parametrize("tasks_file", ["install_docker_debian.yml"])
-def test_apt_tasks_resolve_the_pin_and_fail_loudly(tasks_file):
+def test_apt_tasks_resolve_the_pin_and_fail_loudly():
     """`docker_apt_version` must actually be produced, and a version that the
     repository no longer carries must fail with a message instead of silently
     installing whatever apt picks."""
+    tasks_file = "install_docker_debian.yml"
     text = read("roles", "docker", "tasks", tasks_file)
     assert "apt-cache madison docker-ce" in text, tasks_file
     assert "docker_apt_version:" in text, tasks_file

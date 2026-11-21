@@ -15,16 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   arm64 hosts get packages.
 - **docker**: the EL pin is now `docker-ce-<version>-*`. The old
   `docker-ce-<version>*` also matched e.g. 28.5.20 for 28.5.2.
-- **docker**: `docker-ce-cli` is pinned to the same version as `docker-ce` on
-  apt and EL hosts.
-- **docker**: `live-restore` is forced to `false` on swarm nodes, where dockerd
-  refuses to start with it.
+- **docker**: `live-restore` is forced to `false` on swarm nodes, where the
+  swarm cluster component fails to start with it.
 - **docker**: Debian and Ubuntu share one install task file and one vars file.
   The key moves to `/etc/apt/keyrings/docker.asc` on both, is fetched with
   become and refreshed when Docker rotates it; the old key paths are removed.
 - **docker**: the `python3-debian` install no longer refreshes the apt cache on
-  every run (`cache_valid_time: 3600`), and the trailing `reset_connection` is
-  gone.
+  every run (`cache_valid_time: 3600`). Raspbian keeps its own Docker
+  repository.
 
 ### Changed
 

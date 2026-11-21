@@ -110,6 +110,7 @@
         ansible.builtin.command: systemctl is-active docker-prune.timer docker-prune-volumes.timer
         register: docker_prune_timers
         changed_when: false
+        failed_when: false
 
       - name: Verify the prune timers run without a reboot
         ansible.builtin.assert:

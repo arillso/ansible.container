@@ -1,5 +1,5 @@
-{#- dockerd refuses to start with live-restore in swarm mode, so a swarm node
-    gets it forced off regardless of docker_daemon. -#}
+{#- The swarm cluster component fails to start with live-restore, so a swarm
+    node gets it forced off regardless of docker_daemon. -#}
 {%- set docker_swarm_override = {'live-restore': false}
-    if (docker_swarm_state.stdout | default('')) in ['active', 'locked'] else {} -%}
+    if (docker_swarm_state.stdout | default('')) in ['active', 'locked', 'pending', 'error'] else {} -%}
 {{ docker_daemon_base | combine(docker_daemon, docker_swarm_override, recursive=True) | to_nice_json }}
