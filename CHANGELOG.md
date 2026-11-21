@@ -257,6 +257,10 @@ Contains breaking changes; release it as `3.0.0`.
 - **fleet**: **Upgrade note:** a Bundle `helm` block no longer defaults
   `releaseName` to the Bundle name and `maxHistory` to 5; unset, Fleet's own
   defaults apply. Set `release_name` and `max_history` to keep the old values.
+- **docs**: the README states Python >= 3.12 on the control node (was 3.9) and
+  that fleet and tailscale need the Python `kubernetes` client on the target.
+  Contributors run Molecule with qemu/KVM instead of Docker; see
+  `docs/testing.md`.
 
 ### Removed
 
