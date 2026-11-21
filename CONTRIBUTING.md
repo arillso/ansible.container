@@ -114,16 +114,23 @@ make build
 
 ### Commit Messages
 
-Write clear, descriptive commit messages:
+Use [Conventional Commits](https://www.conventionalcommits.org/) with the role
+as scope, in English:
 
 ```text
-Brief summary (50 chars or less)
+<type>(<scope>): <summary>
 
-- Detailed description with bullet points
-- Reference related issues
+<optional body: what changed and why>
 
 Fixes #123
 ```
+
+- Types: `feat`, `fix`, `perf`, `refactor`, `test`, `docs`, `ci`, `chore`.
+- Scope: the role (`k3s`, `docker_login`) or the area (`plugins/<name>`, `ci`).
+- Summary in lowercase imperative mood: `fix(k3s): wait for the API before applying manifests`.
+- Breaking change: add `!` after the scope and a `BREAKING CHANGE:` footer with
+  the migration step, e.g. `fix(helm)!: …`.
+- The PR title follows the same format.
 
 ### Pull Request Process
 
