@@ -1,0 +1,13 @@
+---
+# Go duration as the HelmChart API accepts it (metav1.Duration), one
+# number-unit pair per match. Shared by the validation in main.yml and the
+# wait in charts.yml so both agree on the format.
+helm_duration_part_pattern: '(\d+(?:\.\d*)?|\.\d+)(ns|us|µs|ms|s|m|h)'
+helm_duration_seconds_per_unit:
+    ns: 0.000000001
+    us: 0.000001
+    µs: 0.000001
+    ms: 0.001
+    s: 1
+    m: 60
+    h: 3600

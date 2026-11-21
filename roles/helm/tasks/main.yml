@@ -1,96 +1,41 @@
 ---
-# Install required Python dependencies for Kubernetes operations.
-# The packages role's `packages` entry point runs unhold/remove/install/hold
-# only — it never includes cache.yml, and install.yml pins
-# `update_cache: false`. On a host whose apt cache is empty (a fresh VM, as in
-# the molecule scenarios) the package is then unfindable, so refresh the cache
-# here first.
-- name: Update the package cache for the Kubernetes Python client
-  ansible.builtin.apt:
-      update_cache: true
-      cache_valid_time: 3600
-  become: true
-  when: ansible_facts['pkg_mgr'] in ['apt', 'apt-get']
-  changed_when: false
+# Role-level validation, so a bad chart definition fails before any package is
+# installed or the cluster is contacted, and outside the rescue below, which
+# would replace the per-chart message with "One or more items failed".
+# An unknown repository key falls back to no repo at all and the controller
+# fails asynchronously in the cluster; a timeout without unit is rejected by
+# the HelmChart API (metav1.Duration).
+- name: "Validate Helm chart definitions"
+  ansible.builtin.assert:
+      that:
+          - item.name is defined
+          - item.chart is defined
+          - >-
+              item.repository is not defined or item.repository in helm_repositories
+              or item.repo is defined
+          - >-
+              item.timeout | default(helm_chart_defaults.timeout) | string
+              is match('^(0|(' ~ helm_duration_part_pattern ~ ')+)$')
+      fail_msg: >-
+          Chart '{{ item.name | default('<unnamed>') }}': needs name and chart,
+          repository must be a key of helm_repositories
+          ({{ helm_repositories.keys() | list | join(', ') }}) unless repo is
+          set, and timeout a duration such as 5m, 1h30m or 90s.
+      quiet: true
+  loop: "{{ helm_charts }}"
+  loop_control:
+      label: "{{ item.name | default('<unnamed>') }}"
+  when: helm_enable_charts | bool
   tags:
       - helm
-      - helm-dependencies
-      - system-packages
+      - helm-charts
+      - kubernetes
 
-# PEP 668 decides where the client comes from, not the package manager.
-# An interpreter that ships an EXTERNALLY-MANAGED marker refuses a
-# system-wide `pip install` with "error: externally-managed-environment",
-# so there the distribution packages are the only way in. Everywhere else
-# PyPI stays, because it is the only source that honours the version
-# floors below on every platform this role advertises.
-#
-# Keying on the marker rather than on the distribution matters for the
-# older apt platforms: bullseye, bookworm and jammy predate PEP 668 and
-# ship python3-kubernetes/python3-oauthlib too old for
-# `kubernetes.core >= 2.4.0` (needs kubernetes >= 12.0.0) and for
-# SIGNATURE_RSA (needs oauthlib >= 3.2.0). They keep the PyPI path and
-# its floors; only a marked interpreter takes the distribution packages,
-# which on those releases (noble and newer) are new enough.
-# Ask the target interpreter for its own stdlib path instead of guessing
-# it from the version: the marker sits next to the stdlib, and only the
-# interpreter that would run the install knows where that is.
-- name: Check whether the system interpreter is externally managed
-  ansible.builtin.command:
-      cmd: >-
-          {{ ansible_facts['python']['executable'] }} -c
-          "import os,sysconfig;print(os.path.exists(os.path.join(sysconfig.get_path('stdlib'),'EXTERNALLY-MANAGED')))"
-  register: _helm_externally_managed
-  changed_when: false
-  check_mode: false
-  tags:
-      - helm
-      - helm-dependencies
-      - system-packages
-
-# arillso.system.packages is no help here: it drives ansible.builtin.apt
-# throughout and advertises Debian and Ubuntu only, so it cannot serve
-# the EL 9 platform this role declares.
-- name: Install the Kubernetes Python client from the distribution
-  ansible.builtin.apt:
-      name:
-          - python3-kubernetes
-          - python3-oauthlib
-      state: present
-  become: true
-  when: _helm_externally_managed.stdout | trim == 'True'
-  tags:
-      - helm
-      - helm-dependencies
-      - system-packages
-
-- name: Install pip for the Kubernetes Python client
-  ansible.builtin.package:
-      name: python3-pip
-      state: present
-  become: true
-  when: _helm_externally_managed.stdout | trim != 'True'
-  tags:
-      - helm
-      - helm-dependencies
-      - system-packages
-
-# oauthlib is listed explicitly because pip leaves a distribution-provided
-# copy in place: EL 9 ships oauthlib 3.1.1 as an RPM, while the kubernetes
-# client pulls requests-oauthlib, which needs SIGNATURE_RSA from a newer
-# oauthlib. Without the upgrade the install succeeds and the very next
-# module import dies with "cannot import name 'SIGNATURE_RSA'".
-- name: Install the Kubernetes Python client from PyPI
-  ansible.builtin.pip:
-      name:
-          - kubernetes
-          - oauthlib>=3.2.0
-      state: present
-  become: true
-  when: _helm_externally_managed.stdout | trim != 'True'
-  register: _helm_python_client_install
-  retries: 3
-  delay: 10
-  until: _helm_python_client_install is succeeded
+# Every task in dependencies.yml carries these tags itself, so the include
+# needs them only to be reached under --tags.
+- name: "Install the Kubernetes Python client"
+  ansible.builtin.include_tasks: dependencies.yml
+  when: helm_enable_charts | bool
   tags:
       - helm
       - helm-dependencies
@@ -111,18 +56,28 @@
             - "helm_repositories count: {{ helm_repositories | length }}"
         when: helm_debug_enabled | default(false)
 
+      # A dynamic include is evaluated by its own tags only, and the tasks in
+      # prerequisites.yml and charts.yml carry none; `apply` hands the tags
+      # down, otherwise `--tags helm` would run the include and then skip
+      # every task inside it.
       - name: "Validate Helm prerequisites"
-        ansible.builtin.include_tasks: prerequisites.yml
+        ansible.builtin.include_tasks:
+            file: prerequisites.yml
+            apply:
+                tags:
+                    - helm
+                    - helm-charts
+                    - kubernetes
         when: helm_enable_charts | default(false)
 
-      - name: "Configure Helm repositories"
-        ansible.builtin.include_tasks: repositories.yml
-        when:
-            - helm_enable_charts | default(false)
-            - helm_repositories | length > 0
-
       - name: "Deploy Helm Charts"
-        ansible.builtin.include_tasks: charts.yml
+        ansible.builtin.include_tasks:
+            file: charts.yml
+            apply:
+                tags:
+                    - helm
+                    - helm-charts
+                    - kubernetes
         when:
             - helm_enable_charts | default(false)
             - helm_charts | length > 0
@@ -134,6 +89,11 @@
                 Helm deployment failed. Check the following:
                 - Kubernetes cluster is accessible
                 - Cattle Operator is running
-                - Helm repositories are reachable
                 - Chart configurations are valid
+                {% set failed = ansible_failed_result.results | default([])
+                   | selectattr('failed', 'defined') | selectattr('failed') | list %}
+                {% for r in failed %}
+                - {{ r.item.name | default(r.item) }}: {{ r.msg | default('failed after ' ~ r.attempts | default(1) ~ ' attempts') }}
+                {% else %}
                 Error: {{ ansible_failed_result.msg | default('Unknown error') }}
+                {% endfor %}

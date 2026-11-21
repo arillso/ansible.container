@@ -88,6 +88,5 @@
           Helm Configuration Summary:
           - Charts to deploy: {{ helm_charts | length }}
           - Repositories configured: {{ helm_repositories | length }}
-          - Validation enabled: {{ helm_validation_enabled }}
           - Deployment wait: {{ helm_deployment_wait }}
           - Kubeconfig: {{ helm_kubeconfig_path }}

@@ -12,7 +12,7 @@ helm_charts: []
 #     installCRDs: true
 
 # Helm repositories configuration
-helm_repositories: # noqa: argument-specs
+helm_repositories:
     jetstack: "https://charts.jetstack.io"
     bitnami: "https://charts.bitnami.com/bitnami"
     prometheus-community: "https://prometheus-community.github.io/helm-charts"
@@ -30,7 +30,6 @@ helm_chart_defaults:
 # would skip that detection.
 helm_kubeconfig_path: ""
 
-helm_validation_enabled: true
 helm_validation_retries: 10
 helm_validation_delay: 30
 helm_deployment_wait: true

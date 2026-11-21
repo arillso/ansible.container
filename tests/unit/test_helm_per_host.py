@@ -29,7 +29,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
-HELM_TASKS = ["charts.yml", "main.yml", "prerequisites.yml", "repositories.yml"]
+HELM_TASKS = ["charts.yml", "dependencies.yml", "main.yml", "prerequisites.yml"]
 
 # Roles that manage a cluster and therefore share the per-host contract.
 CLUSTER_ROLES = ["fleet", "helm", "k3s", "tailscale"]
@@ -112,3 +112,23 @@ def test_kubeconfig_selection_survives_a_skipped_stat():
     assert (
         "selectattr('stat', 'defined')" in text
     ), "guard the stat dict itself before testing stat.exists"
+
+
+def _repo_urls(block):
+    return dict(re.findall(r'^\s+([\w.-]+):\s+"(https?://[^"]+)"', block, re.MULTILINE))
+
+
+def test_helm_repositories_default_matches_argument_specs():
+    """The default lives in defaults/main.yml and argument_specs.yml.
+
+    Nothing else keeps the two copies in sync, and a drift is exactly the
+    mismatch between documented and actual default this test guards.
+    """
+    defaults = read("roles", "helm", "defaults", "main.yml")
+    specs = read("roles", "helm", "meta", "argument_specs.yml")
+    defaults_block = defaults.split("helm_repositories:", 1)[1].split("\n\n", 1)[0]
+    specs_block = (
+        specs.split("helm_repositories:", 1)[1].split("default:", 1)[1].split("description:", 1)[0]
+    )
+    assert _repo_urls(defaults_block), "no repositories parsed from defaults/main.yml"
+    assert _repo_urls(defaults_block) == _repo_urls(specs_block)

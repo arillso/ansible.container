@@ -6,10 +6,11 @@ Installs and manages Helm, the package manager for Kubernetes.
 
 - **Chart Deployment**: Deploy Helm charts via the K3s-embedded Helm controller
   (`helm.cattle.io/v1` HelmChart CRDs) — no separate Helm binary required
-- **Repository Management**: Add and manage Helm chart repositories
+- **Repository Mapping**: Reference charts by repository key from `helm_repositories`
 - **Chart Operations**: Install, upgrade, and remove Helm charts
 - **Per-Chart Versioning**: Pin a chart `version` per entry in `helm_charts`
-- **Validation**: Optional cluster reachability and deployment-wait checks
+- **Validation**: Chart definitions, cluster reachability and an optional
+  wait for the install Job
 
 ## Documentation
 
