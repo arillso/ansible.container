@@ -255,16 +255,18 @@ def test_compose_apt_vars_pin_uses_the_resolved_full_version(vars_file):
 
 def test_compose_redhat_vars_pin_uses_rpm_compatible_syntax():
     """dnf does not know the apt "pkg=version" syntax at all and RPM version
-    strings carry a release part, so the pin needs "pkg-version*"."""
+    strings carry a release part, so the pin needs "pkg-version-*"."""
     text = read("roles", "docker_compose_v2", "vars", "RedHat.yml")
     entries = [
         line.strip().lstrip("-").strip()
         for line in text.splitlines()
         if line.strip().startswith("-")
     ]
-    assert any("docker-compose-plugin-' + docker_compose_v2_version + '*" in e for e in entries), (
+    # the hyphen anchors the version: "5.8.1*" would also match 5.8.10
+    assert any("docker-compose-plugin-' + docker_compose_v2_version + '-*" in e for e in entries), (
         entries
     )
+    assert not any("docker_compose_v2_version + '*" in e for e in entries), entries
     # apt syntax in a RedHat vars file would break dnf
     assert not any("docker-compose-plugin=" in e for e in entries), entries
 

@@ -4,7 +4,9 @@
 # syntax at all and expects "pkg-version"; RPM version strings additionally
 # carry a release part (e.g. <version>-1.el9), which a bare
 # "docker-compose-plugin-<version>" never matches, so the pin uses a wildcard
-# suffix. dnf expands that glob, apt does not -- which is why the Debian and
+# suffix. The hyphen before the wildcard anchors the version: "5.8.1-*"
+# matches the release part only, where "5.8.1*" would also take 5.8.10.
+# dnf expands that glob, apt does not -- which is why the Debian and
 # Ubuntu vars resolve the exact string at runtime instead.
 docker_compose_v2_packages:
-    - name: "{{ 'docker-compose-plugin-' + docker_compose_v2_version + '*' if docker_compose_v2_version != '' else 'docker-compose-plugin' }}"
+    - name: "{{ 'docker-compose-plugin-' + docker_compose_v2_version + '-*' if docker_compose_v2_version != '' else 'docker-compose-plugin' }}"

@@ -1,0 +1,9 @@
+---
+# Derived values, not meant to be overridden.
+
+# A project is managed when there is a definition to deploy, or when a
+# file-based project is torn down, stopped or restarted from the compose file
+# an earlier run left in docker_compose_v2_directory.
+docker_compose_v2_compose_enabled: >-
+    {{ docker_compose_v2_config | length > 0
+       or (docker_compose_v2_use_file and docker_compose_v2_state != 'present') }}

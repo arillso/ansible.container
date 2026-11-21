@@ -36,6 +36,7 @@ argument_specs:
                 type: str
                 description:
                     - Full path to the Docker Compose project directory, constructed from docker_compose_v2_directory_path and docker_compose_v2_project.
+                    - Holds docker-compose.yml, the module runs against this directory.
                 default: "{{ docker_compose_v2_directory_path }}/{{ docker_compose_v2_project }}"
 
             docker_compose_v2_use_file:
@@ -55,6 +56,7 @@ argument_specs:
                 type: str
                 description:
                     - Name of the Docker Compose project, utilized to construct the full Docker Compose directory path.
+                    - Required with docker_compose_v2_use_file. Lowercase letters, digits, '-' and '_', starting with a letter or digit.
                 default: ""
 
             docker_compose_v2_api_version:
@@ -67,7 +69,7 @@ argument_specs:
             docker_compose_v2_ca_cert:
                 type: str
                 description:
-                    - Path to the CA certificate for server verification.
+                    - Deprecated, use docker_compose_v2_ca_path. Used as fallback when docker_compose_v2_ca_path is not set.
 
             docker_compose_v2_client_cert:
                 type: str
@@ -78,12 +80,6 @@ argument_specs:
                 type: str
                 description:
                     - Path to the client's TLS key for Docker daemon communication.
-
-            docker_compose_v2_debug:
-                type: bool
-                description:
-                    - Enable or disable debug mode.
-                default: false
 
             docker_compose_v2_dependencies:
                 type: bool
@@ -108,18 +104,6 @@ argument_specs:
                 description:
                     - List of Compose file names, relative to project_src, to override default docker-compose.yml.
 
-            docker_compose_v2_hostname_check:
-                type: bool
-                description:
-                    - Check Docker daemon's hostname against the name provided in the client certificate. Default is 'false'.
-                default: false
-
-            docker_compose_v2_nocache:
-                type: bool
-                description:
-                    - Control the use of cache during the image build. Set to 'true' to ignore cache.
-                default: false
-
             docker_compose_v2_profiles:
                 type: list
                 elements: str
@@ -134,18 +118,22 @@ argument_specs:
             docker_compose_v2_pull:
                 type: str
                 description:
-                    - "Pull policy for images. Valid values: 'always', 'missing', 'never', 'build'."
+                    - Pull policy for images before C(docker compose up).
+                choices: ["always", "missing", "never", "policy"]
+                default: "policy"
 
             docker_compose_v2_recreate:
                 type: str
                 description:
-                    - "Strategy for container recreation: 'always', 'never', or 'auto' (default)."
+                    - Strategy for container recreation.
+                choices: ["always", "never", "auto"]
                 default: "auto"
 
             docker_compose_v2_remove_images:
                 type: str
                 description:
-                    - Option to remove images when state is 'absent'. Choices are 'all' or 'local'.
+                    - Images to remove when state is 'absent'. Unset removes no images.
+                choices: ["all", "local"]
 
             docker_compose_v2_remove_orphans:
                 type: bool
@@ -160,12 +148,6 @@ argument_specs:
                     - Remove data volumes when state is 'absent'. Default is 'false'.
                 default: false
 
-            docker_compose_v2_restarted:
-                type: bool
-                description:
-                    - Restart all containers when state is 'present'. Default is 'false'.
-                default: false
-
             docker_compose_v2_scale:
                 type: dict
                 description:
@@ -177,23 +159,13 @@ argument_specs:
                 description:
                     - List of specific services to operate on. If empty, applies to all services in the Compose file.
 
-            docker_compose_v2_ssl_version:
-                type: str
-                description:
-                    - Specify a valid SSL version number for secure communication. Uses the default value determined by the SSL Python module if not set.
-
             docker_compose_v2_state:
                 type: str
                 description:
-                    - "Desired state of the Docker Compose project: 'present' (default) or 'absent'."
-                    - "'present' ensures the project is running, 'absent' removes it."
+                    - "Desired state of the project: 'present' runs C(docker compose up), 'stopped' C(stop), 'restarted' C(restart), 'absent' C(down)."
+                    - With docker_compose_v2_use_file, 'stopped', 'restarted' and 'absent' work from the compose file of an earlier run, so docker_compose_v2_config may be empty.
+                choices: ["present", "stopped", "restarted", "absent"]
                 default: "present"
-
-            docker_compose_v2_stopped:
-                type: bool
-                description:
-                    - Stop all containers when state is 'present'. Default is 'false'.
-                default: false
 
             docker_compose_v2_timeout:
                 type: int
@@ -231,6 +203,7 @@ argument_specs:
                 type: str
                 description:
                     - Build policy for Docker Compose services.
+                choices: ["always", "never", "policy"]
 
             docker_compose_v2_ca_path:
                 type: str
