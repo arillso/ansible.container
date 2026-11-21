@@ -8,7 +8,7 @@ first time.
 
 | Level                                      | Location                         | Runs in CI                                                   |
 | ------------------------------------------ | -------------------------------- | ------------------------------------------------------------ |
-| Lint (ansible-lint, yamllint, ruff, black) | whole repo                       | yes, `ci` job                                                |
+| Lint (ansible-lint, yamllint, ruff, black) | repo; ruff and black `plugins/`  | yes, `ci` job                                                |
 | Unit tests (pytest)                        | `tests/unit/`                    | yes, `ci` job                                                |
 | Molecule, one scenario per role            | `roles/<role>/molecule/default/` | yes, one `molecule-<role>` job each                          |
 | Integration (`ansible-test`)               | `tests/integration/targets/`     | no, see [its README](../tests/integration/targets/README.md) |
@@ -25,6 +25,8 @@ lefthook install
 ```
 
 `install-dev` installs `requirements.txt`, which includes `molecule-qemu`.
+`lefthook` itself is not in it; install the binary first. Its hooks also call
+`npx`, `gitleaks` and `actionlint`.
 
 ## Lint and unit tests
 
@@ -36,12 +38,13 @@ make test
 ## Molecule
 
 The scenarios use the `molecule-qemu` driver, not the docker driver: dockerd
-and k3s need a real kernel (modprobe, cgroups). Each scenario boots Ubuntu,
-Debian and, where the role declares EL, Rocky 9 cloud images.
+and k3s need a real kernel (modprobe, cgroups). Each scenario boots an Ubuntu
+and a Rocky 9 cloud image; docker and k3s add Debian 12.
 
 Prerequisites:
 
-- `qemu-system-x86_64` and access to `/dev/kvm`.
+- `qemu-system-x86_64`, `qemu-img`, `mkisofs` (package `genisoimage` on Debian) for the
+  cloud-init seed, and access to `/dev/kvm`.
 - About 2–3 GiB RAM per VM (`vm_memory` in each `molecule.yml`), three VMs for
   docker and k3s.
 - Free ports 2222–2224 on localhost. Every scenario forwards SSH to the same
