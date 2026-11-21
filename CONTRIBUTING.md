@@ -7,7 +7,7 @@ Thank you for your interest in contributing! This document provides guidelines a
 - Ansible >= 2.18
 - Python >= 3.12
 - Git
-- Docker (for testing)
+- qemu with KVM for Molecule, see [docs/testing.md](docs/testing.md)
 
 ## Development Setup
 
@@ -55,7 +55,8 @@ git checkout -b fix/issue-description
 - **Idempotency**: All tasks must be idempotent
 - **Handlers**: Use handlers for service restarts and reloads
 - **FQCN**: Use Fully Qualified Collection Names for modules
-- **Variables**: Document all variables in `defaults/main.yml`
+- **Variables**: Document all variables in `meta/argument_specs.yml`; keep
+  `defaults/main.yml` free of explanatory comments
 - **Argument Specs**: Always provide `meta/argument_specs.yml`
 - **Tags**: Use meaningful tags for task organization
 
@@ -114,16 +115,23 @@ make build
 
 ### Commit Messages
 
-Write clear, descriptive commit messages:
+Use [Conventional Commits](https://www.conventionalcommits.org/) with the role
+as scope, in English:
 
 ```text
-Brief summary (50 chars or less)
+<type>(<scope>): <summary>
 
-- Detailed description with bullet points
-- Reference related issues
+<optional body: what changed and why>
 
 Fixes #123
 ```
+
+- Types: `feat`, `fix`, `perf`, `refactor`, `test`, `docs`, `ci`, `chore`.
+- Scope: the role (`k3s`, `docker_login`) or the area (`plugins/<name>`, `ci`).
+- Summary in lowercase imperative mood: `fix(k3s): wait for the API before applying manifests`.
+- Breaking change: add `!` after the scope and a `BREAKING CHANGE:` footer with
+  the migration step, e.g. `fix(helm)!: …`.
+- The PR title follows the same format.
 
 ### Pull Request Process
 
