@@ -2,8 +2,7 @@
 # Covers Debian and Ubuntu via the os_family fallback in tasks/main.yml.
 #
 # Docker publishes one repository per distribution (ubuntu, raspbian, debian).
-# Derivatives that report their own codename (Kali, Mint, ...) are not
-# supported: their release does not exist in any of these repositories.
+# Other distributions fail early in tasks/install_docker_debian.yml.
 docker_apt_distribution: >-
     {{ ansible_facts['distribution'] | lower
        if ansible_facts['distribution'] in ['Ubuntu', 'Raspbian'] else 'debian' }}

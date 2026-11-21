@@ -3,13 +3,13 @@
 # one through the os_family fallback in tasks/main.yml. docker_apt_distribution
 # (vars/Debian.yml) picks the Docker repository the host belongs to.
 
-- name: "Debian : ensure deb822 dependency"
-  become: true
-  ansible.builtin.apt:
-      name: python3-debian
-      state: present
-      update_cache: true
-      cache_valid_time: 3600
+- name: "Debian : fail on an unsupported distribution"
+  ansible.builtin.fail:
+      msg: >-
+          {{ ansible_facts['distribution'] }} is not supported. Docker publishes
+          repositories for Debian, Ubuntu and Raspbian only, and derivatives
+          report codenames that do not exist there.
+  when: ansible_facts['distribution'] not in ['Debian', 'Ubuntu', 'Raspbian']
 
 - name: "Debian : create keyrings directory"
   become: true
@@ -18,8 +18,10 @@
       state: directory
       mode: "0755"
 
-# force: true re-downloads on every run but only reports a change when the
-# content differs, so a key rotated by Docker is picked up.
+# The key is fetched before anything runs `apt-get update`: once Docker
+# re-signs its repository, an update with the old key fails before a later
+# task could replace it. force: true re-downloads on every run but only
+# reports a change when the content differs.
 - name: "Debian : add key"
   become: true
   ansible.builtin.get_url:
@@ -27,6 +29,15 @@
       dest: /etc/apt/keyrings/docker.asc
       mode: "0644"
       force: true
+  register: docker_key
+
+- name: "Debian : ensure deb822 dependency"
+  become: true
+  ansible.builtin.apt:
+      name: python3-debian
+      state: present
+      update_cache: true
+      cache_valid_time: 3600
 
 # No `architectures:` -- apt then uses the host's native architecture, so
 # arm64 hosts get the arm64 packages.
@@ -43,10 +54,12 @@
       enabled: true
   register: docker_repo
 
-# Earlier releases wrote the source list and the key to these paths; the
-# deb822 repository above replaces all of them. Removed only after it is in
-# place, so a failed key download never leaves a source without its key.
-- name: "Debian : remove legacy docker sources and keys"
+# Earlier releases wrote the source list to docker.list and, on Ubuntu, the
+# key to trusted.gpg.d, where apt trusts it for every source. Both are
+# replaced by the deb822 repository above and removed only after it is in
+# place. The old Debian key in /usr/share/keyrings stays: other sources may
+# still reference it with signed-by.
+- name: "Debian : remove legacy docker source and trusted key"
   become: true
   ansible.builtin.file:
       path: "{{ item }}"
@@ -54,13 +67,12 @@
   loop:
       - /etc/apt/sources.list.d/docker.list
       - /etc/apt/trusted.gpg.d/docker.asc
-      - /usr/share/keyrings/docker-archive-keyring.asc
 
 - name: "Debian : update apt cache"
   become: true
   ansible.builtin.apt:
       update_cache: true
-  when: docker_repo is changed
+  when: docker_repo is changed or docker_key is changed
 
 # apt matches an "=" pin against the full version string (epoch + distro
 # suffix) and does not expand globs in it, so the exact candidate has to be

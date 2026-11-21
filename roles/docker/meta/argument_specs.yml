@@ -24,8 +24,10 @@ argument_specs:
                 description: >-
                     User-provided Docker daemon configuration options, merged recursively on
                     top of docker_daemon_base. Keys set here win; keys left unset are
-                    inherited from the base. Any daemon.json key is accepted and passed
-                    through unchecked; see the dockerd reference for valid keys. On a
+                    inherited from the base. Any daemon.json key is accepted; the rendered
+                    file is checked with `dockerd --validate` before it replaces the
+                    current one, so a wrong key or value type fails the task instead
+                    of the daemon restart. On a
                     swarm node live-restore is forced to false, because the swarm
                     cluster component fails to start with it.
 

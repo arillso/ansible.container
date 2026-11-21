@@ -12,19 +12,44 @@
       systemd_units: "{{ docker_systemd_units }}"
   when: docker_prune_enabled
 
-# With docker_prune_enabled false the timers are stopped and disabled. On a
-# host that never had them, systemd reports the unit as missing, which is
-# the desired end state and not an error.
+# /etc/systemd/system is where arillso.system.systemd writes units
+# (systemd_unit_path default). Checked so that docker_prune_enabled: false
+# only touches timers a previous run installed.
+- name: Find installed Docker prune units
+  ansible.builtin.stat:
+      path: "/etc/systemd/system/{{ item.name }}"
+  loop: "{{ docker_systemd_units }}"
+  register: docker_prune_unit_files
+
 - name: Enable and start systemd timers for Docker
   become: true
   ansible.builtin.systemd:
-      name: "{{ item.name }}"
+      name: "{{ item.item.name }}"
       enabled: "{{ docker_prune_enabled }}"
       state: "{{ 'started' if docker_prune_enabled else 'stopped' }}"
       daemon_reload: true
-  register: docker_prune_timer
-  failed_when:
-      - docker_prune_timer is failed
-      - docker_prune_enabled or 'Could not find' not in docker_prune_timer.msg | default('')
-  loop: "{{ docker_systemd_units }}"
-  when: item.name is search('\.timer$')
+  loop: "{{ docker_prune_unit_files.results }}"
+  loop_control:
+      label: "{{ item.item.name }}"
+  when:
+      - item.item.name is search('\.timer$')
+      - docker_prune_enabled or item.stat.exists
+
+- name: Remove Docker prune units
+  become: true
+  ansible.builtin.file:
+      path: "/etc/systemd/system/{{ item.item.name }}"
+      state: absent
+  loop: "{{ docker_prune_unit_files.results }}"
+  loop_control:
+      label: "{{ item.item.name }}"
+  when:
+      - not docker_prune_enabled
+      - item.stat.exists
+  register: docker_prune_units_removed
+
+- name: Reload systemd after removing the prune units
+  become: true
+  ansible.builtin.systemd:
+      daemon_reload: true
+  when: docker_prune_units_removed is changed

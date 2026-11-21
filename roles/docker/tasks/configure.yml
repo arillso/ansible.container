@@ -16,7 +16,7 @@
 # nodes. A daemon that is not running yet (first install on EL) reports no
 # state, which counts as not in a swarm. A node whose cluster component failed
 # to start because of live-restore reports `error`, so that state counts too.
-# ponytail: a later `docker swarm init` is not seen until the next role run
+# A later `docker swarm init` is only seen on the next role run.
 - name: Read the swarm state
   become: true
   ansible.builtin.command:
@@ -39,5 +39,8 @@
       mode: "0600"
       owner: root
       group: root
+      # Catches wrong value types, unknown and removed keys before the
+      # restart handler can leave the host with a daemon that does not start.
+      validate: dockerd --validate --config-file %s
   notify:
       - Restart docker

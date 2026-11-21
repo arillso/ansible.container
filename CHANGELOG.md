@@ -19,7 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   swarm cluster component fails to start with it.
 - **docker**: Debian and Ubuntu share one install task file and one vars file.
   The key moves to `/etc/apt/keyrings/docker.asc` on both, is fetched with
-  become and refreshed when Docker rotates it; the old key paths are removed.
+  become before any `apt-get update` and refreshes the apt cache when Docker
+  rotates it. Distributions other than Debian, Ubuntu and Raspbian now fail
+  early with a clear message.
 - **docker**: the `python3-debian` install no longer refreshes the apt cache on
   every run (`cache_valid_time: 3600`). Raspbian keeps its own Docker
   repository.
@@ -28,12 +30,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **docker**: the prune timer runs daily with `until=24h` instead of every 5
   minutes with `until=1h`. The new `docker_prune_enabled` (default `true`)
-  turns both prune timers off. **Upgrade note:** stopped containers, unused
+  stops the timers and removes the prune units. **Upgrade note:** stopped containers, unused
   networks and images now survive up to 24h instead of 1h.
 - **docker**: `docker_daemon` in `argument_specs.yml` no longer lists fixed
   sub-options. Any `daemon.json` key is accepted; before, keys such as
   `metrics-addr` or `proxies` failed validation, and the listed
-  `disable-legacy-registry` made dockerd refuse to start.
+  `disable-legacy-registry` made dockerd refuse to start. The rendered
+  `daemon.json` is now checked with `dockerd --validate` before it is written.
 
 - Molecule test image `nginx:alpine` is now pinned as `nginx:1.31.8-alpine` in
   the `k3s` and `docker_compose_v2` scenarios. On the floating `alpine` tag
