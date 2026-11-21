@@ -26,6 +26,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   every run (`cache_valid_time: 3600`). Raspbian keeps its own Docker
   repository.
 
+- **docker_compose_v2**: the systemd unit called the Compose v1 binary
+  `/usr/bin/docker-compose`, which the role never installs, and was never
+  enabled. It now runs `docker compose`, is installed per project as
+  `docker-compose-<project>.service` with `docker_compose_v2_directory` as
+  working directory, and is enabled and started for `present`/`restarted`,
+  disabled for `stopped`, and stopped and removed for `absent`. The unit
+  passes the same `project_name`, `files`, `env_file`, `profiles`,
+  `remove_orphans`, `docker_cli` and `docker_host`/`cli_context` as the
+  module task, so it addresses the same project. The legacy
+  `docker-compose@.service` template is removed and systemd reloaded.
+- **docker_compose_v2**: failures of the template and compose tasks are no
+  longer swallowed by a `rescue` that only printed a debug message; the play
+  now fails.
+- **docker_compose_v2**: the compose file is written to
+  `docker_compose_v2_directory`, the same path the module runs against;
+  before, an overridden `docker_compose_v2_directory` split file and project.
+- **docker_compose_v2**: with `docker_compose_v2_use_file`, `state: absent`
+  (and `stopped`/`restarted`) works without `docker_compose_v2_config`, from
+  the compose file of an earlier run. `state: absent` on a host without that
+  file skips the module instead of failing.
+- **docker_compose_v2**: `docker_compose_v2_timeout: 0` is passed to the
+  module instead of being dropped.
+- **docker_compose_v2**: an unsupported distribution and a missing
+  `docker_compose_v2_project` in file mode now fail with a clear assert.
+- **docker_compose_v2**: the README Quick Start no longer pins the dropped
+  version `2.23.0`.
+
 ### Changed
 
 - **docker**: the prune timer runs daily with `until=24h` instead of every 5
@@ -37,6 +64,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `metrics-addr` or `proxies` failed validation, and the listed
   `disable-legacy-registry` made dockerd refuse to start. The rendered
   `daemon.json` is now checked with `dockerd --validate` before it is written.
+
+- **docker_compose_v2**: `docker_compose_v2_state` documents and accepts all
+  module states (`present`, `stopped`, `restarted`, `absent`).
+  `docker_compose_v2_stopped` and `docker_compose_v2_restarted` are removed;
+  they were never passed to the module. Use the state instead.
+- **docker_compose_v2**: `docker_compose_v2_debug`, `docker_compose_v2_nocache`,
+  `docker_compose_v2_hostname_check` and `docker_compose_v2_ssl_version` are
+  removed; the module has no such options and they had no effect.
+  `docker_compose_v2_ca_cert` is deprecated and now used as fallback for
+  `docker_compose_v2_ca_path`; before it had no effect.
+- **docker_compose_v2**: **Upgrade note:** `docker_compose_v2_remove_images`
+  no longer defaults to `all`. Unset, `state: absent` removes no images, as
+  the module does by default. Set it to `all` to keep the old behaviour.
+- **docker_compose_v2**: `argument_specs.yml` lists the valid choices for
+  `pull`, `recreate`, `remove_images`, `build` and `state`, and the `pull`
+  default `policy`.
 
 - Molecule test image `nginx:alpine` is now pinned as `nginx:1.31.8-alpine` in
   the `k3s` and `docker_compose_v2` scenarios. On the floating `alpine` tag

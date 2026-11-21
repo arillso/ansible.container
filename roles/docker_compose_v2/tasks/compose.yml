@@ -1,67 +1,127 @@
 ---
-# Docker Compose service setup and project launch
+# Docker Compose project file, systemd unit and project launch
 
-- name: Manage Docker Compose Setup
-  when: docker_compose_v2_config | length > 0
+# The role used to install a template unit that called the Compose v1 binary
+# and never worked. It is replaced by one unit per project below.
+- name: Remove the legacy docker-compose@ template unit
+  become: true
+  ansible.builtin.file:
+      path: /etc/systemd/system/docker-compose@.service
+      state: absent
+  register: docker_compose_v2_legacy_unit
+
+- name: Create Docker Compose configuration file from template
+  become: true
+  ansible.builtin.template:
+      src: etc/docker/compose/docker-compose.yml.j2
+      dest: "{{ docker_compose_v2_directory }}/docker-compose.yml"
+      owner: root
+      group: root
+      mode: "0644"
+  when:
+      - docker_compose_v2_use_file
+      - docker_compose_v2_config | length > 0
+
+- name: Set up the Docker Compose systemd unit for the project
+  become: true
+  ansible.builtin.template:
+      src: etc/systemd/system/docker-compose.service.j2
+      dest: "{{ docker_compose_v2_unit_path }}"
+      owner: root
+      group: root
+      mode: "0644"
+  when:
+      - docker_compose_v2_use_file
+      - docker_compose_v2_state != 'absent'
+
+# state=absent without a definition works from the compose file of an earlier
+# run. On a host the project never reached there is none, and the module would
+# fail on an empty project_src instead of finding nothing to remove.
+- name: Check for the Docker Compose project file
+  ansible.builtin.stat:
+      path: "{{ docker_compose_v2_directory }}/{{ docker_compose_v2_files | default(['docker-compose.yml']) | first }}"
+  register: docker_compose_v2_file_stat
+  when:
+      - docker_compose_v2_use_file
+      - docker_compose_v2_state == 'absent'
+      - docker_compose_v2_config | length == 0
+
+- name: Launch Docker Compose based on specified configuration
+  become: true
+  community.docker.docker_compose_v2:
+      project_src: "{{ docker_compose_v2_directory if docker_compose_v2_use_file else omit }}"
+      definition: "{{ docker_compose_v2_config if not docker_compose_v2_use_file else omit }}"
+      api_version: "{{ docker_compose_v2_api_version }}"
+      dependencies: "{{ docker_compose_v2_dependencies }}"
+      docker_host: "{{ docker_compose_v2_docker_host }}"
+      env_files: "{{ docker_compose_v2_env_file | default(omit) }}"
+      profiles: "{{ docker_compose_v2_profiles | default(omit) }}"
+      project_name: "{{ docker_compose_v2_project_name | default(omit) }}"
+      recreate: "{{ docker_compose_v2_recreate }}"
+      remove_images: "{{ docker_compose_v2_remove_images | default(omit) }}"
+      remove_orphans: "{{ docker_compose_v2_remove_orphans }}"
+      remove_volumes: "{{ docker_compose_v2_remove_volumes }}"
+      state: "{{ docker_compose_v2_state }}"
+      timeout: "{{ docker_compose_v2_timeout | default(omit) }}"
+      tls: "{{ docker_compose_v2_tls }}"
+      tls_hostname: "{{ docker_compose_v2_tls_hostname | default(omit) }}"
+      validate_certs: "{{ docker_compose_v2_validate_certs }}"
+      cli_context: "{{ docker_compose_v2_cli_context | default(omit) }}"
+      docker_cli: "{{ docker_compose_v2_docker_cli | default(omit) }}"
+      build: "{{ docker_compose_v2_build | default(omit) }}"
+      ca_path: "{{ docker_compose_v2_ca_path | default(docker_compose_v2_ca_cert) | default(omit) }}"
+      client_cert: "{{ docker_compose_v2_client_cert | default(omit) }}"
+      client_key: "{{ docker_compose_v2_client_key | default(omit) }}"
+      files: "{{ docker_compose_v2_files | default(omit) }}"
+      pull: "{{ docker_compose_v2_pull }}"
+      scale: "{{ docker_compose_v2_scale | default(omit) }}"
+      services: "{{ docker_compose_v2_services | default(omit) }}"
+  when: docker_compose_v2_file_stat.stat.exists | default(true)
+
+# present/restarted: the unit brings the project up again after a reboot.
+# stopped: the unit is only disabled; stopping it would run `docker compose
+# down` and remove the containers that state=stopped is meant to keep.
+- name: Enable the Docker Compose systemd unit
+  become: true
+  ansible.builtin.systemd_service:
+      name: "{{ docker_compose_v2_unit_path | basename }}"
+      enabled: "{{ docker_compose_v2_state != 'stopped' }}"
+      state: "{{ omit if docker_compose_v2_state == 'stopped' else 'started' }}"
+      daemon_reload: true
+  when:
+      - docker_compose_v2_use_file
+      - docker_compose_v2_state != 'absent'
+
+- name: Remove the Docker Compose systemd unit
+  when:
+      - docker_compose_v2_use_file
+      - docker_compose_v2_state == 'absent'
   block:
-      - name: Configure Docker Compose environment
-        when: docker_compose_v2_use_file
-        block:
-            - name: Set up Docker Compose systemd service on target host
-              become: true
-              ansible.builtin.template:
-                  src: etc/systemd/system/docker-compose@.service.j2
-                  dest: /etc/systemd/system/docker-compose@.service
-                  owner: root
-                  group: root
-                  mode: "0644"
+      - name: Check for the Docker Compose systemd unit
+        ansible.builtin.stat:
+            path: "{{ docker_compose_v2_unit_path }}"
+        register: docker_compose_v2_unit_stat
 
-            - name: Create Docker Compose configuration file from template
-              become: true
-              ansible.builtin.template:
-                  src: etc/docker/compose/docker-compose.yml.j2
-                  dest: "{{ docker_compose_v2_directory_path }}/{{ docker_compose_v2_project }}/docker-compose.yml"
-                  owner: root
-                  group: root
-                  mode: "0644"
-
-        rescue:
-            - name: Error handling if the service could not be created
-              ansible.builtin.debug:
-                  msg: "The Docker Compose service could not be created. Please check the configuration and system logs."
-
-      - name: Launch Docker Compose based on specified configuration
+      - name: Stop and disable the Docker Compose systemd unit
         become: true
-        community.docker.docker_compose_v2:
-            project_src: "{{ docker_compose_v2_directory if docker_compose_v2_use_file else omit }}"
-            definition: "{{ docker_compose_v2_config if not docker_compose_v2_use_file else omit }}"
-            api_version: "{{ docker_compose_v2_api_version }}"
-            dependencies: "{{ docker_compose_v2_dependencies }}"
-            docker_host: "{{ docker_compose_v2_docker_host }}"
-            env_files: "{{ docker_compose_v2_env_file | default(omit) }}"
-            profiles: "{{ docker_compose_v2_profiles | default(omit) }}"
-            project_name: "{{ docker_compose_v2_project_name | default(omit) }}"
-            recreate: "{{ docker_compose_v2_recreate }}"
-            remove_images: "{{ docker_compose_v2_remove_images }}"
-            remove_orphans: "{{ docker_compose_v2_remove_orphans }}"
-            remove_volumes: "{{ docker_compose_v2_remove_volumes }}"
-            state: "{{ docker_compose_v2_state }}"
-            timeout: "{{ docker_compose_v2_timeout | default(omit, true) }}"
-            tls: "{{ docker_compose_v2_tls }}"
-            tls_hostname: "{{ docker_compose_v2_tls_hostname | default(omit) }}"
-            validate_certs: "{{ docker_compose_v2_validate_certs }}"
-            cli_context: "{{ docker_compose_v2_cli_context | default(omit) }}"
-            docker_cli: "{{ docker_compose_v2_docker_cli | default(omit) }}"
-            build: "{{ docker_compose_v2_build | default(omit) }}"
-            ca_path: "{{ docker_compose_v2_ca_path | default(omit) }}"
-            client_cert: "{{ docker_compose_v2_client_cert | default(omit) }}"
-            client_key: "{{ docker_compose_v2_client_key | default(omit) }}"
-            files: "{{ docker_compose_v2_files | default(omit) }}"
-            pull: "{{ docker_compose_v2_pull }}"
-            scale: "{{ docker_compose_v2_scale | default(omit) }}"
-            services: "{{ docker_compose_v2_services | default(omit) }}"
+        ansible.builtin.systemd_service:
+            name: "{{ docker_compose_v2_unit_path | basename }}"
+            enabled: false
+            state: stopped
+        when: docker_compose_v2_unit_stat.stat.exists
 
-  rescue:
-      - name: Handle undefined docker_compose_v2_config variable
-        ansible.builtin.debug:
-            msg: "The variable 'docker_compose_v2_config' is not defined. Aborting the playbook due to missing configuration."
+      - name: Remove the Docker Compose systemd unit file
+        become: true
+        ansible.builtin.file:
+            path: "{{ docker_compose_v2_unit_path }}"
+            state: absent
+        register: docker_compose_v2_unit_removed
+
+# Without a reload systemd keeps the removed units loaded as not-found.
+- name: Reload systemd after removing a unit file
+  become: true
+  ansible.builtin.systemd_service:
+      daemon_reload: true
+  when: >-
+      docker_compose_v2_legacy_unit is changed
+      or docker_compose_v2_unit_removed is changed

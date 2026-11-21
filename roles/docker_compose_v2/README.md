@@ -23,7 +23,13 @@ For detailed documentation including all variables, examples, and usage instruct
   roles:
       - role: arillso.container.docker_compose_v2
         vars:
-            docker_compose_v2_version: "2.23.0"
+            docker_compose_v2_project: "web"
+            docker_compose_v2_config:
+                services:
+                    web:
+                        image: nginx:alpine
+                        ports:
+                            - "8080:80"
 ```
 
 ## License

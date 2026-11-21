@@ -28,17 +28,20 @@
             fail_msg: "compose project file was not created"
             success_msg: "compose project file exists"
 
-      - name: Check the systemd unit template was installed
-        ansible.builtin.stat:
-            path: /etc/systemd/system/docker-compose@.service
+      - name: Read the state of the project systemd unit
+        ansible.builtin.systemd_service:
+            name: docker-compose-molecule.service
         register: docker_compose_v2_unit
 
-      - name: Verify the systemd unit template exists
+      - name: Verify the project systemd unit is enabled and active
         ansible.builtin.assert:
             that:
-                - docker_compose_v2_unit.stat.exists
-            fail_msg: "docker-compose@.service unit was not created"
-            success_msg: "docker-compose@.service unit exists"
+                - docker_compose_v2_unit.status.UnitFileState == 'enabled'
+                - docker_compose_v2_unit.status.ActiveState == 'active'
+            fail_msg: >-
+                docker-compose-molecule.service is
+                {{ docker_compose_v2_unit.status.UnitFileState }}/{{ docker_compose_v2_unit.status.ActiveState }}
+            success_msg: "docker-compose-molecule.service is enabled and active"
 
       - name: List running compose containers
         ansible.builtin.command: docker ps --filter "name=molecule" --format "{{ '{{' }}.Names{{ '}}' }}"
@@ -67,17 +70,8 @@
             docker_compose_v2_use_file: true
             docker_compose_v2_state: absent
             docker_compose_v2_remove_volumes: true
-            docker_compose_v2_config:
-                services:
-                    web:
-                        # Must match converge.yml: the role renders this into
-                        # the project file, and compose resolves the project to
-                        # tear down from it. Renovate updates the digest here
-                        # through the molecule-image customManager in
-                        # .github/renovate.json.
-                        image: nginx:1.31.8-alpine@sha256:fed7e14be83cbd2661a75cdc5b872d936cf155d46c327084d30b8df19ae88d72
-                        ports:
-                            - "8080:80"
+            # No docker_compose_v2_config on purpose: state=absent must work
+            # from the compose file converge.yml left on disk.
 
       - name: List compose containers after teardown
         ansible.builtin.command: docker ps --filter "name=molecule" --format "{{ '{{' }}.Names{{ '}}' }}"
@@ -92,3 +86,15 @@
                 compose project still has running containers after
                 state=absent: {{ docker_compose_v2_ps_after.stdout }}
             success_msg: "compose project was torn down correctly"
+
+      - name: Check the project systemd unit after teardown
+        ansible.builtin.stat:
+            path: /etc/systemd/system/docker-compose-molecule.service
+        register: docker_compose_v2_unit_after
+
+      - name: Verify the project systemd unit was removed
+        ansible.builtin.assert:
+            that:
+                - not docker_compose_v2_unit_after.stat.exists
+            fail_msg: "docker-compose-molecule.service still exists after state=absent"
+            success_msg: "docker-compose-molecule.service was removed"

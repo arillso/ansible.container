@@ -14,8 +14,44 @@
   loop_control:
       loop_var: loop_vars
 
+- name: Validate the distribution is supported
+  ansible.builtin.assert:
+      that:
+          - ansible_facts['os_family'] in ['Debian', 'RedHat']
+      fail_msg: >-
+          docker_compose_v2 supports the Debian and RedHat families only, not
+          {{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_version'] }}
+          ({{ ansible_facts['os_family'] }}).
+      quiet: true
+
+- name: Validate the project settings
+  ansible.builtin.assert:
+      that:
+          - docker_compose_v2_project != ''
+      fail_msg: >-
+          docker_compose_v2_project must be set when docker_compose_v2_use_file is
+          true: it names the project directory and the systemd unit.
+      quiet: true
+  when:
+      - docker_compose_v2_use_file
+      - docker_compose_v2_compose_enabled | bool
+
+- name: Validate the inline definition
+  ansible.builtin.assert:
+      that:
+          - docker_compose_v2_config | length > 0
+      fail_msg: >-
+          docker_compose_v2_state={{ docker_compose_v2_state }} without
+          docker_compose_v2_use_file needs docker_compose_v2_config, the module
+          has no other source for the project.
+      quiet: true
+  when:
+      - not docker_compose_v2_use_file
+      - docker_compose_v2_state != 'present'
+
 - name: Install the Docker Compose packages
   ansible.builtin.include_tasks: packages.yml
 
 - name: Manage the Docker Compose project
   ansible.builtin.include_tasks: compose.yml
+  when: docker_compose_v2_compose_enabled | bool

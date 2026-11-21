@@ -12,19 +12,13 @@ docker_compose_v2_use_file: true
 docker_compose_v2_config: []
 docker_compose_v2_project: ""
 docker_compose_v2_api_version: "auto"
-docker_compose_v2_debug: false
 docker_compose_v2_dependencies: true
 docker_compose_v2_docker_host: "unix:///var/run/docker.sock"
-docker_compose_v2_hostname_check: false
-docker_compose_v2_nocache: false
 docker_compose_v2_pull: policy
 docker_compose_v2_recreate: "auto"
-docker_compose_v2_remove_images: all
 docker_compose_v2_remove_orphans: false
 docker_compose_v2_remove_volumes: false
-docker_compose_v2_restarted: false
 docker_compose_v2_state: "present"
-docker_compose_v2_stopped: false
 docker_compose_v2_tls: false
 docker_compose_v2_validate_certs: false
 
