@@ -1,6 +1,7 @@
 ---
 tailscale_kubeconfig_path: /etc/rancher/k3s/k3s.yaml
 tailscale_state: present
+tailscale_wait_timeout: 120
 
 # Tailscale ProxyGroups
 tailscale_proxygroups: []

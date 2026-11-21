@@ -6,9 +6,8 @@
   kubernetes.core.k8s:
       kubeconfig: "{{ tailscale_kubeconfig_path }}"
       state: "{{ tailscale_state }}"
-      # On absent, wait until the object is gone so the ProxyGroup it
-      # references is only deleted after the operator finished cleanup.
       wait: "{{ tailscale_state == 'absent' }}"
+      wait_timeout: "{{ tailscale_wait_timeout }}"
       definition:
           apiVersion: v1
           kind: Service

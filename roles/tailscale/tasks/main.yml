@@ -1,20 +1,12 @@
 ---
 # Tailscale Kubernetes Resources - Main Tasks
 #
-# ProxyGroups are created before and deleted after the Services and
-# Ingresses that reference them through tailscale.com/proxy-group.
-
-- name: Warn about the ignored ProxyGroup namespace
-  ansible.builtin.debug:
-      msg: >-
-          DEPRECATED: tailscale_proxygroups[].namespace is ignored because
-          ProxyGroup is cluster-scoped, and will be removed in the next major
-          release. Set on: {{ tailscale_proxygroups | selectattr('namespace', 'defined')
-          | map(attribute='name') | join(', ') }}
-  when: tailscale_proxygroups | selectattr('namespace', 'defined') | list | length > 0
-  tags:
-      - tailscale
-      - tailscale-proxygroups
+# ProxyGroups are applied after the Services and Ingresses that reference
+# them through tailscale.com/proxy-group. On present the order does not
+# matter, the operator reconciles a Service once its ProxyGroup exists. On
+# absent the Services and Ingresses are deleted first, and every delete waits
+# up to tailscale_wait_timeout, so a ProxyGroup is only removed after the
+# operator released the objects that use it.
 
 - name: Manage Tailscale service namespaces
   ansible.builtin.include_tasks: namespaces.yml
@@ -26,15 +18,6 @@
       - tailscale-namespace
       - tailscale-ingress
       - tailscale-egress
-
-- name: Manage Tailscale ProxyGroups
-  ansible.builtin.include_tasks: proxygroups.yml
-  when:
-      - tailscale_state == "present"
-      - tailscale_proxygroups | length > 0
-  tags:
-      - tailscale
-      - tailscale-proxygroups
 
 - name: Manage Tailscale Ingress Services
   ansible.builtin.include_tasks: ingress_services.yml
@@ -50,11 +33,9 @@
       - tailscale
       - tailscale-egress
 
-- name: Remove Tailscale ProxyGroups
+- name: Manage Tailscale ProxyGroups
   ansible.builtin.include_tasks: proxygroups.yml
-  when:
-      - tailscale_state == "absent"
-      - tailscale_proxygroups | length > 0
+  when: tailscale_proxygroups | length > 0
   tags:
       - tailscale
       - tailscale-proxygroups

@@ -27,6 +27,14 @@ argument_specs:
                     - absent
                 description: State of Tailscale resources (present or absent)
 
+            tailscale_wait_timeout:
+                type: int
+                required: false
+                default: 120
+                description:
+                    - Seconds each delete waits for the resource to be gone when tailscale_state is absent.
+                    - The Tailscale operator holds finalizers on these resources, so absent needs a running operator.
+
             tailscale_proxygroups:
                 type: list
                 required: false

@@ -162,8 +162,9 @@ Contains breaking changes; release it as `3.0.0`.
 - **tailscale**: egress services must set exactly one of `fqdn` or `ip`,
   enforced in `argument_specs.yml`.
 - **tailscale**: with `tailscale_state: absent`, ProxyGroups are removed after
-  the Services and Ingresses that reference them; the role waits until those
-  are gone before deleting the ProxyGroups.
+  the Services and Ingresses that reference them. Every delete waits up to the
+  new `tailscale_wait_timeout` (default `120`) for the operator to release the
+  resource, so `absent` now needs a running operator.
 - **tailscale**: `--tags tailscale-namespace` now reaches the namespace task.
   Namespaces are created once per unique namespace in a new `namespaces.yml`.
 - **tailscale**: ProxyGroup is a cluster-scoped CRD. The role no longer sets
@@ -234,7 +235,8 @@ Contains breaking changes; release it as `3.0.0`.
 - **tailscale**: `meta/main.yml` lists `GenericLinux` instead of a host OS
   matrix; the README lists the actual requirements (operator with CRDs,
   kubeconfig, Python `kubernetes`, `kubernetes.core`).
-
+- **tailscale**: the Molecule scenario also applies a LoadBalancer and an
+  egress Service and verifies both.
 - Molecule test image `nginx:alpine` is now pinned as `nginx:1.31.8-alpine` in
   the `k3s` and `docker_compose_v2` scenarios. On the floating `alpine` tag
   Renovate only proposed digest updates, which have no release timestamp and
