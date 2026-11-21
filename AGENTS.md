@@ -83,7 +83,9 @@ the tag runs `tag.yml`, which publishes to Galaxy.
 - **Integration tests do not run in CI.** `pull-request.yml` and `merge.yml`
   do not set `enable_integration_tests`, which defaults to `false` in the
   reusable, so the integration job never starts. The only targets, `fleet` and
-  `tailscale`, are also `disabled`. Even when the job is enabled, the reusable
+  `tailscale`, are also `disabled` and need an existing K3s cluster; run them
+  manually with `--allow-disabled` (see `tests/integration/targets/README.md`).
+  Even when the job is enabled, the reusable
   runs `ansible-test integration --docker` without `--docker-privileged`, so a
   target marked `needs/privileged` would still be skipped.
   Role coverage lives in the per-role Molecule jobs of `pull-request.yml`.
