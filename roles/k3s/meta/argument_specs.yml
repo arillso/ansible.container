@@ -338,7 +338,7 @@ argument_specs:
 
             k3s_kubeconfig_mode:
                 type: "str"
-                default: "{{ k3s_write_kubeconfig_mode | default('0600') }}"
+                default: "{{ k3s_write_kubeconfig_mode | default('0600', true) }}"
                 description: >-
                     File mode for the user kubeconfig (/etc/rancher/k3s/k3s.yaml or
                     k3s_write_kubeconfig). Defaults to k3s_write_kubeconfig_mode so it

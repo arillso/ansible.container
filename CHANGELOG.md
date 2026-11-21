@@ -127,7 +127,12 @@ Contains breaking changes; release it as `3.0.0`.
   (first host of `k3s_controllers`, else `k3s_servers`, else standalone); a
   missing datastore no longer makes a new server `first_server`, and a set
   `k3s_server_url` never initialises. Secondary servers now get their
-  `server:` URL from the inventory like agents.
+  `server:` URL from the inventory like agents. **Upgrade note:** a server
+  that already bootstrapped its own cluster (`cluster-init` in its
+  `config.yaml`) but is not the first inventory server now fails with a
+  message instead of being rewritten into a joiner; reset it with
+  `k3s-uninstall.sh` first. Deploy the first server before the others (an
+  earlier play or `serial: 1`), since joining servers need its `node-token`.
 - **k3s facts are read fresh.** `facts.yml` and `refresh_facts.yml` drop the
   facts cache before gathering, so the role and following plays no longer see
   pre-install state for up to `k3s_facts_cache_ttl` seconds. Error output of
@@ -145,11 +150,6 @@ Contains breaking changes; release it as `3.0.0`.
   containerd shims run.
 - **k3s first start**: the pending restart starts k3s once instead of
   start-then-restart during the datastore bootstrap.
-
-### Removed
-
-- **helm**: `helm_validation_enabled`, which had no effect.
-- **helm**: The repository reachability check, whose result was never evaluated.
 
 ### Changed
 
@@ -241,6 +241,9 @@ Contains breaking changes; release it as `3.0.0`.
   removed `ssl_version` in 4.0.0, so from that release on setting it failed
   with "Unsupported parameters". On community.docker 3.x the variable is now
   ignored.
+
+- **helm**: `helm_validation_enabled`, which had no effect.
+- **helm**: The repository reachability check, whose result was never evaluated.
 
 - **k3s: unused `k3s_channel` and `k3s_symlink_force`** were never read by
   any task or template.

@@ -59,6 +59,8 @@
       - name: Configure Rancher k3s-selinux repository
         ansible.builtin.yum_repository:
             name: rancher-k3s-common-stable
+            # Same file as the upstream installer, so dnf sees the id once.
+            file: rancher-k3s-common
             description: Rancher k3s common (stable)
             baseurl: "https://rpm.rancher.io/k3s/stable/common/centos/{{ ansible_facts['distribution_major_version'] }}/noarch"
             gpgcheck: true

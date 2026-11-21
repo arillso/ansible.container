@@ -38,6 +38,7 @@
           /etc/ansible/facts.d/k3s.fact returned no usable facts:
           {{ ansible_facts['ansible_local']['k3s'] | default('no output') }}
       quiet: true
+  when: k3s_auto_facts | default(true) | bool
   tags:
       - facts
       - k3s_facts

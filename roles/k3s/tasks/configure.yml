@@ -22,9 +22,15 @@
           K3s {{ k3s_role }} join configuration incomplete after auto-discovery:
           - Server URL: {{ k3s_server_url | default('NOT SET') }}
           - Token: {{ 'SET' if k3s_token | default('') != '' else 'NOT SET' }}
-          Ensure the first K3s server is deployed first and reachable.
+          The token is read from the first server's node-token, which exists
+          only once k3s runs there. Deploy the first server in an earlier play
+          or with `serial: 1`, or set k3s_token.
       success_msg: "K3s join configuration validated successfully"
-  when: k3s_role == "agent" or k3s_server_url | default('') | length > 0
+  # A server with k3s_server_init writes cluster-init and never uses the URL
+  # (e.g. a VIP set as k3s_server_url on the first server).
+  when: >-
+      k3s_role == "agent"
+      or (k3s_server_url | default('') | length > 0 and not k3s_server_init | bool)
 
 - name: Create k3s audit policy
   ansible.builtin.template:

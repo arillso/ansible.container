@@ -86,7 +86,7 @@ k3s_environment_vars: {}
 #   NO_PROXY: "localhost,127.0.0.1,10.0.0.0/8"
 
 # K3s kubeconfig (/etc/rancher/k3s/k3s.yaml); mode follows what k3s writes
-k3s_kubeconfig_mode: "{{ k3s_write_kubeconfig_mode | default('0600') }}"
+k3s_kubeconfig_mode: "{{ k3s_write_kubeconfig_mode | default('0600', true) }}"
 k3s_kubeconfig_group: "root"
 k3s_kubeconfig_owner: "root"
 

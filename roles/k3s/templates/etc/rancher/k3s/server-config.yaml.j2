@@ -312,9 +312,14 @@
 {%- endif -%}
 
 {#- === KUBECONFIG CONFIGURATION === -#}
-{#- k3s rewrites the kubeconfig on every start, so it has to use the mode the
-    role sets in verify.yml. 0600 is the k3s default and stays implicit. -#}
-{%- set _k3s_kubeconfig_mode = k3s_write_kubeconfig_mode | default(k3s_kubeconfig_mode | default(''), true) -%}
+{#- k3s rewrites the kubeconfig on every start, so it uses the mode verify.yml
+    sets. k3s_kubeconfig_mode is the single source (it defaults to
+    k3s_write_kubeconfig_mode); 0600 is the k3s default and stays implicit.
+    An unquoted YAML 0644 arrives as int 420 and is rendered back to octal. -#}
+{%- set _k3s_kubeconfig_mode = k3s_kubeconfig_mode | default('', true) -%}
+{%- if _k3s_kubeconfig_mode is number -%}
+{%-   set _k3s_kubeconfig_mode = '0%o' % _k3s_kubeconfig_mode -%}
+{%- endif -%}
 {%- if _k3s_kubeconfig_mode and _k3s_kubeconfig_mode | string != '0600' -%}
 {%-   set _ = k3s_config.update({'write-kubeconfig-mode': _k3s_kubeconfig_mode}) -%}
 {%- endif -%}
