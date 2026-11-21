@@ -34,13 +34,14 @@ ansible-galaxy collection install arillso.container
       - arillso.container.docker
 ```
 
-Pin the major version before upgrading, the next release (3.0.0) is breaking:
+Pin the major version. 3.0.0 contains breaking changes, read
+[`CHANGELOG.md`](CHANGELOG.md) before upgrading from 2.x:
 
 ```yaml
 ---
 collections:
     - name: arillso.container
-      version: ">=2.2.0,<3.0.0"
+      version: ">=3.0.0,<4.0.0"
 ```
 
 The collection depends on `arillso.system`, `community.docker` and
