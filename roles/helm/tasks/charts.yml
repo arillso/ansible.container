@@ -121,21 +121,24 @@
       # its managed-by annotation). A changed spec therefore has to yield a
       # Job other than the one that existed before the deploy; otherwise the
       # wait would accept the previous, completed Job on an upgrade.
-      # Unset and zero-valued fields render the same Job (`bootstrap` missing
-      # vs `bootstrap: false`), so they are dropped before comparing. Without
-      # this, the role's own explicit defaults count as a change, the
-      # controller keeps the Job, and the wait never sees a new one.
-      # `false` is matched with `sameas` so that a set `0` still counts.
+      # Top-level fields that are `false`, `""` or null render the same Job
+      # as an unset field (`bootstrap` missing vs `bootstrap: false`), so
+      # they are dropped before comparing. Without this, the role's own
+      # explicit defaults count as a change, the controller keeps the Job,
+      # and the wait never sees a new one. `false` is matched with `sameas`
+      # so that a set `0` still counts (`backOffLimit` is a pointer, `0`
+      # differs from unset), and `{}`/`[]` are kept because pointer structs
+      # such as `podSecurityContext: {}` do change the Job.
       _helm_spec_before: >-
           {{ ((_helm_charts_before.results | selectattr('item.name', 'equalto', item.name)
               | map(attribute='resources') | first | default([], true) | first | default({})).spec
              | default({})) | dict2items | rejectattr('value', 'sameas', false)
-             | rejectattr('value', 'in', ['', none, [], {}]) | items2dict }}
+             | rejectattr('value', 'in', ['', none]) | items2dict }}
       _helm_spec_after: >-
           {{ ((_helm_charts_deployment_result.results | selectattr('item.name', 'equalto', item.name)
               | map(attribute='result') | first | default({})).spec | default({}))
              | dict2items | rejectattr('value', 'sameas', false)
-             | rejectattr('value', 'in', ['', none, [], {}]) | items2dict }}
+             | rejectattr('value', 'in', ['', none]) | items2dict }}
       _helm_job_uid_before: >-
           {{ _helm_jobs_before.results | selectattr('item.name', 'equalto', item.name)
              | map(attribute='resources') | first | default([], true)
