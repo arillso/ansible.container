@@ -1,22 +1,7 @@
 ---
 # Tailscale ProxyGroups management tasks
 # Supports: ingress, egress, kube-apiserver
-
-- name: Create namespaces for Tailscale ProxyGroups
-  kubernetes.core.k8s:
-      kubeconfig: "{{ tailscale_kubeconfig_path }}"
-      name: "{{ item.namespace }}"
-      api_version: v1
-      kind: Namespace
-      state: "{{ tailscale_state }}"
-  loop: "{{ tailscale_proxygroups }}"
-  when:
-      - tailscale_state == "present"
-      - item.namespace is defined
-  tags:
-      - tailscale
-      - tailscale-proxygroups
-      - tailscale-namespace
+# ProxyGroup is a cluster-scoped CRD, so no namespace is set.
 
 - name: Manage Tailscale ProxyGroups
   kubernetes.core.k8s:
@@ -27,7 +12,6 @@
           kind: ProxyGroup
           metadata:
               name: "{{ item.name }}"
-              namespace: "{{ item.namespace | default('default') }}"
           spec:
               type: "{{ item.type }}"
               replicas: "{{ item.replicas | default(1) }}"

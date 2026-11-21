@@ -10,6 +10,13 @@ Manages Tailscale resources in Kubernetes for secure mesh networking and service
 - **Kubernetes API Server Proxy**: Secure remote cluster access
 - **Multi-Namespace**: Support for resources across namespaces
 
+## Requirements
+
+- Tailscale Kubernetes operator with its `tailscale.com` CRDs installed in the cluster
+- Kubeconfig on the target host (`tailscale_kubeconfig_path`)
+- Python library `kubernetes` on the target host
+- Collection `kubernetes.core`
+
 ## Documentation
 
 For detailed documentation including all variables, examples, and usage instructions, see:
@@ -27,7 +34,6 @@ For detailed documentation including all variables, examples, and usage instruct
         vars:
             tailscale_proxygroups:
                 - name: ingress-proxies
-                  namespace: tailscale
                   type: ingress
                   replicas: 2
                   tags:
@@ -57,7 +63,6 @@ For detailed documentation including all variables, examples, and usage instruct
         vars:
             tailscale_proxygroups:
                 - name: egress-proxies
-                  namespace: tailscale
                   type: egress
                   replicas: 3
                   tags:
@@ -83,7 +88,6 @@ For detailed documentation including all variables, examples, and usage instruct
         vars:
             tailscale_proxygroups:
                 - name: k8s-api-proxy
-                  namespace: tailscale
                   type: kube-apiserver
                   replicas: 2
                   tags:

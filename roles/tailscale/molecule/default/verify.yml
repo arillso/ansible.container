@@ -3,10 +3,8 @@
 # tailscale.com API accepted, with the spec fields the role is
 # responsible for. Deliberately no status assertion: without a real
 # tailnet the operator never reconciles the resource, so any status
-# check would test the operator rather than the role. The `tailscale`
-# namespace is not asserted either: prepare.yml installs the operator
-# chart with --create-namespace, so it exists before converge and the
-# role's namespace apply is a guaranteed no-op.
+# check would test the operator rather than the role. ProxyGroup is
+# cluster-scoped, so the lookup carries no namespace.
 - name: Verify
   hosts: all
   become: true
@@ -18,7 +16,6 @@
             api_version: tailscale.com/v1alpha1
             kind: ProxyGroup
             name: molecule-ingress
-            namespace: tailscale
             kubeconfig: "{{ tailscale_verify_kubeconfig }}"
         register: tailscale_verify_proxygroup
 

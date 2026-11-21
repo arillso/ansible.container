@@ -1,10 +1,36 @@
 ---
 # Tailscale Kubernetes Resources - Main Tasks
+#
+# ProxyGroups are created before and deleted after the Services and
+# Ingresses that reference them through tailscale.com/proxy-group.
+
+- name: Warn about the ignored ProxyGroup namespace
+  ansible.builtin.debug:
+      msg: >-
+          DEPRECATED: tailscale_proxygroups[].namespace is ignored because
+          ProxyGroup is cluster-scoped, and will be removed in the next major
+          release. Set on: {{ tailscale_proxygroups | selectattr('namespace', 'defined')
+          | map(attribute='name') | join(', ') }}
+  when: tailscale_proxygroups | selectattr('namespace', 'defined') | list | length > 0
+  tags:
+      - tailscale
+      - tailscale-proxygroups
+
+- name: Manage Tailscale service namespaces
+  ansible.builtin.include_tasks: namespaces.yml
+  when:
+      - tailscale_state == "present"
+      - (tailscale_ingress_services + tailscale_egress_services) | length > 0
+  tags:
+      - tailscale
+      - tailscale-namespace
+      - tailscale-ingress
+      - tailscale-egress
 
 - name: Manage Tailscale ProxyGroups
   ansible.builtin.include_tasks: proxygroups.yml
   when:
-      - tailscale_proxygroups is defined
+      - tailscale_state == "present"
       - tailscale_proxygroups | length > 0
   tags:
       - tailscale
@@ -12,18 +38,23 @@
 
 - name: Manage Tailscale Ingress Services
   ansible.builtin.include_tasks: ingress_services.yml
-  when:
-      - tailscale_ingress_services is defined
-      - tailscale_ingress_services | length > 0
+  when: tailscale_ingress_services | length > 0
   tags:
       - tailscale
       - tailscale-ingress
 
 - name: Manage Tailscale Egress Services
   ansible.builtin.include_tasks: egress_services.yml
-  when:
-      - tailscale_egress_services is defined
-      - tailscale_egress_services | length > 0
+  when: tailscale_egress_services | length > 0
   tags:
       - tailscale
       - tailscale-egress
+
+- name: Remove Tailscale ProxyGroups
+  ansible.builtin.include_tasks: proxygroups.yml
+  when:
+      - tailscale_state == "absent"
+      - tailscale_proxygroups | length > 0
+  tags:
+      - tailscale
+      - tailscale-proxygroups

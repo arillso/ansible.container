@@ -25,7 +25,6 @@
 - name: Resolve test parameters
   ansible.builtin.set_fact:
       tailscale_test_kubeconfig: /etc/rancher/k3s/k3s.yaml
-      tailscale_test_namespace: tailscale
       tailscale_test_proxygroup: integration-ingress
       # Prerequisite (out of scope for this role, documented in the header):
       # a running Tailscale operator with the tailscale.com/v1alpha1 CRDs,
@@ -42,7 +41,6 @@
       tailscale_state: present
       tailscale_proxygroups:
           - name: "{{ tailscale_test_proxygroup }}"
-            namespace: "{{ tailscale_test_namespace }}"
             type: ingress
             replicas: 1
             tags:
@@ -54,7 +52,6 @@
       api_version: tailscale.com/v1alpha1
       kind: ProxyGroup
       name: "{{ tailscale_test_proxygroup }}"
-      namespace: "{{ tailscale_test_namespace }}"
   register: tailscale_proxygroup_info
 
 - name: Assert the ProxyGroup was created
@@ -73,7 +70,6 @@
       tailscale_state: absent
       tailscale_proxygroups:
           - name: "{{ tailscale_test_proxygroup }}"
-            namespace: "{{ tailscale_test_namespace }}"
             type: ingress
             replicas: 1
             tags:
@@ -85,7 +81,6 @@
       api_version: tailscale.com/v1alpha1
       kind: ProxyGroup
       name: "{{ tailscale_test_proxygroup }}"
-      namespace: "{{ tailscale_test_namespace }}"
   register: tailscale_proxygroup_removed
 
 - name: Assert the ProxyGroup was removed

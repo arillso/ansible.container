@@ -7,7 +7,6 @@
       # (/etc/rancher/k3s/k3s.yaml), which is where prepare.yml puts it.
       tailscale_proxygroups:
           - name: molecule-ingress
-            namespace: tailscale
             type: ingress
             replicas: 1
             tags:
