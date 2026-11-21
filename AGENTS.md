@@ -80,10 +80,12 @@ the tag runs `tag.yml`, which publishes to Galaxy.
   `molecule/default/verify.yml` because the lint job does not install
   `kubernetes.core`. A new playbook calling `kubernetes.core` needs the same
   exclusion.
-- **Integration tests do not run in CI.** The only targets, `fleet` and
-  `tailscale`, are `disabled`, and the reusable calls `ansible-test integration`
-  without `--docker-privileged`, so a new target marked `needs/privileged`
-  would be skipped as well.
+- **Integration tests do not run in CI.** `pull-request.yml` and `merge.yml`
+  do not set `enable_integration_tests`, which defaults to `false` in the
+  reusable, so the integration job never starts. The only targets, `fleet` and
+  `tailscale`, are also `disabled`. Even when the job is enabled, the reusable
+  runs `ansible-test integration --docker` without `--docker-privileged`, so a
+  target marked `needs/privileged` would still be skipped.
   Role coverage lives in the per-role Molecule jobs of `pull-request.yml`.
 - **One Molecule job per role.** A new role needs its own `molecule-<role>` job
   in `pull-request.yml`; CI does not discover scenarios on its own.

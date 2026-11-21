@@ -34,6 +34,15 @@ ansible-galaxy collection install arillso.container
       - arillso.container.docker
 ```
 
+Pin the major version before upgrading, the next release (3.0.0) is breaking:
+
+```yaml
+---
+collections:
+    - name: arillso.container
+      version: ">=2.2.0,<3.0.0"
+```
+
 The collection depends on `arillso.system`, `community.docker` and
 `kubernetes.core`; `ansible-galaxy` installs them with it.
 
@@ -46,7 +55,9 @@ and Ansible validates them at runtime. Examples per role are in the guide:
 ## Requirements
 
 - Ansible >= 2.18
-- Python >= 3.11 on the control node (ansible-core 2.18 minimum)
+- Python >= 3.12 on the control node
+- The Python `kubernetes` client on hosts that run fleet or tailscale; only
+  the helm role installs it
 
 ## Contributing
 

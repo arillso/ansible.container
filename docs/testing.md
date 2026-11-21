@@ -50,7 +50,16 @@ Prerequisites:
 - Free ports 2222–2224 on localhost. Every scenario forwards SSH to the same
   ports, so run one role at a time.
 
-Run a role's scenario from the role directory:
+The scenarios call each role by its full name (`arillso.container.<role>`).
+Install the checkout as that collection first, or Molecule tests a copy from
+Galaxy instead of your changes. Repeat after every change:
+
+```bash
+make build
+ansible-galaxy collection install arillso-container-*.tar.gz --force
+```
+
+Then run the role's scenario from the role directory:
 
 ```bash
 cd roles/<role>
