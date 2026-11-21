@@ -41,7 +41,7 @@ Pin the major version. 3.0.0 contains breaking changes, read
 ---
 collections:
     - name: arillso.container
-      version: ">=3.0.0,<4.0.0"
+      version: ">=3.0.1,<4.0.0"
 ```
 
 The collection depends on `arillso.system`, `community.docker` and
