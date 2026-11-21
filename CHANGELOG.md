@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **helm**: the install Job wait failed on the first run after upgrading to
+  3.0.0. The role now sends `bootstrap: false` explicitly, so the HelmChart
+  spec counted as changed and the wait expected a new Job, but the k3s Helm
+  controller only replaces the Job when the rendered Job changes and kept the
+  completed one. Unset and zero-valued spec fields are now ignored when
+  comparing the spec before and after the deploy.
+
 ## [3.0.0] - 2026-11-21
 
 Contains breaking changes.
