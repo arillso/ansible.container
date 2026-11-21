@@ -24,9 +24,6 @@
           - Service Active: {{ ansible_facts['ansible_local']['k3s'].service.service_active }}
           - Token Exists: {{ ansible_facts['ansible_local']['k3s'].cluster.token_exists }}
           - Cluster Server URL: {{ ansible_facts['ansible_local']['k3s'].cluster_info.server_url }}
-          {% if ansible_facts['ansible_local']['k3s']._fallback_mode | default(false) %}
-          - [FALLBACK MODE] Facts collected via fallback mechanism
-          {% endif %}
 
 # Display auto-discovered configuration for agents
 - name: Display auto-discovered agent configuration

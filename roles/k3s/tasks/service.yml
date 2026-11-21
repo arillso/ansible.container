@@ -13,6 +13,13 @@
       - Reload systemd
       - Restart k3s
 
+# Flushed before the state task: on a fresh install the pending restart is
+# the first start, instead of starting k3s and restarting it right away
+# during the datastore bootstrap. Also makes the server restart before
+# agents try to connect.
+- name: Flush handlers to apply service restarts
+  ansible.builtin.meta: flush_handlers
+
 - name: Enable and start k3s service
   ansible.builtin.systemd:
       name: k3s
@@ -20,7 +27,3 @@
       state: "{{ k3s_service_state }}"
       daemon_reload: true
   become: true
-
-# Flush handlers before health check so server restarts before agents try to connect
-- name: Flush handlers to apply service restarts
-  ansible.builtin.meta: flush_handlers

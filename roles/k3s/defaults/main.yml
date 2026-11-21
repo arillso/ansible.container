@@ -4,7 +4,6 @@
 # K3s version and installation
 # renovate: datasource=github-releases depName=k3s-io/k3s
 k3s_version: "v1.37.2+k3s1"
-k3s_channel: "stable"
 k3s_binary_checksum: ""
 
 # K3s role configuration (server, agent)
@@ -70,7 +69,6 @@ k3s_extra_agent_args: []
 
 # K3s symlinks
 k3s_create_symlinks: true
-k3s_symlink_force: false
 k3s_symlink_commands:
     - kubectl
     - crictl
@@ -87,8 +85,8 @@ k3s_environment_vars: {}
 #   HTTPS_PROXY: "http://proxy.example.com:8080"
 #   NO_PROXY: "localhost,127.0.0.1,10.0.0.0/8"
 
-# K3s kubeconfig
-k3s_kubeconfig_mode: "0644"
+# K3s kubeconfig (/etc/rancher/k3s/k3s.yaml); mode follows what k3s writes
+k3s_kubeconfig_mode: "{{ k3s_write_kubeconfig_mode | default('0600', true) }}"
 k3s_kubeconfig_group: "root"
 k3s_kubeconfig_owner: "root"
 

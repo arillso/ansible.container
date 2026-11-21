@@ -2,26 +2,13 @@
 # K3s Facts Collection and Validation
 # Automatic facts collection with enterprise-grade K3s-specific facts
 
-- name: Check if K3s facts are available
-  ansible.builtin.debug:
-      msg: "Checking K3s facts availability"
-  register: _k3s_facts_check
-  changed_when: false
-
-- name: Gather existing local facts
-  ansible.builtin.setup:
-      gather_subset:
-          - "!all"
-          - "!any"
-          - "local"
-  register: _k3s_current_facts
-
 # Deploy K3s facts script to collect and provide cluster information
 - name: Create facts.d directory
   ansible.builtin.file:
       path: /etc/ansible/facts.d
       state: directory
       mode: "0755"
+  become: true
   when:
       - k3s_auto_facts | default(true) | bool
 
@@ -30,15 +17,28 @@
       src: etc/ansible/facts.d/k3s.fact.j2
       dest: /etc/ansible/facts.d/k3s.fact
       mode: "0755"
+  become: true
   when:
       - k3s_auto_facts | default(true) | bool
-  register: _k3s_facts_script_deployed
 
-# Refresh facts after deploying facts script
-- name: Refresh local facts after facts deployment
-  ansible.builtin.setup:
-      gather_subset:
-          - "!all"
-          - "!any"
-          - "local"
-  when: _k3s_facts_script_deployed is changed
+# The role decides on this run's state, so it must not read a cached result
+# written before this run or by a previous version of the script.
+- name: Gather fresh K3s facts
+  ansible.builtin.include_tasks: refresh_facts.yml
+  tags:
+      - facts
+      - k3s_facts
+
+- name: Fail on K3s facts without cluster data
+  ansible.builtin.assert:
+      that:
+          - ansible_facts['ansible_local']['k3s'] is mapping
+          - ansible_facts['ansible_local']['k3s'].cluster_info is defined
+      fail_msg: >-
+          /etc/ansible/facts.d/k3s.fact returned no usable facts:
+          {{ ansible_facts['ansible_local']['k3s'] | default('no output') }}
+      quiet: true
+  when: k3s_auto_facts | default(true) | bool
+  tags:
+      - facts
+      - k3s_facts

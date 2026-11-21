@@ -17,6 +17,7 @@
   ansible.builtin.slurp:
       src: "{{ k3s_token_file }}"
   register: _k3s_cluster_token
+  become: true
   failed_when: false
   no_log: true
   when:
@@ -49,14 +50,17 @@
       - k3s_server_url == ""
       - ansible_facts['ansible_local']['k3s'].cluster_info.server_url is defined
       - ansible_facts['ansible_local']['k3s'].cluster_info.server_url != ""
-      - k3s_role == "agent" or (k3s_role == "server" and not k3s_server_init | bool)
+      # Facts resolve a server's URL to its own address; servers use the
+      # inventory fallback below instead.
+      - k3s_role == "agent"
       - >-
           ansible_facts['ansible_local']['k3s'].cluster_info.server_url not in [
           'https://' + ansible_facts['default_ipv4']['address'] + ':' + k3s_https_listen_port | string,
           'https://' + inventory_hostname + ':' + k3s_https_listen_port | string
           ]
 
-# Fallback server URL determination from inventory when facts are not available
+# Server URL from the inventory. Agents use it when facts resolve none; a
+# secondary server always needs it, otherwise it bootstraps its own cluster.
 - name: Set server URL from inventory (fallback)
   ansible.builtin.set_fact:
       k3s_server_url: >-
@@ -64,9 +68,10 @@
           | default(groups['k3s_controllers'][0]) }}:{{ k3s_https_listen_port }}
   when:
       - k3s_server_url == ""
-      - k3s_role == "agent"
+      - k3s_role == "agent" or not k3s_server_init | bool
       - groups['k3s_controllers'] is defined
       - groups['k3s_controllers'] | length > 0
+      - groups['k3s_controllers'][0] != inventory_hostname
 
 - name: Set server URL from k3s_servers inventory (fallback)
   ansible.builtin.set_fact:
@@ -75,6 +80,41 @@
           | default(groups['k3s_servers'][0]) }}:{{ k3s_https_listen_port }}
   when:
       - k3s_server_url == ""
-      - k3s_role == "agent"
+      - k3s_role == "agent" or not k3s_server_init | bool
       - groups['k3s_servers'] is defined
       - groups['k3s_servers'] | length > 0
+      - groups['k3s_servers'][0] != inventory_hostname
+      # With controllers, the first controller initialises the cluster.
+      - groups['k3s_controllers'] | default([]) | length == 0
+
+# A server that already runs its own cluster (cluster-init, no server URL)
+# cannot join another one: k3s restarts with its own datastore and CA and
+# fails. Older role versions bootstrapped every fresh server, so stop here
+# instead of rewriting config.yaml.
+- name: Read the current k3s server config
+  ansible.builtin.slurp:
+      src: "{{ k3s_config_dir }}/config.yaml"
+  register: _k3s_current_config
+  become: true
+  failed_when: false
+  no_log: true
+  when:
+      - k3s_role == "server"
+      - k3s_server_url | length > 0
+      - not k3s_server_init | bool
+
+- name: Refuse to join a server that bootstrapped its own cluster
+  ansible.builtin.assert:
+      that:
+          - not (_current.get('cluster-init', false) | bool and not _current.get('server'))
+      fail_msg: >-
+          {{ inventory_hostname }} runs its own cluster (cluster-init in
+          {{ k3s_config_dir }}/config.yaml) but would now join {{ k3s_server_url }}.
+          Remove the node from its cluster and reset it (k3s-uninstall.sh) before
+          it can join, or make it the first host of k3s_controllers/k3s_servers.
+      quiet: true
+  vars:
+      _current: >-
+          {{ (_k3s_current_config.content | b64decode | from_yaml)
+          if _k3s_current_config.content is defined else {} }}
+  when: _k3s_current_config.content is defined

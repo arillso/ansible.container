@@ -72,6 +72,13 @@ For detailed documentation including all variables, examples, and usage instruct
 - **Agents fail to join the cluster**: a mismatched or missing join token is the
   usual cause. Verify the token configured for agents matches the server token
   and that the server API endpoint is reachable on port 6443.
+- **Secondary servers fail with "join configuration incomplete"**: joining
+  servers read the token from the first server's `node-token`, which only
+  exists once k3s runs there. Deploy the first server in an earlier play or with
+  `serial: 1`, or set `k3s_token`.
+- **"runs its own cluster" on a server**: older role versions bootstrapped every
+  fresh server as its own cluster. Such a node cannot join the first server;
+  reset it with `k3s-uninstall.sh` and re-run the role.
 - **Upgrade is rejected**: the role enforces one-minor-version-at-a-time and no
   downgrades (see _Upgrading K3s_ above). Set an allowed `k3s_version` if the
   upgrade-path validation fails.

@@ -122,10 +122,34 @@ Contains breaking changes; release it as `3.0.0`.
   `helm_enable_charts: true`, and the distribution path uses
   `ansible.builtin.package` instead of `apt`.
 
-### Removed
-
-- **helm**: `helm_validation_enabled`, which had no effect.
-- **helm**: The repository reachability check, whose result was never evaluated.
+- **k3s: additional servers join instead of bootstrapping their own
+  cluster.** Only the inventory decides which server initialises the cluster
+  (first host of `k3s_controllers`, else `k3s_servers`, else standalone); a
+  missing datastore no longer makes a new server `first_server`, and a set
+  `k3s_server_url` never initialises. Secondary servers now get their
+  `server:` URL from the inventory like agents. **Upgrade note:** a server
+  that already bootstrapped its own cluster (`cluster-init` in its
+  `config.yaml`) but is not the first inventory server now fails with a
+  message instead of being rewritten into a joiner; reset it with
+  `k3s-uninstall.sh` first. Deploy the first server before the others (an
+  earlier play or `serial: 1`), since joining servers need its `node-token`.
+- **k3s facts are read fresh.** `facts.yml` and `refresh_facts.yml` drop the
+  facts cache before gathering, so the role and following plays no longer see
+  pre-install state for up to `k3s_facts_cache_ttl` seconds. Error output of
+  the facts script now fails the role with the script's message instead of a
+  missing-attribute error.
+- **k3s: root-only files are handled with `become`**: the `node-token`
+  slurp and the facts script deployment no longer depend on play-level become.
+- **k3s environment file**: `k3s.service.env` is always written, before the
+  first start. It carries `K3S_CONFIG_FILE`, which a custom `k3s_config_dir`
+  needs even without `k3s_environment_vars`.
+- **k3s joining servers** are checked for server URL and token like agents,
+  instead of failing later at k3s startup.
+- **k3s killall script**: `/usr/local/bin/k3s-killall.sh` is now deployed
+  (`k3s_create_killall_script`), and no longer aborts on `set -e` when no
+  containerd shims run.
+- **k3s first start**: the pending restart starts k3s once instead of
+  start-then-restart during the datastore bootstrap.
 
 ### Changed
 
@@ -171,6 +195,18 @@ Contains breaking changes; release it as `3.0.0`.
 - **helm**: `tasks/main.yml` only dispatches; the dependency installation moved
   to `tasks/dependencies.yml`.
 
+- **k3s kubeconfig permissions apply to the user kubeconfig.**
+  `k3s_kubeconfig_mode`/`_owner`/`_group` now target
+  `/etc/rancher/k3s/k3s.yaml` (or `k3s_write_kubeconfig`) instead of
+  `server/cred/admin.kubeconfig`. `k3s_kubeconfig_mode` defaults to
+  `k3s_write_kubeconfig_mode`, else `0600`; a `k3s_kubeconfig_mode` other
+  than `0600` is also written as `write-kubeconfig-mode`, so k3s keeps it on
+  restart.
+- **k3s-selinux from the signed Rancher repository.** The RPM is installed
+  from `rpm.rancher.io` with GPG checking instead of a pinned `1.4-1` URL with
+  `disable_gpg_check`, and install failures are no longer swallowed. Without a
+  reachable repository the role reports a warning and skips the package.
+
 - Molecule test image `nginx:alpine` is now pinned as `nginx:1.31.8-alpine` in
   the `k3s` and `docker_compose_v2` scenarios. On the floating `alpine` tag
   Renovate only proposed digest updates, which have no release timestamp and
@@ -205,6 +241,12 @@ Contains breaking changes; release it as `3.0.0`.
   removed `ssl_version` in 4.0.0, so from that release on setting it failed
   with "Unsupported parameters". On community.docker 3.x the variable is now
   ignored.
+
+- **helm**: `helm_validation_enabled`, which had no effect.
+- **helm**: The repository reachability check, whose result was never evaluated.
+
+- **k3s: unused `k3s_channel` and `k3s_symlink_force`** were never read by
+  any task or template.
 
 ## [2.2.0] - 2026-11-04
 

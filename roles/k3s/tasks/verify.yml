@@ -24,21 +24,33 @@
       sleep: "{{ k3s_health_check_sleep }}"
   when: k3s_role == "server"
 
+# The kubeconfig k3s writes for users. server/cred/admin.kubeconfig is
+# k3s' internal credential and stays as k3s creates it.
 - name: Check if kubeconfig exists
   ansible.builtin.stat:
-      path: "{{ k3s_data_dir }}/server/cred/admin.kubeconfig"
+      path: "{{ k3s_write_kubeconfig | default('/etc/rancher/k3s/k3s.yaml', true) }}"
   become: true
   register: _k3s_kubeconfig_check
   when: k3s_role == "server"
 
 - name: Set kubeconfig permissions
   ansible.builtin.file:
-      path: "{{ k3s_data_dir }}/server/cred/admin.kubeconfig"
+      path: "{{ k3s_write_kubeconfig | default('/etc/rancher/k3s/k3s.yaml', true) }}"
       mode: "{{ k3s_kubeconfig_mode }}"
       owner: "{{ k3s_kubeconfig_owner }}"
       group: "{{ k3s_kubeconfig_group }}"
   become: true
   when: _k3s_kubeconfig_check.stat.exists | default(false)
+
+- name: Create k3s killall script
+  ansible.builtin.template:
+      src: usr/local/bin/k3s-killall.sh.j2
+      dest: "/usr/local/bin/k3s-killall.sh"
+      mode: "0755"
+      owner: root
+      group: root
+  become: true
+  when: k3s_create_killall_script | bool
 
 - name: Create k3s uninstall script
   ansible.builtin.template:
