@@ -5,7 +5,7 @@
 # with an auth key; it manages Tailscale Kubernetes resources (ProxyGroups,
 # Ingress/Egress Services) via the tailscale.com/v1alpha1 CRDs. Exercising it
 # end-to-end therefore requires:
-#   * a running K3s cluster (provided via the `k3s` dependency), AND
+#   * an existing, running K3s cluster (not provisioned by this target), AND
 #   * the Tailscale Kubernetes operator installed in that cluster, which in
 #     turn needs a Tailscale OAuth client (client id + secret) to register
 #     with the tailnet and to install the ProxyGroup/Connector CRDs.

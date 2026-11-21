@@ -6,8 +6,8 @@
 # (the Bundle resource is applied with wait_condition type=Ready, which only
 # reconciles once the Fleet controller is present). Plain CI runners and the
 # default ansible-test containers do not ship Fleet, so this target is gated
-# behind `disabled` and the `k3s` dependency. Run it manually against a
-# cluster that has Fleet deployed:
+# behind `disabled`. Run it manually against an existing K3s cluster that has
+# Fleet deployed:
 #
 #     ansible-test integration fleet --allow-disabled
 #

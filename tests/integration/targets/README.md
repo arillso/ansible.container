@@ -49,6 +49,7 @@ in place.
       ansible-test integration tailscale --allow-disabled
     ```
 
-Both targets depend on the `k3s` target to provide the cluster. The
+Neither target provisions the cluster: both expect an existing K3s cluster on
+the test host (set one up with the `arillso.container.k3s` role). The
 per-target `tasks/main.yml` files carry the same reasoning inline; keep the two
 in sync when the prerequisites change.
