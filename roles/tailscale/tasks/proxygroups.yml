@@ -8,9 +8,11 @@
       msg: >-
           DEPRECATED: tailscale_proxygroups[].namespace is ignored because
           ProxyGroup is cluster-scoped, and will be removed in the next major
-          release. Set on: {{ tailscale_proxygroups | selectattr('namespace')
-          | map(attribute='name') | join(', ') }}
-  when: tailscale_proxygroups | selectattr('namespace') | list | length > 0
+          release. Set on: {{ tailscale_proxygroups | selectattr('namespace', 'defined')
+          | selectattr('namespace') | map(attribute='name') | join(', ') }}
+  when: >-
+      tailscale_proxygroups | selectattr('namespace', 'defined')
+      | selectattr('namespace') | list | length > 0
   tags:
       - tailscale
       - tailscale-proxygroups
