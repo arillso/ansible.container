@@ -108,7 +108,8 @@ Contains breaking changes; release it as `3.0.0`.
   it only set a label that the k3s Helm controller never reads.
 - **helm**: The install Job wait now uses the chart's own timeout and parses
   every h/m/s duration (`1h`, `300s`, `1m30s`); those used to evaluate to a
-  0-second wait.
+  0-second wait. A wait that runs into that timeout fails at once instead of
+  being retried `helm_validation_retries` times.
 - **helm**: The wait no longer accepts the previous, completed install Job on an
   upgrade. A Job that the controller has marked for replacement does not count.
 - **helm**: Chart definitions are validated before deploy: an unknown

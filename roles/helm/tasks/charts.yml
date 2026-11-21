@@ -16,25 +16,6 @@
   when:
       - _helm_crd_check.resources | length == 0
 
-# Both fields fail late otherwise: an unknown repository key falls back to
-# no repo at all and the controller fails asynchronously in the cluster, and
-# a timeout without unit is rejected by the HelmChart API (metav1.Duration).
-- name: "Validate Helm chart definitions"
-  ansible.builtin.assert:
-      that:
-          - item.repository is not defined or item.repository in helm_repositories
-          - >-
-              item.timeout | default(helm_chart_defaults.timeout) | string
-              is match('^(?=\\d)(\\d+h)?(\\d+m)?(\\d+s)?$')
-      fail_msg: >-
-          Chart '{{ item.name }}': repository must be a key of helm_repositories
-          ({{ helm_repositories.keys() | list | join(', ') }}) and timeout a
-          duration such as 5m, 1h or 1m30s.
-      quiet: true
-  loop: "{{ helm_charts }}"
-  loop_control:
-      label: "{{ item.name }}"
-
 - name: "Create namespaces for Helm charts"
   kubernetes.core.k8s:
       name: "{{ item.namespace | default(helm_chart_defaults.namespace) }}"
@@ -121,8 +102,11 @@
   # marked Job is not the result of this deploy. Remaining gap: a check
   # that runs before the controller has reacted at all still sees the old
   # Job unmarked.
+  # A wait that ran into the chart timeout ends the loop: retrying it would
+  # stretch a failing install to retries x timeout before it is reported.
   until: >-
-      _helm_install_job.resources | default([]) | length == 1
+      'even after waiting' in (_helm_install_job.msg | default(''))
+      or _helm_install_job.resources | default([]) | length == 1
       and 'helmcharts.helm.cattle.io/replace-wait'
       not in (_helm_install_job.resources[0].metadata.annotations | default({}))
   retries: "{{ helm_validation_retries }}"

@@ -1,15 +1,35 @@
 ---
-# A dynamic include is evaluated by its own tags only; `apply` hands the
-# same tags down to the included tasks, otherwise `--tags helm` would run
-# the include and then skip every task inside it.
+# Role-level validation, so a bad chart definition fails before any package is
+# installed or the cluster is contacted, and outside the rescue below, which
+# would replace the per-chart message with "One or more items failed".
+# An unknown repository key falls back to no repo at all and the controller
+# fails asynchronously in the cluster; a timeout without unit is rejected by
+# the HelmChart API (metav1.Duration).
+- name: "Validate Helm chart definitions"
+  ansible.builtin.assert:
+      that:
+          - item.repository is not defined or item.repository in helm_repositories
+          - >-
+              item.timeout | default(helm_chart_defaults.timeout) | string
+              is match('^(?=\\d)(\\d+h)?(\\d+m)?(\\d+s)?$')
+      fail_msg: >-
+          Chart '{{ item.name }}': repository must be a key of helm_repositories
+          ({{ helm_repositories.keys() | list | join(', ') }}) and timeout a
+          duration such as 5m, 1h or 1m30s.
+      quiet: true
+  loop: "{{ helm_charts }}"
+  loop_control:
+      label: "{{ item.name }}"
+  when: helm_enable_charts | bool
+  tags:
+      - helm
+      - helm-charts
+      - kubernetes
+
+# Every task in dependencies.yml carries these tags itself, so the include
+# needs them only to be reached under --tags.
 - name: "Install the Kubernetes Python client"
-  ansible.builtin.include_tasks:
-      file: dependencies.yml
-      apply:
-          tags:
-              - helm
-              - helm-dependencies
-              - system-packages
+  ansible.builtin.include_tasks: dependencies.yml
   when: helm_enable_charts | bool
   tags:
       - helm
@@ -31,6 +51,10 @@
             - "helm_repositories count: {{ helm_repositories | length }}"
         when: helm_debug_enabled | default(false)
 
+      # A dynamic include is evaluated by its own tags only, and the tasks in
+      # prerequisites.yml and charts.yml carry none; `apply` hands the tags
+      # down, otherwise `--tags helm` would run the include and then skip
+      # every task inside it.
       - name: "Validate Helm prerequisites"
         ansible.builtin.include_tasks:
             file: prerequisites.yml
@@ -61,4 +85,7 @@
                 - Kubernetes cluster is accessible
                 - Cattle Operator is running
                 - Chart configurations are valid
-                Error: {{ ansible_failed_result.msg | default('Unknown error') }}
+                Error: {{ (ansible_failed_result.results | default([])
+                          | selectattr('failed', 'defined') | selectattr('failed')
+                          | map(attribute='msg', default='') | select | join('; '))
+                          or ansible_failed_result.msg | default('Unknown error') }}
