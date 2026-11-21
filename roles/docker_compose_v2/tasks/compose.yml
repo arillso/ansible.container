@@ -1,14 +1,29 @@
 ---
-# Docker Compose project file, systemd unit and project launch
+# Docker Compose project file and project launch
 
-# The role used to install a template unit that called the Compose v1 binary
-# and never worked. It is replaced by one unit per project below.
-- name: Remove the legacy docker-compose@ template unit
+# Earlier releases installed a docker-compose@.service template that called
+# the Compose v1 binary and never worked. Remove it and any instance enabled
+# by hand; restarts after a reboot come from `restart:` in the compose file.
+- name: Find enabled legacy docker-compose@ instances
+  ansible.builtin.find:
+      paths: /etc/systemd/system/multi-user.target.wants
+      patterns: "docker-compose@*.service"
+      file_type: link
+  register: docker_compose_v2_legacy_instances
+
+- name: Remove the legacy docker-compose@ template unit and its instances
   become: true
   ansible.builtin.file:
-      path: /etc/systemd/system/docker-compose@.service
+      path: "{{ item }}"
       state: absent
+  loop: "{{ ['/etc/systemd/system/docker-compose@.service'] + (docker_compose_v2_legacy_instances.files | map(attribute='path') | list) }}"
   register: docker_compose_v2_legacy_unit
+
+- name: Reload systemd after removing the legacy unit
+  become: true
+  ansible.builtin.systemd_service:
+      daemon_reload: true
+  when: docker_compose_v2_legacy_unit is changed
 
 - name: Create Docker Compose configuration file from template
   become: true
@@ -22,24 +37,12 @@
       - docker_compose_v2_use_file
       - docker_compose_v2_config | length > 0
 
-- name: Set up the Docker Compose systemd unit for the project
-  become: true
-  ansible.builtin.template:
-      src: etc/systemd/system/docker-compose.service.j2
-      dest: "{{ docker_compose_v2_unit_path }}"
-      owner: root
-      group: root
-      mode: "0644"
-  when:
-      - docker_compose_v2_use_file
-      - docker_compose_v2_state != 'absent'
-
 # state=absent without a definition works from the compose file of an earlier
 # run. On a host the project never reached there is none, and the module would
 # fail on an empty project_src instead of finding nothing to remove.
 - name: Check for the Docker Compose project file
   ansible.builtin.stat:
-      path: "{{ docker_compose_v2_directory }}/{{ docker_compose_v2_files | default(['docker-compose.yml']) | first }}"
+      path: "{{ [docker_compose_v2_directory, docker_compose_v2_files | default([], true) | first | default('docker-compose.yml')] | path_join }}"
   register: docker_compose_v2_file_stat
   when:
       - docker_compose_v2_use_file
@@ -77,51 +80,3 @@
       scale: "{{ docker_compose_v2_scale | default(omit) }}"
       services: "{{ docker_compose_v2_services | default(omit) }}"
   when: docker_compose_v2_file_stat.stat.exists | default(true)
-
-# present/restarted: the unit brings the project up again after a reboot.
-# stopped: the unit is only disabled; stopping it would run `docker compose
-# down` and remove the containers that state=stopped is meant to keep.
-- name: Enable the Docker Compose systemd unit
-  become: true
-  ansible.builtin.systemd_service:
-      name: "{{ docker_compose_v2_unit_path | basename }}"
-      enabled: "{{ docker_compose_v2_state != 'stopped' }}"
-      state: "{{ omit if docker_compose_v2_state == 'stopped' else 'started' }}"
-      daemon_reload: true
-  when:
-      - docker_compose_v2_use_file
-      - docker_compose_v2_state != 'absent'
-
-- name: Remove the Docker Compose systemd unit
-  when:
-      - docker_compose_v2_use_file
-      - docker_compose_v2_state == 'absent'
-  block:
-      - name: Check for the Docker Compose systemd unit
-        ansible.builtin.stat:
-            path: "{{ docker_compose_v2_unit_path }}"
-        register: docker_compose_v2_unit_stat
-
-      - name: Stop and disable the Docker Compose systemd unit
-        become: true
-        ansible.builtin.systemd_service:
-            name: "{{ docker_compose_v2_unit_path | basename }}"
-            enabled: false
-            state: stopped
-        when: docker_compose_v2_unit_stat.stat.exists
-
-      - name: Remove the Docker Compose systemd unit file
-        become: true
-        ansible.builtin.file:
-            path: "{{ docker_compose_v2_unit_path }}"
-            state: absent
-        register: docker_compose_v2_unit_removed
-
-# Without a reload systemd keeps the removed units loaded as not-found.
-- name: Reload systemd after removing a unit file
-  become: true
-  ansible.builtin.systemd_service:
-      daemon_reload: true
-  when: >-
-      docker_compose_v2_legacy_unit is changed
-      or docker_compose_v2_unit_removed is changed

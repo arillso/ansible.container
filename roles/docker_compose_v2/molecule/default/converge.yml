@@ -12,7 +12,7 @@
       docker_compose_v2_version: ""
       docker_compose_v2_project: "molecule"
       # Deploy a minimal compose project from a templated file so we
-      # exercise both the systemd unit and the docker_compose_v2 module.
+      # exercise the template and the docker_compose_v2 module.
       docker_compose_v2_use_file: true
       docker_compose_v2_config:
           services:

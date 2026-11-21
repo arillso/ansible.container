@@ -27,10 +27,12 @@
 - name: Validate the project settings
   ansible.builtin.assert:
       that:
-          - docker_compose_v2_project != ''
+          - docker_compose_v2_project is match('^[a-z0-9][a-z0-9_-]*$')
       fail_msg: >-
-          docker_compose_v2_project must be set when docker_compose_v2_use_file is
-          true: it names the project directory and the systemd unit.
+          docker_compose_v2_project '{{ docker_compose_v2_project }}' is not a valid
+          Compose project name (lowercase letters, digits, '-' and '_', starting with
+          a letter or digit). With docker_compose_v2_use_file it names the project
+          directory, which Compose uses as project name.
       quiet: true
   when:
       - docker_compose_v2_use_file

@@ -7,4 +7,3 @@
 docker_compose_v2_compose_enabled: >-
     {{ docker_compose_v2_config | length > 0
        or (docker_compose_v2_use_file and docker_compose_v2_state != 'present') }}
-docker_compose_v2_unit_path: "/etc/systemd/system/docker-compose-{{ docker_compose_v2_project }}.service"

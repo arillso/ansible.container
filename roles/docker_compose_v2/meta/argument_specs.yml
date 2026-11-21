@@ -36,7 +36,7 @@ argument_specs:
                 type: str
                 description:
                     - Full path to the Docker Compose project directory, constructed from docker_compose_v2_directory_path and docker_compose_v2_project.
-                    - Holds docker-compose.yml and is the working directory of the per-project systemd unit docker-compose-<project>.service.
+                    - Holds docker-compose.yml, the module runs against this directory.
                 default: "{{ docker_compose_v2_directory_path }}/{{ docker_compose_v2_project }}"
 
             docker_compose_v2_use_file:
@@ -56,7 +56,7 @@ argument_specs:
                 type: str
                 description:
                     - Name of the Docker Compose project, utilized to construct the full Docker Compose directory path.
-                    - Required with docker_compose_v2_use_file, it also names the systemd unit docker-compose-<project>.service.
+                    - Required with docker_compose_v2_use_file. Lowercase letters, digits, '-' and '_', starting with a letter or digit.
                 default: ""
 
             docker_compose_v2_api_version:

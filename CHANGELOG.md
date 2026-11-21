@@ -25,17 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **docker**: the `python3-debian` install no longer refreshes the apt cache on
   every run (`cache_valid_time: 3600`). Raspbian keeps its own Docker
   repository.
-
-- **docker_compose_v2**: the systemd unit called the Compose v1 binary
-  `/usr/bin/docker-compose`, which the role never installs, and was never
-  enabled. It now runs `docker compose`, is installed per project as
-  `docker-compose-<project>.service` with `docker_compose_v2_directory` as
-  working directory, and is enabled and started for `present`/`restarted`,
-  disabled for `stopped`, and stopped and removed for `absent`. The unit
-  passes the same `project_name`, `files`, `env_file`, `profiles`,
-  `remove_orphans`, `docker_cli` and `docker_host`/`cli_context` as the
-  module task, so it addresses the same project. The legacy
-  `docker-compose@.service` template is removed and systemd reloaded.
+- **docker_compose_v2**: the role installed a `docker-compose@.service`
+  template that called the Compose v1 binary `/usr/bin/docker-compose`, which
+  the role never installs, so the unit could not start. The unit is removed,
+  together with any instance enabled by hand. **Upgrade note:** restart after
+  a reboot comes from the `restart:` policy in the compose file.
 - **docker_compose_v2**: failures of the template and compose tasks are no
   longer swallowed by a `rescue` that only printed a debug message; the play
   now fails.
@@ -48,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   file skips the module instead of failing.
 - **docker_compose_v2**: `docker_compose_v2_timeout: 0` is passed to the
   module instead of being dropped.
-- **docker_compose_v2**: an unsupported distribution and a missing
+- **docker_compose_v2**: an unsupported distribution and a missing or invalid
   `docker_compose_v2_project` in file mode now fail with a clear assert.
 - **docker_compose_v2**: the README Quick Start no longer pins the dropped
   version `2.23.0`.
