@@ -4,11 +4,14 @@ Manages Docker registry authentication for pulling from private registries.
 
 ## Features
 
-- **Registry Authentication**: Login to Docker registries (Docker Hub, GHCR, private registries)
-- **Multiple Registries**: Support for multiple registry authentications
-- **Secure Credentials**: Handle credentials securely via Ansible Vault
-- **User-Scoped**: Per-user Docker configuration
-- **Validation**: Verify authentication after login
+- **Registry Authentication**: Login to one Docker registry per role call (Docker Hub, GHCR, private registries)
+- **Logout**: `docker_login_state: absent` removes the stored credentials
+- **Credential Check**: Fails early when username or password is empty
+- **Custom Config Path**: `docker_login_config_path` selects the Docker client config file
+
+The role does not escalate privileges itself. The credentials land in the
+config of the user the task runs as, so set `become` / `become_user` on the
+play or role as needed.
 
 ## Documentation
 
@@ -20,14 +23,16 @@ For detailed documentation including all variables, examples, and usage instruct
 
 ```yaml
 - hosts: servers
+  become: true
   roles:
       - role: arillso.container.docker_login
         vars:
-            docker_login_registries:
-                - registry: ghcr.io
-                  username: myuser
-                  password: "{{ vault_ghcr_token }}"
+            docker_login_registry_url: ghcr.io
+            docker_login_username: myuser
+            docker_login_password: "{{ vault_ghcr_token }}"
 ```
+
+For several registries, include the role once per registry.
 
 ## License
 
