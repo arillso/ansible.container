@@ -287,7 +287,6 @@
                             "max_history":
                                 "description": "Maximum number of release history entries"
                                 "type": "int"
-                                "default": 5
                             "atomic":
                                 "description": "Atomic Helm operations"
                                 "type": "bool"

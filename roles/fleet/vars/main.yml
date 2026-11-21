@@ -1,0 +1,7 @@
+---
+# Whether a GitRepo item carries credentials. Evaluated per loop item; shared
+# by auth.yml (creates the Secret) and gitrepos.yml (references it), so both
+# agree on when the Secret exists.
+_fleet_gitrepo_has_auth: >-
+    {{ (item.git_token is defined and item.git_username is defined)
+    or item.git_ssh_private_key is defined }}

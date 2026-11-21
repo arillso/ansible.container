@@ -1,6 +1,9 @@
 ---
 # Namespaces for all Fleet resources, created before auth.yml writes the
-# GitRepo credential Secrets into them.
+# GitRepo credential Secrets into them. Tagged always: every topic depends on
+# its namespace, and a topic tag here would let --skip-tags drop a namespace
+# that another selected topic still writes into. --skip-tags fleet-namespace
+# still skips them.
 
 - name: "Create namespace for Fleet GitRepos"
   kubernetes.core.k8s:
@@ -14,9 +17,7 @@
       - fleet_enable_gitrepos | bool
       - (item.create_namespace | default(fleet_defaults.create_namespace)) | bool
   tags:
-      - fleet
-      - fleet-gitrepos
-      - fleet-secrets
+      - always
       - fleet-namespace
 
 - name: "Create namespace for Fleet Bundles"
@@ -31,8 +32,7 @@
       - fleet_enable_bundles | bool
       - (item.create_namespace | default(fleet_defaults.create_namespace)) | bool
   tags:
-      - fleet
-      - fleet-bundles
+      - always
       - fleet-namespace
 
 - name: "Create namespace for Fleet Clusters"
@@ -45,8 +45,7 @@
   loop: "{{ fleet_clusters }}"
   when: (item.create_namespace | default(fleet_defaults.create_namespace)) | bool
   tags:
-      - fleet
-      - fleet-clusters
+      - always
       - fleet-namespace
 
 - name: "Create namespace for Fleet ClusterRegistrationTokens"
@@ -59,6 +58,5 @@
   loop: "{{ fleet_registration_tokens }}"
   when: (item.create_namespace | default(fleet_defaults.create_namespace)) | bool
   tags:
-      - fleet
-      - fleet-registration-tokens
+      - always
       - fleet-namespace

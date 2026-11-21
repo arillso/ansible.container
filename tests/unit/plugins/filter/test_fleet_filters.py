@@ -241,6 +241,13 @@ class TestTransformFleetTargets:
         result = transform_fleet_targets(targets)
         assert result[0]["helm"]["values"] == {"replica_count": 2}
 
+    def test_namespace_labels_preserved(self):
+        """namespace_labels and template_values hold user keys."""
+        targets = [{"namespace_labels": {"team_name": "x"}, "template_values": {"some_key": 1}}]
+        result = transform_fleet_targets(targets)
+        assert result[0]["namespaceLabels"] == {"team_name": "x"}
+        assert result[0]["templateValues"] == {"some_key": 1}
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

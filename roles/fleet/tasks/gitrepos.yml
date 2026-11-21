@@ -6,10 +6,6 @@
 # reconciles the repo asynchronously on its own). Firing these in parallel
 # would add job/polling overhead for no latency gain. Kept synchronous.
 - name: "Manage Fleet GitRepos"
-  vars:
-      _gitrepo_has_auth: >-
-          {{ (item.git_token is defined and item.git_username is defined)
-          or item.git_ssh_private_key is defined }}
   kubernetes.core.k8s:
       kubeconfig: "{{ fleet_kubeconfig_path }}"
       definition:
@@ -31,7 +27,7 @@
               serviceAccount: "{{ item.service_account | default(fleet_defaults.service_account) }}"
               # Only reference a Secret that exists: auth.yml creates it only
               # when credentials are set, and a public repo needs none.
-              clientSecretName: "{{ item.client_secret_name | default(item.name + '-git-auth' if _gitrepo_has_auth | bool else omit) }}"
+              clientSecretName: "{{ item.client_secret_name | default(item.name + '-git-auth' if _fleet_gitrepo_has_auth | bool else omit) }}"
               caBundle: "{{ item.ca_bundle | default(omit) }}"
               insecureSkipTLSVerify: "{{ (item.insecure_skip_tls | default(false) | bool) or omit }}"
               helmSecretName: "{{ item.helm_secret_name | default(omit) }}"
@@ -44,7 +40,11 @@
               forceSyncGeneration: "{{ (item.force_update | default(fleet_defaults.force_update) | int) or omit }}"
               keepResources: "{{ (item.keep_resources | default(false) | bool) or omit }}"
               deleteNamespace: "{{ (item.delete_namespace | default(false) | bool) or omit }}"
-              correctDrift: "{{ item.correct_drift | default(omit) }}"
+              correctDrift: >-
+                  {{ {'enabled': item.correct_drift.enabled | default(omit),
+                      'force': item.correct_drift.force | default(omit),
+                      'keepFailHistory': item.correct_drift.keep_fail_history | default(omit)}
+                     if item.correct_drift is defined else omit }}
               imageScanInterval: "{{ item.image_scan_interval | default(omit) }}"
               imageScanCommit: >-
                   {{ {'authorName': item.image_scan_commit.author_name | default('Fleet Image Updater'),

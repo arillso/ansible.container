@@ -13,12 +13,15 @@
       name: "{{ item.name }}"
       namespace: "{{ item.namespace | default(fleet_defaults.namespace) }}"
       state: "{{ fleet_state }}"
+      # Server-side apply and omitted optionals, as in bundles.yml: empty
+      # values are dropped by the API and made every run report changed.
+      apply: true
       definition:
           metadata:
               labels: "{{ item.labels | default({}) | combine({'app.kubernetes.io/managed-by': 'ansible', 'app.kubernetes.io/component': 'fleet-cluster'}) }}"
               annotations: "{{ item.annotations | default(omit) }}"
           # yamllint disable-line rule:line-length
-          spec: "{{ omit if (item.kubeconfig_secret is not defined) else {'kubeConfigSecret': item.kubeconfig_secret, 'kubeConfigSecretNamespace': item.kubeconfig_secret_namespace | default(item.namespace | default(fleet_defaults.namespace)), 'clientID': item.client_id | default(''), 'agentEnvVars': item.agent_env_vars | default([]), 'agentNamespace': item.agent_namespace | default('fleet-system'), 'agentTLSMode': item.agent_tls_mode | default('system-store'), 'agentPrivateCA': item.agent_private_ca | default(''), 'privateRepoURL': item.private_repo_url | default(''), 'templateValues': item.template_values | default({})} }}"
+          spec: "{{ omit if (item.kubeconfig_secret is not defined) else {'kubeConfigSecret': item.kubeconfig_secret, 'kubeConfigSecretNamespace': item.kubeconfig_secret_namespace | default(item.namespace | default(fleet_defaults.namespace)), 'clientID': item.client_id | default(omit), 'agentEnvVars': item.agent_env_vars | default(omit), 'agentNamespace': item.agent_namespace | default('fleet-system'), 'agentTLSMode': item.agent_tls_mode | default('system-store'), 'agentPrivateCA': item.agent_private_ca | default(omit), 'privateRepoURL': item.private_repo_url | default(omit), 'templateValues': item.template_values | default(omit)} }}"
       wait: "{{ omit if (item.kubeconfig_secret is not defined) else true }}"
       wait_condition: "{{ omit if (item.kubeconfig_secret is not defined) else {'type': 'Ready', 'status': 'True'} }}"
       wait_timeout: "{{ omit if (item.kubeconfig_secret is not defined) else fleet_resource_timeout }}"

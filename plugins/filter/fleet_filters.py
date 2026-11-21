@@ -137,7 +137,8 @@ def to_camel_case(snake_str):
 
 # Maps whose keys are user data (label keys, Helm values), not API field
 # names. Their content is passed through unchanged.
-_VERBATIM_KEYS = frozenset(['matchLabels', 'labels', 'annotations', 'values'])
+_VERBATIM_KEYS = frozenset(['matchLabels', 'labels', 'annotations', 'values',
+                            'namespaceLabels', 'namespaceAnnotations', 'templateValues'])
 
 
 def transform_fleet_targets(targets):

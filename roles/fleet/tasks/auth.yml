@@ -24,7 +24,7 @@
   loop: "{{ fleet_gitrepos | default([]) }}"
   when:
       - fleet_gitrepos | length > 0
-      - (item.git_token is defined and item.git_username is defined) or (item.git_ssh_private_key is defined)
+      - _fleet_gitrepo_has_auth | bool
   tags:
       - fleet
       - fleet-secrets

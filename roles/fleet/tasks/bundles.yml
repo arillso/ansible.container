@@ -36,9 +36,8 @@
               forceSyncGeneration: "{{ (item.force_update | default(fleet_defaults.force_update) | int) or omit }}"
               paused: "{{ (item.paused | default(false) | bool) or omit }}"
               # Sub-objects are only sent when the item sets them. An object
-              # whose fields are all omitted still reached the API as {} (or
-              # filled with role defaults), which the stored Bundle never
-              # matches.
+              # whose fields are all omitted still reached the API as {},
+              # which the stored Bundle never matches.
               rolloutStrategy: >-
                   {{ {'maxUnavailable': item.rollout_strategy.max_unavailable | default(omit),
                       'maxUnavailablePartitions': item.rollout_strategy.max_unavailable_partitions | default(omit),
@@ -57,13 +56,13 @@
                   {{ {'chart': item.helm.chart | default(omit),
                       'repo': item.helm.repo | default(omit),
                       'version': item.helm.version | default(omit),
-                      'releaseName': item.helm.release_name | default(item.name),
+                      'releaseName': item.helm.release_name | default(omit),
                       'values': item.helm['values'] | default(omit),
                       'valuesFiles': item.helm.values_files | default(omit),
                       'valuesFrom': item.helm.values_from | default(omit),
                       'force': item.helm.force | default(omit),
                       'takeOwnership': item.helm.take_ownership | default(omit),
-                      'maxHistory': item.helm.max_history | default(5) | int,
+                      'maxHistory': item.helm.max_history | default(omit),
                       'atomic': item.helm.atomic | default(omit),
                       'disablePreProcess': item.helm.disable_pre_process | default(omit)}
                      if item.helm is defined else omit }}
