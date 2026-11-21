@@ -42,6 +42,3 @@
 
 - name: Run handlers
   ansible.builtin.meta: flush_handlers
-
-- name: Reset ssh connection
-  ansible.builtin.meta: reset_connection

@@ -10,12 +10,21 @@
       systemd_service_enabled: false
       systemd_journald_enabled: false
       systemd_units: "{{ docker_systemd_units }}"
+  when: docker_prune_enabled
 
+# With docker_prune_enabled false the timers are stopped and disabled. On a
+# host that never had them, systemd reports the unit as missing, which is
+# the desired end state and not an error.
 - name: Enable and start systemd timers for Docker
   become: true
   ansible.builtin.systemd:
       name: "{{ item.name }}"
-      enabled: true
+      enabled: "{{ docker_prune_enabled }}"
+      state: "{{ 'started' if docker_prune_enabled else 'stopped' }}"
       daemon_reload: true
+  register: docker_prune_timer
+  failed_when:
+      - docker_prune_timer is failed
+      - docker_prune_enabled or 'Could not find' not in docker_prune_timer.msg | default('')
   loop: "{{ docker_systemd_units }}"
   when: item.name is search('\.timer$')

@@ -7,7 +7,7 @@ Installs and configures Docker Engine with support for custom daemon configurati
 - **Docker Installation**: Install Docker Engine from official repositories
 - **Daemon Configuration**: Customize Docker daemon settings (logging, registry mirrors, etc.), merged onto secure role defaults
 - **Systemd Integration**: Manage Docker service and custom systemd units
-- **Automated Cleanup**: Configure scheduled prune tasks for containers, images, and volumes
+- **Automated Cleanup**: Daily `docker system prune` of anything unused for 24h, weekly including anonymous volumes; disable with `docker_prune_enabled: false`
 - **Multi-Distribution**: Support for Debian, Ubuntu, RHEL, and derivatives
 
 ## Documentation
@@ -44,6 +44,10 @@ merged with `docker_daemon`:
 The merge is recursive, so a nested dict such as `log-opts` merges per sub-key
 instead of being replaced wholesale. To drop a base key rather than override
 it, replace `docker_daemon_base` itself.
+
+On a swarm node (`docker info` reports `active` or `locked`) the role forces
+`live-restore: false`, because dockerd refuses to start with it in swarm mode.
+A `docker swarm init` after the role run is only picked up on the next run.
 
 ## Hardening
 

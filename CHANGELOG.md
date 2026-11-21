@@ -7,7 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **docker**: the prune timers are now started, not only enabled. Before, they
+  stayed inactive until the next reboot.
+- **docker**: the apt repository no longer hardcodes `architectures: amd64`, so
+  arm64 hosts get packages.
+- **docker**: the EL pin is now `docker-ce-<version>-*`. The old
+  `docker-ce-<version>*` also matched e.g. 28.5.20 for 28.5.2.
+- **docker**: `docker-ce-cli` is pinned to the same version as `docker-ce` on
+  apt and EL hosts.
+- **docker**: `live-restore` is forced to `false` on swarm nodes, where dockerd
+  refuses to start with it.
+- **docker**: Debian and Ubuntu share one install task file and one vars file.
+  The key moves to `/etc/apt/keyrings/docker.asc` on both, is fetched with
+  become and refreshed when Docker rotates it; the old key paths are removed.
+- **docker**: the `python3-debian` install no longer refreshes the apt cache on
+  every run (`cache_valid_time: 3600`), and the trailing `reset_connection` is
+  gone.
+
 ### Changed
+
+- **docker**: the prune timer runs daily with `until=24h` instead of every 5
+  minutes with `until=1h`. The new `docker_prune_enabled` (default `true`)
+  turns both prune timers off. **Upgrade note:** stopped containers, unused
+  networks and images now survive up to 24h instead of 1h.
+- **docker**: `docker_daemon` in `argument_specs.yml` no longer lists fixed
+  sub-options. Any `daemon.json` key is accepted; before, keys such as
+  `metrics-addr` or `proxies` failed validation, and the listed
+  `disable-legacy-registry` made dockerd refuse to start.
 
 - Molecule test image `nginx:alpine` is now pinned as `nginx:1.31.8-alpine` in
   the `k3s` and `docker_compose_v2` scenarios. On the floating `alpine` tag

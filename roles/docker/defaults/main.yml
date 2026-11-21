@@ -13,23 +13,27 @@ docker_daemon_base:
 # User-provided daemon configuration, merged on top of `docker_daemon_base`.
 docker_daemon: {}
 
+# Scheduled prune of unused containers, networks, images and anonymous
+# volumes. false stops and disables the timers.
+docker_prune_enabled: true
+
 # Consumed by the arillso.system.systemd role (systemd_units interface):
 # each entry is {name: <full unit filename>, unit: {Section: {Key: Value}}}.
 docker_systemd_units:
     - name: docker-prune.service
       unit:
           Unit:
-              Description: Docker Image Prune Service
+              Description: Docker System Prune Service
           Service:
               Type: oneshot
-              ExecStart: "/usr/bin/docker system prune -af --filter 'until=1h'"
+              ExecStart: "/usr/bin/docker system prune -af --filter 'until=24h'"
 
     - name: docker-prune.timer
       unit:
           Unit:
-              Description: Run docker image prune regularly
+              Description: Run docker system prune daily
           Timer:
-              OnCalendar: "*:0/5"
+              OnCalendar: daily
               Persistent: true
           Install:
               WantedBy: timers.target
@@ -37,7 +41,7 @@ docker_systemd_units:
     - name: docker-prune-volumes.service
       unit:
           Unit:
-              Description: Docker Volume Prune Service
+              Description: Docker System Prune with Volumes Service
           Service:
               Type: oneshot
               ExecStart: "/usr/bin/docker system prune -af --volumes"
@@ -45,7 +49,7 @@ docker_systemd_units:
     - name: docker-prune-volumes.timer
       unit:
           Unit:
-              Description: Run docker image prune volumes regularly
+              Description: Run docker system prune with volumes weekly
           Timer:
               OnCalendar: weekly
               Persistent: true

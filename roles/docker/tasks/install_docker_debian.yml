@@ -1,33 +1,54 @@
 ---
+# Shared by Debian and Ubuntu: Ubuntu has no file of its own and reaches this
+# one through the os_family fallback in tasks/main.yml. docker_apt_distribution
+# (vars/Debian.yml) picks the Docker repository the host belongs to.
+
 - name: "Debian : ensure deb822 dependency"
   become: true
   ansible.builtin.apt:
       name: python3-debian
       state: present
       update_cache: true
+      cache_valid_time: 3600
 
-- name: "Debian : remove legacy docker.list"
+# Earlier releases wrote the source list and the key to these paths; the
+# deb822 repository below replaces all of them.
+- name: "Debian : remove legacy docker sources and keys"
   become: true
   ansible.builtin.file:
-      path: /etc/apt/sources.list.d/docker.list
+      path: "{{ item }}"
       state: absent
+  loop:
+      - /etc/apt/sources.list.d/docker.list
+      - /etc/apt/trusted.gpg.d/docker.asc
+      - /usr/share/keyrings/docker-archive-keyring.asc
 
+- name: "Debian : create keyrings directory"
+  become: true
+  ansible.builtin.file:
+      path: /etc/apt/keyrings
+      state: directory
+      mode: "0755"
+
+# force: true re-downloads on every run but only reports a change when the
+# content differs, so a key rotated by Docker is picked up.
 - name: "Debian : add key"
   become: true
   ansible.builtin.get_url:
-      url: https://download.docker.com/linux/debian/gpg
-      dest: /usr/share/keyrings/docker-archive-keyring.asc
+      url: "https://download.docker.com/linux/{{ docker_apt_distribution }}/gpg"
+      dest: /etc/apt/keyrings/docker.asc
       mode: "0644"
       force: true
 
+# No `architectures:` -- apt then uses the host's native architecture, so
+# arm64 hosts get the arm64 packages.
 - name: "Debian : add repository"
   become: true
   ansible.builtin.deb822_repository:
       name: docker
       types: deb
-      architectures: amd64
-      signed_by: /usr/share/keyrings/docker-archive-keyring.asc
-      uris: "https://download.docker.com/linux/{{ ansible_facts['distribution'] | lower }}"
+      signed_by: /etc/apt/keyrings/docker.asc
+      uris: "https://download.docker.com/linux/{{ docker_apt_distribution }}"
       suites: "{{ ansible_facts['distribution_release'] }}"
       components: stable
       state: present

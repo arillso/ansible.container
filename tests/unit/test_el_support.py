@@ -185,7 +185,9 @@ def test_redhat_vars_pin_uses_rpm_compatible_wildcard():
         for line in text.splitlines()
         if line.strip().startswith("-")
     ]
-    assert any("docker-ce-' + docker_version + '*" in e for e in entries), entries
+    # the hyphen anchors the version: "28.5.2*" would also match 28.5.20
+    assert any("docker-ce-' + docker_version + '-*" in e for e in entries), entries
+    assert not any("docker_version + '*" in e for e in entries), entries
     # apt syntax in a RedHat vars file would break dnf
     assert not any("docker-ce=" in e for e in entries), entries
     # the EL repos ship no python3-docker, and pip is not the SDK, so the
@@ -194,7 +196,7 @@ def test_redhat_vars_pin_uses_rpm_compatible_wildcard():
     assert "python3-pip" not in entries, entries
 
 
-@pytest.mark.parametrize("vars_file", ["Debian.yml", "Ubuntu.yml"])
+@pytest.mark.parametrize("vars_file", ["Debian.yml"])
 def test_apt_vars_pin_uses_the_resolved_full_version(vars_file):
     """apt matches an `=` pin against the full version string (epoch and
     distro release suffix) and does not expand globs in it: both
@@ -214,7 +216,7 @@ def test_apt_vars_pin_uses_the_resolved_full_version(vars_file):
     assert not any("docker-ce=*" in e for e in entries), entries
 
 
-@pytest.mark.parametrize("tasks_file", ["install_docker_debian.yml", "install_docker_ubuntu.yml"])
+@pytest.mark.parametrize("tasks_file", ["install_docker_debian.yml"])
 def test_apt_tasks_resolve_the_pin_and_fail_loudly(tasks_file):
     """`docker_apt_version` must actually be produced, and a version that the
     repository no longer carries must fail with a message instead of silently
