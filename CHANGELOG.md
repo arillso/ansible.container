@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Contains breaking changes; release it as `3.0.0`.
+## [3.0.0] - 2026-11-21
+
+Contains breaking changes.
 
 ### Fixed
 
