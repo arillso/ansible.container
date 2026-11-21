@@ -1,57 +1,58 @@
 # Ansible Collection: arillso.container
 
-[![license](https://img.shields.io/github/license/mashape/apistatus.svg?style=popout-square)](LICENSE) [![Ansible Galaxy](http://img.shields.io/badge/ansible--galaxy-arillso.container-blue.svg?style=popout-square)](https://galaxy.ansible.com/arillso/container)
+[![CI](https://github.com/arillso/ansible.container/actions/workflows/merge.yml/badge.svg?branch=main)](https://github.com/arillso/ansible.container/actions/workflows/merge.yml)
+[![Ansible Galaxy](https://img.shields.io/badge/ansible--galaxy-arillso.container-blue.svg)](https://galaxy.ansible.com/ui/repo/published/arillso/container/)
+[![License: MIT](https://img.shields.io/github/license/arillso/ansible.container)](LICENSE)
 
-## Description
-
-This is an Ansible collection that provides comprehensive roles for container and orchestration management. It includes tools for Docker, Docker Compose, Kubernetes (K3s), Helm, Rancher Fleet GitOps, and Tailscale VPN mesh networking.
+Roles to install and run container and Kubernetes infrastructure on Debian,
+Ubuntu and EL 9 hosts.
 
 ## Roles
 
-### Docker Ecosystem
+| Role                                                   | Purpose                                                                |
+| ------------------------------------------------------ | ---------------------------------------------------------------------- |
+| [docker](roles/docker/README.md)                       | Docker Engine installation and daemon configuration                    |
+| [docker_compose_v2](roles/docker_compose_v2/README.md) | Docker Compose v2 as Docker CLI plugin                                 |
+| [docker_login](roles/docker_login/README.md)           | Login to and logout from a container registry                          |
+| [k3s](roles/k3s/README.md)                             | K3s server and agent nodes, including HA with embedded etcd            |
+| [helm](roles/helm/README.md)                           | Helm repositories and charts on a K3s cluster                          |
+| [fleet](roles/fleet/README.md)                         | Rancher Fleet GitRepos, Bundles and cluster registration               |
+| [tailscale](roles/tailscale/README.md)                 | Tailscale Kubernetes operator resources (ProxyGroups, ingress, egress) |
 
-- **[docker](roles/docker/README.md)** - Docker Engine installation and configuration with comprehensive daemon settings
-- **[docker_compose_v2](roles/docker_compose_v2/README.md)** - Docker Compose v2 (modern) installation as Docker CLI plugin
-- **[docker_login](roles/docker_login/README.md)** - Docker registry login and logout
-
-### Kubernetes Ecosystem
-
-- **[k3s](roles/k3s/README.md)** - Lightweight Kubernetes distribution with autonomous deployment and HA support
-- **[fleet](roles/fleet/README.md)** - Rancher Fleet GitOps management for Kubernetes with GitRepo and Bundle support
-- **[helm](roles/helm/README.md)** - Helm package manager for Kubernetes with chart and repository management
-- **[tailscale](roles/tailscale/README.md)** - Tailscale VPN mesh networking with Kubernetes ProxyGroup configuration
-
-## Installation
-
-Install this collection from Ansible Galaxy:
+## Quickstart
 
 ```bash
 ansible-galaxy collection install arillso.container
 ```
 
-Or add it to your `requirements.yml`:
-
 ```yaml
 ---
-collections:
-    - name: arillso.container
-      version: ">=0.0.5"
+- name: Install Docker
+  hosts: docker_hosts
+  become: true
+  roles:
+      - arillso.container.docker
 ```
+
+The collection depends on `arillso.system`, `community.docker` and
+`kubernetes.core`; `ansible-galaxy` installs them with it.
+
+## Configuration
+
+Each role documents its variables in `roles/<role>/meta/argument_specs.yml`,
+and Ansible validates them at runtime. Examples per role are in the guide:
+<https://guide.arillso.io/collections/arillso/container/>
 
 ## Requirements
 
 - Ansible >= 2.18
-- Python >= 3.9
+- Python >= 3.12
 
-## Documentation
+## Contributing
 
-Full documentation is available at:
-<https://guide.arillso.io/collections/arillso/container/>
+See [CONTRIBUTING.md](CONTRIBUTING.md). Test setup and Molecule usage:
+[docs/testing.md](docs/testing.md).
 
 ## License
 
-This project is under the MIT License. See the [LICENSE](LICENSE) file for the full license text.
-
-## Copyright
-
-(c) 2023-2026, Arillso
+MIT, see [LICENSE](LICENSE). (c) 2023-2026, Arillso
