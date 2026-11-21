@@ -1,15 +1,17 @@
 ---
 # Fleet Authentication Secrets Management
 
-# Per-GitRepo authentication secrets
-- name: "Create GitRepo-specific authentication secrets (token or SSH)"
+# Per-GitRepo authentication secrets. The name matches the clientSecretName
+# gitrepos.yml sets, and the Secret follows fleet_state so credentials do not
+# outlive the GitRepo.
+- name: "Manage GitRepo-specific authentication secrets (token or SSH)"
   kubernetes.core.k8s:
-      kubeconfig: "{{ fleet_kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
+      kubeconfig: "{{ fleet_kubeconfig_path }}"
       definition:
           apiVersion: v1
           kind: Secret
           metadata:
-              name: "{{ item.name }}-git-auth"
+              name: "{{ item.client_secret_name | default(item.name + '-git-auth') }}"
               namespace: "{{ item.namespace | default(fleet_defaults.namespace) }}"
               labels:
                   "app.kubernetes.io/managed-by": "ansible"
@@ -17,13 +19,12 @@
                   "gitops.infrastructure/gitrepo": "{{ item.name }}"
           stringData: "{{ {'username': item.git_username, 'password': item.git_token} if item.git_token is defined and item.git_username is defined else {'ssh-privatekey': item.git_ssh_private_key, 'known_hosts': item.git_known_hosts} if item.git_ssh_private_key is defined and item.git_known_hosts is defined else {'ssh-privatekey': item.git_ssh_private_key} if item.git_ssh_private_key is defined else {} }}"
           type: "{{ 'kubernetes.io/basic-auth' if item.git_token is defined and item.git_username is defined else 'kubernetes.io/ssh-auth' if item.git_ssh_private_key is defined else '' }}"
-      state: present
+      state: "{{ fleet_state }}"
   no_log: true
   loop: "{{ fleet_gitrepos | default([]) }}"
   when:
       - fleet_gitrepos | length > 0
-      - (item.git_token is defined and item.git_username is defined) or (item.git_ssh_private_key is defined)
+      - _fleet_gitrepo_has_auth | bool
   tags:
       - fleet
       - fleet-secrets
-      - fleet-gitrepo-secrets

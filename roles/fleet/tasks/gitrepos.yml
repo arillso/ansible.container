@@ -1,67 +1,58 @@
 ---
 # Fleet GitRepos management tasks
 
-- name: "Create namespace for Fleet GitRepos"
-  kubernetes.core.k8s:
-      name: "{{ item.namespace | default(fleet_defaults.namespace) }}"
-      api_version: v1
-      kind: Namespace
-      state: "{{ fleet_state }}"
-      kubeconfig: "{{ fleet_kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
-  loop: "{{ fleet_gitrepos }}"
-  when:
-      - fleet_gitrepos | length > 0
-      - (item.create_namespace | default(fleet_defaults.create_namespace)) | bool
-      - fleet_state == "present"
-  tags:
-      - fleet
-      - fleet-gitrepos
-      - fleet-namespace
-
 # Not converted to async: GitRepo applies have no wait (the k8s call only
 # creates/updates the CR and returns immediately; the Fleet controller
 # reconciles the repo asynchronously on its own). Firing these in parallel
 # would add job/polling overhead for no latency gain. Kept synchronous.
 - name: "Manage Fleet GitRepos"
   kubernetes.core.k8s:
-      kubeconfig: "{{ fleet_kubeconfig_path | default('/etc/rancher/k3s/k3s.yaml') }}"
+      kubeconfig: "{{ fleet_kubeconfig_path }}"
       definition:
           apiVersion: "{{ fleet_api_version }}"
           kind: GitRepo
           metadata:
               name: "{{ item.name }}"
               namespace: "{{ item.namespace | default(fleet_defaults.namespace) }}"
-              labels:
-                  "app.kubernetes.io/managed-by": "ansible"
-                  "app.kubernetes.io/component": "fleet-gitrepo"
-                  "fleet.cattle.io/client-secret": "true"
-                  "gitops.infrastructure/gitrepo": "{{ item.name }}"
+              labels: "{{ item.labels | default({}) | combine({'app.kubernetes.io/managed-by': 'ansible', 'app.kubernetes.io/component': 'fleet-gitrepo', 'fleet.cattle.io/client-secret': 'true', 'gitops.infrastructure/gitrepo': item.name}) }}"
               annotations: "{{ item.annotations | default({}) }}"
+          # Optional fields are omitted rather than sent as an empty, zero or
+          # false value, for the same reason as in bundles.yml.
           spec:
               repo: "{{ item.repository }}"
               branch: "{{ item.branch | default('main') }}"
               revision: "{{ item.revision | default(omit) }}"
-              # Omitted when unset for the same reason as in bundles.yml:
-              # the API drops an empty list, so sending one made every
-              # apply differ from the stored object.
               paths: "{{ item.paths | default(omit) }}"
               pollingInterval: "{{ item.polling_interval | default(fleet_defaults.polling_interval) }}"
               serviceAccount: "{{ item.service_account | default(fleet_defaults.service_account) }}"
-              clientSecretName: "{{ item.client_secret_name | default(item.name + '-git-auth') }}"
+              # Only reference a Secret that exists: auth.yml creates it only
+              # when credentials are set, and a public repo needs none.
+              clientSecretName: "{{ item.client_secret_name | default(item.name + '-git-auth' if _fleet_gitrepo_has_auth | bool else omit) }}"
               caBundle: "{{ item.ca_bundle | default(omit) }}"
-              insecureSkipTLSVerify: "{{ item.insecure_skip_tls | default(false) | bool }}"
+              insecureSkipTLSVerify: "{{ (item.insecure_skip_tls | default(false) | bool) or omit }}"
               helmSecretName: "{{ item.helm_secret_name | default(omit) }}"
               helmRepoURLRegex: "{{ item.helm_repo_url_regex | default(omit) }}"
               helmSecretNameForPaths: "{{ item.helm_secret_name_for_paths | default(omit) }}"
               excludePaths: "{{ item.exclude_paths | default(omit) }}"
-              disablePolling: "{{ item.disable_polling | default(omit) }}"
+              disablePolling: "{{ (item.disable_polling | default(false) | bool) or omit }}"
               webhookSecret: "{{ item.webhook_secret | default(omit) }}"
-              paused: "{{ item.paused | default(omit) }}"
-              forceSyncGeneration: "{{ item.force_sync_generation | default(omit) }}"
-              correctDrift: "{{ item.correct_drift | default(omit) }}"
-              deleteNamespace: "{{ item.delete_namespace | default(omit) }}"
+              paused: "{{ (item.paused | default(false) | bool) or omit }}"
+              forceSyncGeneration: "{{ (item.force_update | default(fleet_defaults.force_update) | int) or omit }}"
+              keepResources: "{{ (item.keep_resources | default(false) | bool) or omit }}"
+              deleteNamespace: "{{ (item.delete_namespace | default(false) | bool) or omit }}"
+              correctDrift: >-
+                  {{ {'enabled': item.correct_drift.enabled | default(omit),
+                      'force': item.correct_drift.force | default(omit),
+                      'keepFailHistory': item.correct_drift.keep_fail_history | default(omit)}
+                     if item.correct_drift is defined else omit }}
+              imageScanInterval: "{{ item.image_scan_interval | default(omit) }}"
+              imageScanCommit: >-
+                  {{ {'authorName': item.image_scan_commit.author_name | default('Fleet Image Updater'),
+                      'authorEmail': item.image_scan_commit.author_email | default('fleet@cattle.io'),
+                      'messageTemplate': item.image_scan_commit.message_template | default(omit)}
+                     if (item.image_scan_commit.enable | default(false) | bool) else omit }}
               bundles: "{{ item.bundles | default(omit) }}"
-              targets: "{{ item.targets | default([]) | arillso.container.fleet_transform_targets if item.targets is defined else omit }}"
+              targets: "{{ item.targets | arillso.container.fleet_transform_targets if item.targets is defined else omit }}"
       state: "{{ fleet_state }}"
       # Server-side apply, for the same reason as in bundles.yml: the
       # controller writes defaults into the live object that the role

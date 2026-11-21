@@ -1,6 +1,16 @@
 ---
 # Main tasks for Fleet role
 
+# Tagged always: the inner tasks carry the topic tags (fleet-gitrepos,
+# fleet-bundles, fleet-namespace, ...), so --tags and --skip-tags select them
+# individually. Topic tags on this include would skip every namespace under
+# --skip-tags of a single topic.
+- name: "Include Fleet namespace management"
+  ansible.builtin.include_tasks: namespaces.yml
+  when: fleet_state == "present"
+  tags:
+      - always
+
 - name: "Include Fleet Secrets management"
   ansible.builtin.include_tasks: auth.yml
   when: fleet_enable_gitrepos | bool

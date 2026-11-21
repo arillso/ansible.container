@@ -64,6 +64,43 @@ Contains breaking changes; release it as `3.0.0`.
 - **docker_compose_v2**: the README Quick Start no longer pins the dropped
   version `2.23.0`.
 
+- **fleet workspaces never became ready**: FleetWorkspace has no spec and no
+  Ready condition. The role no longer sends `displayName`/`description` and
+  no longer waits 300 s per workspace before failing.
+- **fleet target label keys were camelCased**: `fleet_transform_targets` left
+  `match_labels: {env_type: prod}` as `matchLabels: {envType: prod}`, so the
+  selector matched no cluster. The content of `match_labels`, `labels`,
+  `annotations`, `values`, `namespace_labels`, `namespace_annotations` and
+  `template_values` is now passed through unchanged, and
+  `to_camel_case` no longer upper-cases letters after a digit (`node_k8s`
+  became `nodeK8S`).
+- **fleet public GitRepos referenced a missing Secret**: `clientSecretName` is
+  only set when credentials or `client_secret_name` are given. The auth Secret
+  uses `client_secret_name` as its name when set.
+- **fleet auth Secret written before its namespace existed** on a fresh
+  cluster.
+- **fleet auth Secrets ignored `fleet_state: absent`** and kept tokens and SSH
+  keys in the cluster.
+- **fleet items without `labels`** failed to template in bundles, clusters and
+  workspaces.
+- **fleet GitRepo ignored documented options**: `labels`, `force_update`,
+  `keep_resources`, `image_scan_interval` and `image_scan_commit` now reach
+  the CR. `paused`, `delete_namespace`, `disable_polling`, `webhook_secret`,
+  `helm_secret_name_for_paths` and `bundles` were read but rejected by the
+  argument spec; they are now declared.
+- **fleet Bundle sent empty sub-objects**: `helm`, `kustomize`,
+  `correctDrift`, `diff`, `rolloutStrategy` and `targets` are only sent when
+  the item sets them. `helm.values` was read as the dict method instead of the
+  key.
+- **fleet GitRepo `correct_drift.keep_fail_history`** reached the API in
+  snake_case and was dropped; it is now sent as `keepFailHistory`, as for
+  Bundles.
+- **fleet Cluster reported changed on every run**: empty `clientID`,
+  `agentPrivateCA`, `privateRepoURL`, `agentEnvVars` and `templateValues` are
+  omitted, and the Cluster is applied server-side.
+- **fleet `auth` entry point** declared `fleet_git_*` variables it never
+  read; it now declares `fleet_gitrepos`.
+
 ### Changed
 
 - **BREAKING — docker_login no longer escalates privileges**: the login task
@@ -110,8 +147,28 @@ Contains breaking changes; release it as `3.0.0`.
   timestamp. The `molecule-image` Renovate manager now also matches the
   `--image=` form, so the k3s smoke-test pin, which had drifted to an older
   digest, is tracked as well.
+- **fleet**: namespaces for all Fleet resources are created in the new
+  `namespaces.yml`, which runs first. The tasks are tagged `always` and
+  `fleet-namespace`, so `--tags`/`--skip-tags` of a topic can no longer drop a
+  namespace another topic writes into; `--skip-tags fleet-namespace` skips
+  them. The `gitrepos`, `bundles`, `clusters` and `registration_tokens` entry
+  points no longer create the namespace; it must exist when using
+  `tasks_from`.
+- **fleet**: `fleet_kubeconfig_path` (default `/etc/rancher/k3s/k3s.yaml`) is
+  declared in defaults and argument specs. `fleet_resource_timeout` now sets
+  the Cluster readiness wait.
+- **fleet**: **Upgrade note:** a Bundle `helm` block no longer defaults
+  `releaseName` to the Bundle name and `maxHistory` to 5; unset, Fleet's own
+  defaults apply. Set `release_name` and `max_history` to keep the old values.
 
 ### Removed
+
+- **fleet**: `fleet_validate_manifests`, `fleet_dry_run` and
+  `fleet_secret_timeout` (never used; use check mode instead of
+  `fleet_dry_run`). The GitRepo options `target_customizations` and
+  `disable_dependency_update` and the workspace options `display_name` and
+  `description` are no longer accepted; none of them is a field of the
+  respective API object and none had an effect.
 
 - **BREAKING — docker_login**: `docker_login_ssl_version`. community.docker
   removed `ssl_version` in 4.0.0, so from that release on setting it failed

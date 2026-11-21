@@ -39,6 +39,10 @@
                         "description": "Default service account"
                         "type": "str"
                         "default": "default"
+            "fleet_kubeconfig_path":
+                "description": "Path to the kubeconfig used for all Kubernetes API calls"
+                "type": "str"
+                "default": "/etc/rancher/k3s/k3s.yaml"
             "fleet_api_version":
                 "description": "Fleet API version to use"
                 "type": "str"
@@ -50,14 +54,6 @@
                 "choices":
                     - "present"
                     - "absent"
-            "fleet_validate_manifests":
-                "description": "Validate Kubernetes manifests before applying"
-                "type": "bool"
-                "default": true
-            "fleet_dry_run":
-                "description": "Enable dry-run mode for Fleet operations"
-                "type": "bool"
-                "default": false
             "fleet_bundle_wait":
                 "description": "Whether Manage Fleet Bundles waits for each Bundle to report Ready (per-bundle overridable via the bundle's wait key)"
                 "type": "bool"
@@ -66,12 +62,8 @@
                 "description": "Default seconds to wait for a Bundle to report Ready when waiting is enabled"
                 "type": "int"
                 "default": 300
-            "fleet_secret_timeout":
-                "description": "Timeout in seconds for secret operations"
-                "type": "int"
-                "default": 60
             "fleet_resource_timeout":
-                "description": "Timeout in seconds for resource operations"
+                "description": "Seconds to wait for a Cluster with kubeconfig_secret to report Ready"
                 "type": "int"
                 "default": 300
             "fleet_registration_tokens":
@@ -114,12 +106,6 @@
                         "description": "Name of the Workspace resource"
                         "type": "str"
                         "required": true
-                    "display_name":
-                        "description": "Display name for the workspace"
-                        "type": "str"
-                    "description":
-                        "description": "Description of the workspace"
-                        "type": "str"
                     "labels":
                         "description": "Additional labels for the Workspace resource"
                         "type": "dict"
@@ -301,7 +287,6 @@
                             "max_history":
                                 "description": "Maximum number of release history entries"
                                 "type": "int"
-                                "default": 5
                             "atomic":
                                 "description": "Atomic Helm operations"
                                 "type": "bool"
@@ -486,10 +471,28 @@
                         "description": "Keep resources when GitRepo is deleted"
                         "type": "bool"
                         "default": false
-                    "disable_dependency_update":
-                        "description": "Disable automatic dependency updates"
+                    "delete_namespace":
+                        "description": "Delete the target namespace when the GitRepo is deleted"
                         "type": "bool"
                         "default": false
+                    "paused":
+                        "description": "Pause deployment of changes from the repository"
+                        "type": "bool"
+                        "default": false
+                    "disable_polling":
+                        "description": "Disable polling and rely on webhooks only"
+                        "type": "bool"
+                        "default": false
+                    "webhook_secret":
+                        "description": "Name of the Secret holding the webhook secret"
+                        "type": "str"
+                    "helm_secret_name_for_paths":
+                        "description": "Secret name with Helm credentials per path"
+                        "type": "str"
+                    "bundles":
+                        "description": "Bundle definitions (base and options paths), passed to the API unchanged"
+                        "type": "list"
+                        "elements": "dict"
                     "targets":
                         "description":
                             - "List of cluster targets for deployment"
@@ -506,45 +509,12 @@
                                 "description": "Name of the target (optional - defaults to 'target000' format if not specified)"
                                 "type": "str"
                                 "required": false
-                    "target_customizations":
-                        "description": "List of target-specific customizations"
-                        "type": "list"
-                        "elements": "dict"
-                        "default": []
-                        "options":
-                            "name":
-                                "description": "Name of the customization"
-                                "type": "str"
-                                "required": true
-                            "cluster_selector":
-                                "description": "Cluster selector for customization"
-                                "type": "dict"
-                            "helm":
-                                "description": "Helm-specific customizations"
-                                "type": "dict"
-                                "options":
-                                    "values":
-                                        "description": "Helm values override"
-                                        "type": "dict"
-                                        "default": {}
-                                    "values_files":
-                                        "description": "List of Helm values files"
-                                        "type": "list"
-                                        "elements": "str"
-                                        "default": []
-                            "kustomize":
-                                "description": "Kustomize-specific customizations"
-                                "type": "dict"
-                                "options":
-                                    "dir":
-                                        "description": "Kustomize directory path"
-                                        "type": "str"
                     "image_scan_commit":
                         "description": "Image scanning and auto-commit configuration"
                         "type": "dict"
                         "options":
                             "enable":
-                                "description": "Enable image scanning"
+                                "description": "Send imageScanCommit; the remaining keys are ignored while false"
                                 "type": "bool"
                                 "default": false
                             "author_name":
@@ -576,24 +546,16 @@
         "short_description": "Manage Fleet authentication secrets only"
         "description":
             - "Manages Kubernetes secrets for GitRepo authentication"
+            - "Reads git_username, git_token, git_ssh_private_key, git_known_hosts and client_secret_name from each fleet_gitrepos item"
+            - "The target namespace must already exist"
         "author":
             - "Arillso Team"
         "options":
-            "fleet_git_username":
-                "description": "Git username for token authentication"
-                "type": "str"
-            "fleet_git_token":
-                "description": "Git token for authentication"
-                "type": "str"
-            "fleet_git_ssh_private_key":
-                "description": "SSH private key for authentication"
-                "type": "str"
-            "fleet_git_known_hosts":
-                "description": "Known hosts for SSH authentication"
-                "type": "str"
-            "fleet_client_secret_name":
-                "description": "Name of the Kubernetes secret for Git authentication"
-                "type": "str"
+            "fleet_gitrepos":
+                "description": "List of Fleet GitRepos whose authentication secrets to manage"
+                "type": "list"
+                "elements": "dict"
+                "default": []
     "gitrepos":
         "short_description": "Manage Fleet GitRepos only"
         "description":
