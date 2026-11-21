@@ -15,12 +15,6 @@ argument_specs:
                 required: true
                 description: "K3s version to install (e.g., v1.35.2+k3s1)"
 
-            k3s_channel:
-                type: "str"
-                required: false
-                default: "stable"
-                description: "K3s release channel (e.g., stable, latest, testing)"
-
             k3s_role:
                 type: "str"
                 required: true
@@ -318,11 +312,6 @@ argument_specs:
                 default: true
                 description: "Create symlinks for kubectl, crictl, ctr"
 
-            k3s_symlink_force:
-                type: "bool"
-                default: false
-                description: "Force overwrite existing symlinks"
-
             k3s_symlink_commands:
                 type: "list"
                 elements: "str"
@@ -349,8 +338,11 @@ argument_specs:
 
             k3s_kubeconfig_mode:
                 type: "str"
-                default: "0644"
-                description: "File permissions for kubeconfig"
+                default: "{{ k3s_write_kubeconfig_mode | default('0600') }}"
+                description: >-
+                    File mode for the user kubeconfig (/etc/rancher/k3s/k3s.yaml or
+                    k3s_write_kubeconfig). Defaults to k3s_write_kubeconfig_mode so it
+                    does not fight the mode k3s writes on each start.
 
             k3s_kubeconfig_group:
                 type: "str"

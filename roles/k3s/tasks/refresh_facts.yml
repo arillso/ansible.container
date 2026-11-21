@@ -1,12 +1,25 @@
 ---
-# Post-installation facts refresh to capture new state
+# Re-run the K3s facts script without its cache, so the result reflects the
+# current state. The cache only serves later fact gathering by other plays.
 
-- name: Refresh K3s facts after installation
+- name: Drop cached K3s facts
+  ansible.builtin.file:
+      path: "{{ facts_cache_dir | default('/var/cache/ansible-facts') }}/k3s-facts.json"
+      state: absent
+  become: true
+  # Cache invalidation, not a configuration change.
+  changed_when: false
+  tags:
+      - facts
+      - k3s_facts
+
+- name: Refresh K3s facts
   ansible.builtin.setup:
       gather_subset:
           - "!all"
           - "!any"
           - "local"
+  become: true
   tags:
       - facts
       - k3s_facts

@@ -214,14 +214,14 @@ collect_k3s_facts() {
         fi
     fi
 
-    # Determine if this is the first server
+    # Determine if this is the first server. Only the inventory decides: a
+    # missing datastore says nothing about whether a cluster already exists
+    # elsewhere, so a server added later would bootstrap its own cluster.
+    # Without any server group the node is a standalone server.
+{% set _k3s_server_group = groups['k3s_controllers'] | default([]) or groups['k3s_servers'] | default([]) %}
     local first_server=false
-    if [[ "${K3S_ROLE}" == "server" ]]; then
-        # In Ansible context, this would check if it's the first in k3s_servers group
-        if [[ "{{ inventory_hostname == (groups['k3s_servers'][0] if groups['k3s_servers'] | default([]) else '') }}" == "True" ]]; then
-            first_server=true
-        elif [[ ! -f "${K3S_DATA_DIR}/server/db/state.db" ]] && [[ "${service_exists}" == "false" ]]; then
-            # If database doesn't exist and service isn't set up, likely the first server
+    if [[ "${K3S_ROLE}" == "server" && -z "${K3S_SERVER_URL}" ]]; then
+        if [[ "{{ (_k3s_server_group | length == 0) or inventory_hostname == _k3s_server_group[0] }}" == "True" ]]; then
             first_server=true
         fi
     fi

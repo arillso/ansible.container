@@ -11,18 +11,20 @@
   become: true
 
 # Final validation for agents to ensure server connectivity before config creation
-- name: Validate agent configuration requirements
+# Agents and joining servers need both; a joining server without a token
+# would otherwise fail later with an opaque k3s startup error.
+- name: Validate join configuration requirements
   ansible.builtin.assert:
       that:
           - k3s_server_url is defined and k3s_server_url != ""
           - k3s_token is defined and k3s_token != ""
       fail_msg: |
-          K3s agent configuration incomplete after auto-discovery:
+          K3s {{ k3s_role }} join configuration incomplete after auto-discovery:
           - Server URL: {{ k3s_server_url | default('NOT SET') }}
           - Token: {{ 'SET' if k3s_token | default('') != '' else 'NOT SET' }}
-          Ensure K3s servers are deployed first and accessible from agents.
-      success_msg: "K3s agent configuration validated successfully"
-  when: k3s_role == "agent"
+          Ensure the first K3s server is deployed first and reachable.
+      success_msg: "K3s join configuration validated successfully"
+  when: k3s_role == "agent" or k3s_server_url | default('') | length > 0
 
 - name: Create k3s audit policy
   ansible.builtin.template:
@@ -61,6 +63,19 @@
       group: root
   become: true
   no_log: true
+  notify: Restart k3s
+
+# Written before the service starts, so the first start already runs with
+# proxy settings. Always rendered: it also carries K3S_CONFIG_FILE and
+# K3S_DATA_DIR, so an emptied k3s_environment_vars drops only its entries.
+- name: Create K3s environment configuration file
+  ansible.builtin.template:
+      src: etc/systemd/system/k3s.service.env.j2
+      dest: /etc/systemd/system/k3s.service.env
+      mode: "0600"
+      owner: root
+      group: root
+  become: true
   notify: Restart k3s
 
 - name: Create k3s registries config

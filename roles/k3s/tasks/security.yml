@@ -33,27 +33,51 @@
         become: true
         when: ansible_facts['os_family'] == "RedHat"
 
-      - name: Check for k3s-selinux package availability
+      # Same repository and signing key the upstream k3s install script uses.
+      # The package comes from the repository, so its version follows
+      # upstream and every RPM is GPG-verified.
+      - name: Check Rancher k3s-selinux repository availability
         ansible.builtin.uri:
-            url: "https://rpm.rancher.io/k3s/stable/common/centos/{{ ansible_facts['distribution_major_version'] }}/noarch/"
-            method: GET
-            status_code: 200
+            url: "https://rpm.rancher.io/k3s/stable/common/centos/{{ ansible_facts['distribution_major_version'] }}/noarch/repodata/repomd.xml"
+            method: HEAD
             timeout: 10
         register: _k3s_selinux_repo_check
         failed_when: false
         when: ansible_facts['os_family'] == "RedHat"
 
-      - name: Install k3s-selinux package
-        ansible.builtin.package:
-            name: "https://rpm.rancher.io/k3s/stable/common/centos/{{ ansible_facts['distribution_major_version'] }}/noarch/k3s-selinux-1.4-1.el{{ ansible_facts['distribution_major_version'] }}.noarch.rpm"
-            state: present
-            disable_gpg_check: true
+      # Fedora, air-gapped hosts or EL majors Rancher does not publish.
+      - name: Report missing k3s-selinux repository
+        ansible.builtin.debug:
+            msg: >-
+                WARNING: {{ _k3s_selinux_repo_check.url | default('rpm.rancher.io') }}
+                is not reachable (status {{ _k3s_selinux_repo_check.status | default('n/a') }}).
+                k3s-selinux is not installed; install it from a local mirror.
+        when:
+            - ansible_facts['os_family'] == "RedHat"
+            - _k3s_selinux_repo_check.status | default(0) != 200
+
+      - name: Configure Rancher k3s-selinux repository
+        ansible.builtin.yum_repository:
+            name: rancher-k3s-common-stable
+            description: Rancher k3s common (stable)
+            baseurl: "https://rpm.rancher.io/k3s/stable/common/centos/{{ ansible_facts['distribution_major_version'] }}/noarch"
+            gpgcheck: true
+            repo_gpgcheck: false
+            gpgkey: https://rpm.rancher.io/public.key
+            enabled: true
         become: true
         when:
             - ansible_facts['os_family'] == "RedHat"
-            - _k3s_selinux_repo_check.status == 200
-        failed_when: false
-        register: _k3s_selinux_install
+            - _k3s_selinux_repo_check.status | default(0) == 200
+
+      - name: Install k3s-selinux package
+        ansible.builtin.package:
+            name: k3s-selinux
+            state: present
+        become: true
+        when:
+            - ansible_facts['os_family'] == "RedHat"
+            - _k3s_selinux_repo_check.status | default(0) == 200
 
       - name: Configure SELinux context for K3s binary
         community.general.sefcontext:
