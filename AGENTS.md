@@ -112,9 +112,9 @@ Three-level testing strategy:
 3. **Integration Tests** (ansible-test) - For role integration
     - Location: `tests/integration/targets/`
     - Run: `ansible-test integration`
-    - Not wired into CI: the reusable workflow calls `ansible-test integration`
-      without `--docker-privileged`, so every target marked `needs/privileged`
-      is skipped. The remaining targets (`fleet`, `tailscale`) are `disabled`.
+    - Not wired into CI: both remaining targets (`fleet`, `tailscale`) are
+      `disabled` and need an existing K3s cluster; run them manually with
+      `--allow-disabled` (see `tests/integration/targets/README.md`).
       Role coverage lives in the Molecule scenarios above, which use the
       qemu/KVM driver and can run dockerd and k3s for real.
 
