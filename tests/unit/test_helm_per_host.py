@@ -29,7 +29,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
-HELM_TASKS = ["charts.yml", "main.yml", "prerequisites.yml", "repositories.yml"]
+HELM_TASKS = ["charts.yml", "dependencies.yml", "main.yml", "prerequisites.yml"]
 
 # Roles that manage a cluster and therefore share the per-host contract.
 CLUSTER_ROLES = ["fleet", "helm", "k3s", "tailscale"]

@@ -16,6 +16,25 @@
   when:
       - _helm_crd_check.resources | length == 0
 
+# Both fields fail late otherwise: an unknown repository key falls back to
+# no repo at all and the controller fails asynchronously in the cluster, and
+# a timeout without unit is rejected by the HelmChart API (metav1.Duration).
+- name: "Validate Helm chart definitions"
+  ansible.builtin.assert:
+      that:
+          - item.repository is not defined or item.repository in helm_repositories
+          - >-
+              item.timeout | default(helm_chart_defaults.timeout) | string
+              is match('^(?=\\d)(\\d+h)?(\\d+m)?(\\d+s)?$')
+      fail_msg: >-
+          Chart '{{ item.name }}': repository must be a key of helm_repositories
+          ({{ helm_repositories.keys() | list | join(', ') }}) and timeout a
+          duration such as 5m, 1h or 1m30s.
+      quiet: true
+  loop: "{{ helm_charts }}"
+  loop_control:
+      label: "{{ item.name }}"
+
 - name: "Create namespaces for Helm charts"
   kubernetes.core.k8s:
       name: "{{ item.namespace | default(helm_chart_defaults.namespace) }}"
@@ -45,6 +64,7 @@
                   helm.cattle.io/bootstrap: "{{ item.bootstrap | default(false) | string }}"
           spec:
               chart: "{{ item.chart }}"
+              bootstrap: "{{ item.bootstrap | default(false) | bool }}"
               repo: "{{ helm_repositories[item.repository] | default(item.repo) | default(omit) }}"
               version: "{{ item.version | default(omit) }}"
               targetNamespace: "{{ item.namespace | default(helm_chart_defaults.namespace) }}"
@@ -75,14 +95,36 @@
       wait_condition:
           type: "Complete"
           status: "True"
-      wait_timeout: "{{ (item.timeout | default(helm_deployment_timeout) | regex_replace('([0-9]+)m', '\\1') | int) * 60 if 'm' in (item.timeout | default(helm_deployment_timeout) | string) else (item.timeout | default(helm_deployment_timeout) | int) }}"
+      wait_timeout: "{{ _helm_timeout_seconds | int }}"
+  vars:
+      # Same duration the HelmChart gets, converted from h/m/s to seconds.
+      _helm_timeout: "{{ item.timeout | default(helm_chart_defaults.timeout) | string }}"
+      _helm_timeout_seconds: >-
+          {%- set ns = namespace(s=0) -%}
+          {%- for n, u in _helm_timeout | regex_findall('(\\d+)([hms])') -%}
+          {%- set ns.s = ns.s + (n | int) * {'h': 3600, 'm': 60, 's': 1}[u] -%}
+          {%- endfor -%}
+          {{ ns.s }}
   loop: "{{ helm_charts }}"
+  loop_control:
+      label: "{{ item.name }}"
   when:
       - helm_deployment_wait | bool
       # `default` guards the idempotence run: the deploy task above is tagged
       # molecule-idempotence-notest, so it is skipped there and never
       # registers its result.
       - _helm_charts_deployment_result | default({}) is changed
+  register: _helm_install_job
+  # On an upgrade the previous, already completed Job stays until the
+  # controller replaces it, and the wait above would accept it. The
+  # controller marks a Job it is about to replace with replace-wait, so a
+  # marked Job is not the result of this deploy. Remaining gap: a check
+  # that runs before the controller has reacted at all still sees the old
+  # Job unmarked.
+  until: >-
+      _helm_install_job.resources | default([]) | length == 1
+      and 'helmcharts.helm.cattle.io/replace-wait'
+      not in (_helm_install_job.resources[0].metadata.annotations | default({}))
   retries: "{{ helm_validation_retries }}"
   delay: "{{ helm_validation_delay }}"
 

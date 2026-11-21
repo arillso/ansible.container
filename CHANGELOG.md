@@ -101,6 +101,29 @@ Contains breaking changes; release it as `3.0.0`.
 - **fleet `auth` entry point** declared `fleet_git_*` variables it never
   read; it now declares `fleet_gitrepos`.
 
+- **helm**: `--tags helm`, `helm-charts` or `kubernetes` now runs the included
+  task files. The tags sat only on the dynamic includes, so a tagged run skipped
+  every task inside them and deployed nothing.
+- **helm**: `bootstrap: true` now sets `spec.bootstrap` on the HelmChart. Before,
+  it only set a label that the k3s Helm controller never reads.
+- **helm**: The install Job wait now uses the chart's own timeout and parses
+  every h/m/s duration (`1h`, `300s`, `1m30s`); those used to evaluate to a
+  0-second wait.
+- **helm**: The wait no longer accepts the previous, completed install Job on an
+  upgrade. A Job that the controller has marked for replacement does not count.
+- **helm**: Chart definitions are validated before deploy: an unknown
+  `repository` key or a timeout without a unit now fails instead of producing a
+  HelmChart that fails inside the cluster.
+- **helm**: The Kubernetes Python client is installed only with
+  `helm_enable_charts: true`, and the distribution path uses
+  `ansible.builtin.package` instead of `apt`.
+
+### Removed
+
+- **helm**: `helm_validation_enabled` and `helm_deployment_timeout`. The first
+  had no effect; the wait now derives its timeout from the chart's `timeout`.
+- **helm**: The repository reachability check, whose result was never evaluated.
+
 ### Changed
 
 - **BREAKING — docker_login no longer escalates privileges**: the login task
@@ -139,6 +162,11 @@ Contains breaking changes; release it as `3.0.0`.
 - **docker_compose_v2**: `argument_specs.yml` lists the valid choices for
   `pull`, `recreate`, `remove_images`, `build` and `state`, and the `pull`
   default `policy`.
+
+- **helm**: The `helm_repositories` default in `argument_specs.yml` now lists
+  the seven repositories that `defaults/main.yml` sets.
+- **helm**: `tasks/main.yml` only dispatches; the dependency installation moved
+  to `tasks/dependencies.yml`.
 
 - Molecule test image `nginx:alpine` is now pinned as `nginx:1.31.8-alpine` in
   the `k3s` and `docker_compose_v2` scenarios. On the floating `alpine` tag

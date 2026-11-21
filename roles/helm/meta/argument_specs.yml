@@ -30,14 +30,25 @@ argument_specs:
                     - namespace: Target namespace
                     - create_namespace: Create namespace if missing
                     - values: Chart values override
+                    - timeout: Duration such as 5m (default from helm_chart_defaults)
+                    - bootstrap: Install as bootstrap chart (spec.bootstrap)
 
             helm_repositories:
                 type: "dict"
                 required: false
-                default: {}
+                default:
+                    jetstack: "https://charts.jetstack.io"
+                    bitnami: "https://charts.bitnami.com/bitnami"
+                    prometheus-community: "https://prometheus-community.github.io/helm-charts"
+                    grafana: "https://grafana.github.io/helm-charts"
+                    ingress-nginx: "https://kubernetes.github.io/ingress-nginx"
+                    traefik: "https://traefik.github.io/charts"
+                    metallb: "https://metallb.github.io/metallb"
                 description: |
                     Dictionary of Helm repositories.
                     Key is repository name, value is repository URL.
+                    Overriding it replaces the whole dict; the defaults are
+                    not merged in. A chart's `repository` must be a key here.
 
             helm_chart_defaults:
                 type: "dict"
@@ -59,7 +70,10 @@ argument_specs:
                     timeout:
                         type: "str"
                         default: "5m"
-                        description: "Default timeout for Helm operations"
+                        description: |
+                            Default timeout for Helm operations, as a duration such
+                            as 5m, 1h or 1m30s. Also bounds each wait for the
+                            install Job.
 
             helm_kubeconfig_path:
                 type: "str"
@@ -71,12 +85,6 @@ argument_specs:
                     /etc/rancher/k3s/k3s.yaml,
                     /var/lib/rancher/k3s/server/cred/admin.kubeconfig,
                     /root/.kube/config and ~/.kube/config.
-
-            helm_validation_enabled:
-                type: "bool"
-                required: false
-                default: true
-                description: "Enable post-deployment validation"
 
             helm_validation_retries:
                 type: "int"
@@ -95,12 +103,6 @@ argument_specs:
                 required: false
                 default: true
                 description: "Wait for deployment to complete"
-
-            helm_deployment_timeout:
-                type: "int"
-                required: false
-                default: 600
-                description: "Timeout for deployment in seconds"
 
             helm_debug_enabled:
                 type: "bool"
