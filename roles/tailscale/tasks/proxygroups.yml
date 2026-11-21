@@ -1,33 +1,33 @@
 ---
 # Tailscale ProxyGroups management tasks
 # Supports: ingress, egress, kube-apiserver
+# ProxyGroup is a cluster-scoped CRD, so no namespace is set.
 
-- name: Create namespaces for Tailscale ProxyGroups
-  kubernetes.core.k8s:
-      kubeconfig: "{{ tailscale_kubeconfig_path }}"
-      name: "{{ item.namespace }}"
-      api_version: v1
-      kind: Namespace
-      state: "{{ tailscale_state }}"
-  loop: "{{ tailscale_proxygroups }}"
-  when:
-      - tailscale_state == "present"
-      - item.namespace is defined
+- name: Warn about the ignored ProxyGroup namespace
+  ansible.builtin.debug:
+      msg: >-
+          DEPRECATED: tailscale_proxygroups[].namespace is ignored because
+          ProxyGroup is cluster-scoped, and will be removed in the next major
+          release. Set on: {{ tailscale_proxygroups | selectattr('namespace', 'defined')
+          | selectattr('namespace') | map(attribute='name') | join(', ') }}
+  when: >-
+      tailscale_proxygroups | selectattr('namespace', 'defined')
+      | selectattr('namespace') | list | length > 0
   tags:
       - tailscale
       - tailscale-proxygroups
-      - tailscale-namespace
 
 - name: Manage Tailscale ProxyGroups
   kubernetes.core.k8s:
       kubeconfig: "{{ tailscale_kubeconfig_path }}"
       state: "{{ tailscale_state }}"
+      wait: "{{ tailscale_state == 'absent' }}"
+      wait_timeout: "{{ tailscale_wait_timeout }}"
       definition:
           apiVersion: tailscale.com/v1alpha1
           kind: ProxyGroup
           metadata:
               name: "{{ item.name }}"
-              namespace: "{{ item.namespace | default('default') }}"
           spec:
               type: "{{ item.type }}"
               replicas: "{{ item.replicas | default(1) }}"

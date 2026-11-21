@@ -3,10 +3,8 @@
 # tailscale.com API accepted, with the spec fields the role is
 # responsible for. Deliberately no status assertion: without a real
 # tailnet the operator never reconciles the resource, so any status
-# check would test the operator rather than the role. The `tailscale`
-# namespace is not asserted either: prepare.yml installs the operator
-# chart with --create-namespace, so it exists before converge and the
-# role's namespace apply is a guaranteed no-op.
+# check would test the operator rather than the role. ProxyGroup is
+# cluster-scoped, so the lookup carries no namespace.
 - name: Verify
   hosts: all
   become: true
@@ -18,7 +16,6 @@
             api_version: tailscale.com/v1alpha1
             kind: ProxyGroup
             name: molecule-ingress
-            namespace: tailscale
             kubeconfig: "{{ tailscale_verify_kubeconfig }}"
         register: tailscale_verify_proxygroup
 
@@ -36,3 +33,38 @@
                     == "molecule-ingress"
             fail_msg: "ProxyGroup 'molecule-ingress' is missing or does not match the converge spec"
             success_msg: "ProxyGroup 'molecule-ingress' applied with the expected spec"
+
+      - name: Fetch the LoadBalancer Service
+        kubernetes.core.k8s_info:
+            api_version: v1
+            kind: Service
+            name: molecule-lb
+            namespace: molecule-tailscale
+            kubeconfig: "{{ tailscale_verify_kubeconfig }}"
+        register: tailscale_verify_lb
+
+      - name: Fetch the egress Service
+        kubernetes.core.k8s_info:
+            api_version: v1
+            kind: Service
+            name: molecule-egress
+            namespace: molecule-tailscale
+            kubeconfig: "{{ tailscale_verify_kubeconfig }}"
+        register: tailscale_verify_egress
+
+      - name: Assert both Services carry the role's spec
+        ansible.builtin.assert:
+            that:
+                - tailscale_verify_lb.resources | length == 1
+                - tailscale_verify_lb.resources[0].spec.loadBalancerClass == "tailscale"
+                - "'selector' not in tailscale_verify_lb.resources[0].spec"
+                - >-
+                    tailscale_verify_lb.resources[0].metadata.annotations['tailscale.com/proxy-group']
+                    == "molecule-ingress"
+                - tailscale_verify_egress.resources | length == 1
+                - tailscale_verify_egress.resources[0].spec.type == "ExternalName"
+                - >-
+                    tailscale_verify_egress.resources[0].metadata.annotations['tailscale.com/tailnet-fqdn']
+                    == "db.example.ts.net"
+            fail_msg: "Tailscale Services are missing or do not match the converge spec"
+            success_msg: "Tailscale Services applied with the expected spec"

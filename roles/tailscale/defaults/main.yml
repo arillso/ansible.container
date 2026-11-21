@@ -1,26 +1,24 @@
 ---
 tailscale_kubeconfig_path: /etc/rancher/k3s/k3s.yaml
 tailscale_state: present
+tailscale_wait_timeout: 120
 
 # Tailscale ProxyGroups
 tailscale_proxygroups: []
 # Examples:
 # tailscale_proxygroups:
 #   - name: ingress-proxies
-#     namespace: tailscale
 #     type: ingress
 #     replicas: 2
 #     tags:
 #       - "tag:k8s-ingress"
 #     hostname_prefix: prod-ingress
 #   - name: egress-proxies
-#     namespace: tailscale
 #     type: egress
 #     replicas: 3
 #     tags:
 #       - "tag:k8s-egress"
 #   - name: k8s-api-proxy
-#     namespace: tailscale
 #     type: kube-apiserver
 #     replicas: 2
 #     tags:

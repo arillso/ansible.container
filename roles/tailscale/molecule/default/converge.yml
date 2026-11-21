@@ -7,15 +7,35 @@
       # (/etc/rancher/k3s/k3s.yaml), which is where prepare.yml puts it.
       tailscale_proxygroups:
           - name: molecule-ingress
-            namespace: tailscale
             type: ingress
             replicas: 1
             tags:
                 - "tag:k8s-ingress"
             hostname_prefix: molecule-ingress
-      # Ingress and egress services are left out: both reference a
-      # ProxyGroup the operator would have to have provisioned, and
-      # without a real tailnet the operator never gets that far.
+          - name: molecule-egress
+            type: egress
+            replicas: 1
+            tags:
+                - "tag:k8s-egress"
+      # Without a real tailnet the operator never reconciles these, so the
+      # scenario only proves the API accepts what the role renders. Both
+      # services share a namespace to exercise the namespace dedup, and the
+      # LoadBalancer has no selector to exercise the omitted field.
+      tailscale_ingress_services:
+          - name: molecule-lb
+            namespace: molecule-tailscale
+            proxy_group: molecule-ingress
+            ports:
+                - name: http
+                  port: 80
+      tailscale_egress_services:
+          - name: molecule-egress
+            namespace: molecule-tailscale
+            proxy_group: molecule-egress
+            fqdn: db.example.ts.net
+            ports:
+                - name: postgres
+                  port: 5432
   tasks:
       - name: Include tailscale role
         ansible.builtin.include_role:

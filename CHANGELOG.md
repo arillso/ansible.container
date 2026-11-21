@@ -151,6 +151,31 @@ Contains breaking changes; release it as `3.0.0`.
 - **k3s first start**: the pending restart starts k3s once instead of
   start-then-restart during the datastore bootstrap.
 
+- **helm**, **fleet**, **tailscale**: `kubernetes.core` is now a collection
+  dependency in `galaxy.yml`; the three roles call its modules but a plain
+  `ansible-galaxy collection install arillso.container` did not pull it.
+- **tailscale**: a `loadbalancer` ingress service without `selector` no longer
+  fails at templating; the field is omitted.
+- **tailscale**: `ports` is only required for `type: loadbalancer`. An
+  `ingress` entry instead requires `default_backend` or `rules`, which the
+  Kubernetes API needs for an Ingress.
+- **tailscale**: egress services must set exactly one of `fqdn` or `ip`,
+  enforced in `argument_specs.yml`.
+- **tailscale**: with `tailscale_state: absent`, ProxyGroups are removed after
+  the Services and Ingresses that reference them. Every delete waits up to the
+  new `tailscale_wait_timeout` (default `120`) for the operator to release the
+  resource, so `absent` now needs a running operator.
+- **tailscale**: `--tags tailscale-namespace` now reaches the namespace task.
+  Namespaces are created once per unique namespace in a new `namespaces.yml`.
+- **tailscale**: ProxyGroup is a cluster-scoped CRD. The role no longer sets
+  `metadata.namespace` on it and no longer creates a namespace for it.
+
+### Deprecated
+
+- **tailscale**: `tailscale_proxygroups[].namespace` is ignored and will be
+  removed in the next major release. The role prints a deprecation notice
+  when it is set.
+
 ### Changed
 
 - **BREAKING — docker_login no longer escalates privileges**: the login task
@@ -207,6 +232,11 @@ Contains breaking changes; release it as `3.0.0`.
   `disable_gpg_check`, and install failures are no longer swallowed. Without a
   reachable repository the role reports a warning and skips the package.
 
+- **tailscale**: `meta/main.yml` lists `GenericLinux` instead of a host OS
+  matrix; the README lists the actual requirements (operator with CRDs,
+  kubeconfig, Python `kubernetes`, `kubernetes.core`).
+- **tailscale**: the Molecule scenario also applies a LoadBalancer and an
+  egress Service and verifies both.
 - Molecule test image `nginx:alpine` is now pinned as `nginx:1.31.8-alpine` in
   the `k3s` and `docker_compose_v2` scenarios. On the floating `alpine` tag
   Renovate only proposed digest updates, which have no release timestamp and

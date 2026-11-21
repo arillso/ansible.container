@@ -1,0 +1,19 @@
+---
+# Namespaces for Ingress and Egress Services. ProxyGroups are
+# cluster-scoped and need none. Namespaces are never removed on absent.
+
+- name: Create namespaces for Tailscale services
+  kubernetes.core.k8s:
+      kubeconfig: "{{ tailscale_kubeconfig_path }}"
+      name: "{{ item }}"
+      api_version: v1
+      kind: Namespace
+      state: present
+  loop: >-
+      {{ (tailscale_ingress_services + tailscale_egress_services)
+         | map(attribute='namespace') | unique }}
+  tags:
+      - tailscale
+      - tailscale-namespace
+      - tailscale-ingress
+      - tailscale-egress

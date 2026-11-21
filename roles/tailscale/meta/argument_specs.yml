@@ -27,6 +27,14 @@ argument_specs:
                     - absent
                 description: State of Tailscale resources (present or absent)
 
+            tailscale_wait_timeout:
+                type: int
+                required: false
+                default: 120
+                description:
+                    - Seconds each delete waits for the resource to be gone when tailscale_state is absent.
+                    - The Tailscale operator holds finalizers on these resources, so absent needs a running operator.
+
             tailscale_proxygroups:
                 type: list
                 required: false
@@ -41,8 +49,9 @@ argument_specs:
                     namespace:
                         type: str
                         required: false
-                        default: default
-                        description: Namespace for the ProxyGroup
+                        description:
+                            - Ignored. ProxyGroup is a cluster-scoped resource.
+                            - Accepted for backwards compatibility and will be removed in the next major release.
                     type:
                         type: str
                         required: true
@@ -85,6 +94,9 @@ argument_specs:
                 default: []
                 elements: dict
                 description: List of Tailscale Ingress Services (LoadBalancer or Ingress)
+                required_if:
+                    - [type, loadbalancer, [ports]]
+                    - [type, ingress, [default_backend, rules], true]
                 options:
                     name:
                         type: str
@@ -117,8 +129,8 @@ argument_specs:
                     ports:
                         type: list
                         elements: dict
-                        required: true
-                        description: List of ports to expose
+                        required: false
+                        description: List of ports to expose (required for type loadbalancer, unused for type ingress)
                         options:
                             name:
                                 type: str
@@ -148,12 +160,12 @@ argument_specs:
                     default_backend:
                         type: dict
                         required: false
-                        description: Default backend for Ingress
+                        description: Default backend for Ingress (type ingress needs default_backend or rules)
                     rules:
                         type: list
                         elements: dict
                         required: false
-                        description: Ingress rules
+                        description: Ingress rules (type ingress needs default_backend or rules)
 
             tailscale_egress_services:
                 type: list
@@ -161,6 +173,10 @@ argument_specs:
                 default: []
                 elements: dict
                 description: List of Tailscale Egress Services (FQDN or IP-based)
+                mutually_exclusive:
+                    - [fqdn, ip]
+                required_one_of:
+                    - [fqdn, ip]
                 options:
                     name:
                         type: str
@@ -177,11 +193,11 @@ argument_specs:
                     fqdn:
                         type: str
                         required: false
-                        description: Target FQDN in Tailscale network (mutually exclusive with ip)
+                        description: Target FQDN in Tailscale network (exactly one of fqdn or ip)
                     ip:
                         type: str
                         required: false
-                        description: Target IP in Tailscale network (mutually exclusive with fqdn)
+                        description: Target IP in Tailscale network (exactly one of fqdn or ip)
                     ports:
                         type: list
                         elements: dict

@@ -5,18 +5,11 @@ galaxy_info:
     description: "Manages Tailscale Kubernetes resources including ProxyGroups, Ingress, and Egress services."
     license: MIT
     min_ansible_version: "2.18"
+    # Platform-independent: the role only talks to the Kubernetes API.
     platforms:
-        - name: Ubuntu
+        - name: GenericLinux
           versions:
-              - jammy
-              - noble
-        - name: Debian
-          versions:
-              - bullseye
-              - bookworm
-        - name: EL
-          versions:
-              - "9"
+              - all
     galaxy_tags:
         - tailscale
         - kubernetes
