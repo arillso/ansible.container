@@ -65,19 +65,25 @@ the tag runs `tag.yml`, which publishes to Galaxy.
 
 - **Static guards in `tests/unit/`.** `test_el_support.py` fails when a role
   declares `EL` in `meta/main.yml` without a matching RedHat platform in its
-  Molecule scenario, when two platforms share an SSH port, or when the docker
-  and docker_compose_v2 package pins break their apt/rpm syntax.
-  `test_helm_per_host.py` fails on any `run_once` in the helm role: every host
-  is its own k3s cluster. Adding a platform or a pin means running `make test`.
+  Molecule scenario, when a platform lacks a `host_vars` entry or shares an SSH
+  port, when a Molecule playbook installs packages with `ansible.builtin.apt`
+  instead of `ansible.builtin.package`, or when the docker and
+  docker_compose_v2 package pins break their apt/rpm syntax.
+  `test_helm_per_host.py` fails on any `run_once` in the fleet, helm, k3s and
+  tailscale tasks (every host is its own k3s cluster) and when the
+  `helm_repositories` default drifts between `defaults/main.yml` and
+  `argument_specs.yml`. Adding a platform, a pin or a Molecule playbook means
+  running `make test`.
 - **Lint differs between hook and CI.** The lefthook `ansible-lint` runs
   `--offline` so a machine without Galaxy access can still commit; CI lints
   online. `.ansible-lint` excludes the fleet, helm and tailscale
   `molecule/default/verify.yml` because the lint job does not install
   `kubernetes.core`. A new playbook calling `kubernetes.core` needs the same
   exclusion.
-- **Integration tests do not run in CI.** The reusable calls
-  `ansible-test integration` without `--docker-privileged`, so targets marked
-  `needs/privileged` are skipped, and `fleet` and `tailscale` are `disabled`.
+- **Integration tests do not run in CI.** The only targets, `fleet` and
+  `tailscale`, are `disabled`, and the reusable calls `ansible-test integration`
+  without `--docker-privileged`, so a new target marked `needs/privileged`
+  would be skipped as well.
   Role coverage lives in the per-role Molecule jobs of `pull-request.yml`.
 - **One Molecule job per role.** A new role needs its own `molecule-<role>` job
   in `pull-request.yml`; CI does not discover scenarios on its own.

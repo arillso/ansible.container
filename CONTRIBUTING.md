@@ -7,7 +7,7 @@ Thank you for your interest in contributing! This document provides guidelines a
 - Ansible >= 2.18
 - Python >= 3.12
 - Git
-- Docker (for testing)
+- qemu with KVM for Molecule, see [docs/testing.md](docs/testing.md)
 
 ## Development Setup
 

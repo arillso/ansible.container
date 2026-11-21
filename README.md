@@ -46,7 +46,7 @@ and Ansible validates them at runtime. Examples per role are in the guide:
 ## Requirements
 
 - Ansible >= 2.18
-- Python >= 3.12
+- Python >= 3.11 on the control node (ansible-core 2.18 minimum)
 
 ## Contributing
 
