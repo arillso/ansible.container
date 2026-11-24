@@ -70,9 +70,12 @@ the tag runs `tag.yml`, which publishes to Galaxy.
   instead of `ansible.builtin.package`, or when the docker and
   docker_compose_v2 package pins break their apt/rpm syntax.
   `test_helm_per_host.py` fails on any `run_once` in the fleet, helm, k3s and
-  tailscale tasks (every host is its own k3s cluster) and when the
-  `helm_repositories` default drifts between `defaults/main.yml` and
-  `argument_specs.yml`. Adding a platform, a pin or a Molecule playbook means
+  tailscale tasks (every host is its own k3s cluster).
+  `test_argument_specs_defaults.py` fails when a variable in a role's
+  `defaults/main.yml` is missing from the `main` entry point of
+  `argument_specs.yml`, is `required`, or carries a different `default:`
+  (compared as raw YAML, Jinja verbatim); it skips when PyYAML is missing.
+  Adding a platform, a pin, a role default or a Molecule playbook means
   running `make test`.
 - **Lint differs between hook and CI.** The lefthook `ansible-lint` runs
   `--offline` so a machine without Galaxy access can still commit; CI lints

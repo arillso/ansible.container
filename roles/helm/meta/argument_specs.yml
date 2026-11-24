@@ -9,6 +9,19 @@ argument_specs:
             This role manages Helm chart deployments to Kubernetes clusters.
             Supports repository management, chart installation, and validation.
         author: "Simon Bärlocher"
+        examples: |
+            - hosts: k8s_masters
+              roles:
+                  - role: arillso.container.helm
+                    vars:
+                        helm_enable_charts: true
+                        helm_charts:
+                            - name: cert-manager
+                              chart: cert-manager
+                              repository: jetstack
+                              version: "v1.13.2"
+                              namespace: cert-manager
+                              create_namespace: true
         options:
             helm_enable_charts:
                 type: "bool"

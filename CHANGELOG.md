@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Every role's `main` entry point carries an `examples` playbook snippet,
+  rendered on the role page by antsibull-docs. A unit test checks that each
+  example calls its role and that its top-level role `vars` are
+  declared options.
+
+### Fixed
+
+- **docker**, **k3s**: `argument_specs.yml` documented the role defaults
+  incompletely or with values that differed from `defaults/main.yml`, so the
+  role pages showed no or wrong defaults. docker now documents
+  `docker_daemon_base`, `docker_daemon` and `docker_systemd_units`; k3s
+  documents `k3s_version`, `k3s_role` and `k3s_node_name` as optional with
+  their defaults instead of `required`, and `k3s_token_file` and
+  `k3s_required_packages` with the actual templated values. A unit test keeps
+  both files in sync for every role.
+
 ## [3.0.1] - 2026-11-21
 
 ### Fixed

@@ -5,6 +5,18 @@ argument_specs:
         description:
             - This spec outlines parameters for configuring Docker Compose with Ansible.
             - It includes Docker Compose version, package names, directory paths, configuration methods, and project name.
+        examples: |
+            - hosts: servers
+              roles:
+                  - role: arillso.container.docker_compose_v2
+                    vars:
+                        docker_compose_v2_project: "web"
+                        docker_compose_v2_config:
+                            services:
+                                web:
+                                    image: nginx:alpine
+                                    ports:
+                                        - "8080:80"
 
         options:
             docker_compose_v2_version:

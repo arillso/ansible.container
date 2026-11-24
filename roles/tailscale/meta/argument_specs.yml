@@ -11,6 +11,17 @@ argument_specs:
             - Supports FQDN and IP-based access for egress services
         author:
             - Simon Bärlocher
+        examples: |
+            - hosts: k8s_masters
+              roles:
+                  - role: arillso.container.tailscale
+                    vars:
+                        tailscale_proxygroups:
+                            - name: ingress-proxies
+                              type: ingress
+                              replicas: 2
+                              tags:
+                                  - "tag:k8s-ingress"
         options:
             tailscale_kubeconfig_path:
                 type: str

@@ -4,6 +4,17 @@ argument_specs:
         short_description: Configure and manage Docker environment using Ansible
         description:
             - This spec defines the parameters for configuring Docker and its environment on various distributions using Ansible.
+        examples: |
+            - hosts: servers
+              roles:
+                  - role: arillso.container.docker
+                    vars:
+                        # Merged on top of docker_daemon_base, not a replacement.
+                        docker_daemon:
+                            log-driver: json-file
+                            log-opts:
+                                max-size: "10m"
+                                max-file: "3"
         options:
             docker_version:
                 type: str
@@ -18,6 +29,10 @@ argument_specs:
                     /etc/docker/daemon.json is docker_daemon_base recursively merged with
                     docker_daemon. Override individual keys via docker_daemon rather than
                     replacing this dict.
+                default:
+                    log-driver: journald
+                    live-restore: true
+                    no-new-privileges: true
 
             docker_daemon:
                 type: dict
@@ -30,6 +45,7 @@ argument_specs:
                     of the daemon restart. On a
                     swarm node live-restore is forced to false, because the swarm
                     cluster component fails to start with it.
+                default: {}
 
             docker_prune_enabled:
                 type: bool
@@ -44,6 +60,39 @@ argument_specs:
                 description: >-
                     Systemd units to create for Docker pruning, in the
                     arillso.system.systemd `systemd_units` format.
+                default:
+                    - name: docker-prune.service
+                      unit:
+                          Unit:
+                              Description: Docker System Prune Service
+                          Service:
+                              Type: oneshot
+                              ExecStart: "/usr/bin/docker system prune -af --filter 'until=24h'"
+                    - name: docker-prune.timer
+                      unit:
+                          Unit:
+                              Description: Run docker system prune daily
+                          Timer:
+                              OnCalendar: daily
+                              Persistent: true
+                          Install:
+                              WantedBy: timers.target
+                    - name: docker-prune-volumes.service
+                      unit:
+                          Unit:
+                              Description: Docker System Prune with Volumes Service
+                          Service:
+                              Type: oneshot
+                              ExecStart: "/usr/bin/docker system prune -af --volumes"
+                    - name: docker-prune-volumes.timer
+                      unit:
+                          Unit:
+                              Description: Run docker system prune with volumes weekly
+                          Timer:
+                              OnCalendar: weekly
+                              Persistent: true
+                          Install:
+                              WantedBy: timers.target
                 options:
                     name:
                         type: str
