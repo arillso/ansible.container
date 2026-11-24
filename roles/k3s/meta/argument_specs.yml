@@ -12,18 +12,19 @@ argument_specs:
         options:
             k3s_version:
                 type: "str"
-                required: true
+                # renovate: datasource=github-releases depName=k3s-io/k3s
+                default: "v1.37.2+k3s1"
                 description: "K3s version to install (e.g., v1.35.2+k3s1)"
 
             k3s_role:
                 type: "str"
-                required: true
+                default: "server"
                 choices: ["server", "agent"]
                 description: "K3s node role - server (control plane) or agent (worker)"
 
             k3s_node_name:
                 type: "str"
-                required: true
+                default: "{{ inventory_hostname }}"
                 description: "K3s node name (usually inventory_hostname)"
 
             k3s_server_init:
@@ -196,7 +197,7 @@ argument_specs:
 
             k3s_token_file:
                 type: "str"
-                default: "/var/lib/rancher/k3s/server/node-token"
+                default: "{{ k3s_data_dir }}/server/node-token"
                 description: "Path to the K3s node token file"
 
             k3s_max_pods:
@@ -365,7 +366,7 @@ argument_specs:
                 default:
                     - curl
                     - iptables
-                    - nfs-common
+                    - "{{ 'nfs-utils' if ansible_facts['os_family'] == 'RedHat' else 'nfs-common' }}"
                 description: >-
                     Required system packages for K3s. The NFS client entry
                     defaults to nfs-utils on RedHat and nfs-common
