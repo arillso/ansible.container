@@ -33,14 +33,21 @@ def load(*parts):
     return yaml.safe_load(REPO_ROOT.joinpath(*parts).read_text())
 
 
+def role_defaults(role):
+    path = REPO_ROOT / "roles" / role / "defaults" / "main.yml"
+    return (load("roles", role, "defaults", "main.yml") or {}) if path.exists() else {}
+
+
 def main_spec(role):
+    path = REPO_ROOT / "roles" / role / "meta" / "argument_specs.yml"
+    assert path.exists(), f"{role}: meta/argument_specs.yml missing"
     return load("roles", role, "meta", "argument_specs.yml")["argument_specs"]["main"]
 
 
 @pytest.mark.parametrize("role", ROLES)
 def test_defaults_documented_in_argument_specs(role):
     """Every role default is declared, optional and documented with its value."""
-    defaults = load("roles", role, "defaults", "main.yml") or {}
+    defaults = role_defaults(role)
     options = main_spec(role)["options"]
     for name, value in defaults.items():
         assert name in options, f"{role}: {name} not declared"
@@ -55,7 +62,8 @@ def test_examples_use_declared_options(role):
     """antsibull-docs renders `examples` on the role page; keep them valid.
 
     An example that sets an undeclared variable documents an option the
-    role does not have.
+    role does not have. Only the top-level role `vars` keys are checked,
+    not sub-options.
     """
     spec = main_spec(role)
     assert isinstance(spec.get("examples"), str) and spec["examples"].strip(), (

@@ -112,4 +112,3 @@ def test_kubeconfig_selection_survives_a_skipped_stat():
     assert (
         "selectattr('stat', 'defined')" in text
     ), "guard the stat dict itself before testing stat.exists"
-

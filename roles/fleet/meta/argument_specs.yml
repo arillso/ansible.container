@@ -13,6 +13,7 @@
               roles:
                   - role: arillso.container.fleet
                     vars:
+                        fleet_enable_gitrepos: true
                         fleet_gitrepos:
                             - name: apps
                               repository: https://github.com/example/fleet-apps
