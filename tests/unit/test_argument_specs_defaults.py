@@ -48,3 +48,27 @@ def test_defaults_documented_in_argument_specs(role):
         assert not opt.get("required"), f"{role}: {name} is required but has a role default"
         assert "default" in opt, f"{role}: {name} has no default in argument_specs"
         assert opt["default"] == value, f"{role}: {name} default drifted"
+
+
+@pytest.mark.parametrize("role", ROLES)
+def test_examples_use_declared_options(role):
+    """antsibull-docs renders `examples` on the role page; keep them valid.
+
+    An example that sets an undeclared variable documents an option the
+    role does not have.
+    """
+    spec = main_spec(role)
+    assert isinstance(spec.get("examples"), str) and spec["examples"].strip(), (
+        f"{role}: main entry point has no examples"
+    )
+    plays = yaml.safe_load(spec["examples"])
+    entries = [
+        r
+        for play in plays
+        for r in play.get("roles", [])
+        if isinstance(r, dict) and r.get("role") == f"arillso.container.{role}"
+    ]
+    assert entries, f"{role}: example does not call arillso.container.{role}"
+    for entry in entries:
+        unknown = set(entry.get("vars", {})) - set(spec["options"])
+        assert not unknown, f"{role}: example uses undeclared {sorted(unknown)}"

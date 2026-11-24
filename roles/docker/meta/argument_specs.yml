@@ -4,6 +4,17 @@ argument_specs:
         short_description: Configure and manage Docker environment using Ansible
         description:
             - This spec defines the parameters for configuring Docker and its environment on various distributions using Ansible.
+        examples: |
+            - hosts: servers
+              roles:
+                  - role: arillso.container.docker
+                    vars:
+                        # Merged on top of docker_daemon_base, not a replacement.
+                        docker_daemon:
+                            log-driver: json-file
+                            log-opts:
+                                max-size: "10m"
+                                max-file: "3"
         options:
             docker_version:
                 type: str

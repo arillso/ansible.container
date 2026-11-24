@@ -9,6 +9,13 @@ argument_specs:
             Main entry point for K3s installation with full configuration options.
             Supports both server and agent roles with manual configuration.
         author: "Simon Bärlocher"
+        examples: |
+            - hosts: k3s_servers
+              roles:
+                  - role: arillso.container.k3s
+                    vars:
+                        k3s_role: server
+                        k3s_server_init: true
         options:
             k3s_version:
                 type: "str"

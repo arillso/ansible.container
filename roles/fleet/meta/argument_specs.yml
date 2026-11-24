@@ -8,6 +8,17 @@
             - "Manages GitRepos, Bundles, Clusters, and Workspaces"
         "author":
             - "Arillso Team"
+        "examples": |
+            - hosts: k8s_masters
+              roles:
+                  - role: arillso.container.fleet
+                    vars:
+                        fleet_gitrepos:
+                            - name: apps
+                              repository: https://github.com/example/fleet-apps
+                              branch: main
+                              paths:
+                                  - apps
         "options":
             "fleet_defaults":
                 "description": "Global Fleet default values"

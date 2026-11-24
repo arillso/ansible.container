@@ -5,6 +5,15 @@ argument_specs:
         description:
             - This spec outlines parameters for managing Docker registry logins with Ansible.
             - It includes options for Docker API version, server verification certificates, and Docker host connection settings, along with login credentials.
+        examples: |
+            - hosts: servers
+              become: true
+              roles:
+                  - role: arillso.container.docker_login
+                    vars:
+                        docker_login_registry_url: ghcr.io
+                        docker_login_username: myuser
+                        docker_login_password: "{{ vault_registry_token }}"
 
         options:
             docker_login_api_version:

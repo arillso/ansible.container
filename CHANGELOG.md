@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Every role's `main` entry point carries an `examples` playbook snippet,
+  rendered on the role page by antsibull-docs. A unit test checks that each
+  example calls its role and only sets declared options.
+
 ### Fixed
 
 - **docker**, **k3s**: `argument_specs.yml` documented the role defaults
