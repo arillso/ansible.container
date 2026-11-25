@@ -28,6 +28,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `log-opts` keys for log rotation (`max-size`, `max-file`) and states that
   they need `log-driver: json-file` or `local`, because the base default
   `journald` does not support them.
+- **k3s**, **fleet**: the README Quick Starts set variables the roles never
+  read (`k3s_server_config`, `fleet_namespace`), so a copied Quick Start ran
+  but silently dropped the setting. They now match the `examples` of the
+  argument specs (`k3s_server_init`, `fleet_enable_gitrepos` with
+  `fleet_gitrepos`).
+- **k3s**: `argument_specs.yml` no longer declares the entry points
+  `server_init`, `server_join` and `agent`. They had no task file, so
+  `tasks_from` on them always failed; use `main` with `k3s_role` and
+  `k3s_server_init`. Unit tests check that every README Quick Start sets only
+  declared options and that every entry point has a task file.
 
 ## [3.0.1] - 2026-11-21
 

@@ -23,7 +23,13 @@ For detailed documentation including all variables, examples, and usage instruct
   roles:
       - role: arillso.container.fleet
         vars:
-            fleet_namespace: cattle-fleet-system
+            fleet_enable_gitrepos: true
+            fleet_gitrepos:
+                - name: apps
+                  repository: https://github.com/example/fleet-apps
+                  branch: main
+                  paths:
+                      - apps
 ```
 
 ## Troubleshooting
