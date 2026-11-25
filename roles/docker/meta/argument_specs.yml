@@ -45,6 +45,10 @@ argument_specs:
                     of the daemon restart. On a
                     swarm node live-restore is forced to false, because the swarm
                     cluster component fails to start with it.
+                    For log rotation set log-opts with max-size (e.g. "10m") and
+                    max-file (e.g. "3") together with log-driver json-file or local;
+                    journald, the base default, does not support these keys and
+                    relies on the limits in journald.conf instead.
                 default: {}
 
             docker_prune_enabled:

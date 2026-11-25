@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   their defaults instead of `required`, and `k3s_token_file` and
   `k3s_required_packages` with the actual templated values. A unit test keeps
   both files in sync for every role.
+- **docker**: the `docker_daemon` description on the role page now names the
+  `log-opts` keys for log rotation (`max-size`, `max-file`) and states that
+  they need `log-driver: json-file` or `local`, because the base default
+  `journald` does not support them.
 
 ## [3.0.1] - 2026-11-21
 
