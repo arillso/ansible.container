@@ -14,6 +14,7 @@ tests/unit/requirements.txt, so PyYAML is not a guaranteed import there;
 the module skips instead of failing collection.
 """
 
+import re
 from pathlib import Path
 
 import pytest
@@ -80,3 +81,42 @@ def test_examples_use_declared_options(role):
     for entry in entries:
         unknown = set(entry.get("vars", {})) - set(spec["options"])
         assert not unknown, f"{role}: example uses undeclared {sorted(unknown)}"
+
+
+def quick_start_blocks(role):
+    """Return the yaml code blocks of the README `## Quick Start` section."""
+    text = (REPO_ROOT / "roles" / role / "README.md").read_text()
+    section = re.search(r"^## Quick Start\n(.*?)(?=^## |\Z)", text, re.M | re.S)
+    assert section, f"{role}: README has no '## Quick Start' section"
+    blocks = re.findall(r"^```ya?ml\n(.*?)^```", section.group(1), re.M | re.S)
+    assert blocks, f"{role}: README Quick Start has no yaml block"
+    return blocks
+
+
+@pytest.mark.parametrize("role", ROLES)
+def test_readme_quick_start_uses_declared_options(role):
+    """A Quick Start that sets an undeclared variable is silently ignored.
+
+    Role argument specs do not reject unknown variables, so a copied
+    Quick Start runs but drops the setting. Only the top-level role
+    `vars` keys are checked, not sub-options.
+    """
+    options = set(main_spec(role)["options"])
+    for block in quick_start_blocks(role):
+        for play in yaml.safe_load(block):
+            for entry in play.get("roles", []):
+                if not isinstance(entry, dict) or entry.get("role") != f"arillso.container.{role}":
+                    continue
+                unknown = set(entry.get("vars", {})) - options
+                assert not unknown, f"{role}: Quick Start uses undeclared {sorted(unknown)}"
+
+
+@pytest.mark.parametrize("role", ROLES)
+def test_entry_points_have_task_files(role):
+    """`tasks_from: <entry point>` fails when tasks/<entry point>.yml is missing."""
+    specs = load("roles", role, "meta", "argument_specs.yml")["argument_specs"]
+    tasks = REPO_ROOT / "roles" / role / "tasks"
+    missing = sorted(
+        name for name in specs if name != "main" and not (tasks / f"{name}.yml").exists()
+    )
+    assert not missing, f"{role}: entry points without task file {missing}"

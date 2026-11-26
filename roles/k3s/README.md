@@ -60,8 +60,7 @@ For detailed documentation including all variables, examples, and usage instruct
       - role: arillso.container.k3s
         vars:
             k3s_role: server
-            k3s_server_config:
-                cluster-init: true
+            k3s_server_init: true
 ```
 
 ## Troubleshooting
